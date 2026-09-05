@@ -18,7 +18,7 @@ export const CH0_DIALOGUES: DialogueScript[] = [
     line('n3', 'woni', '우이!'),
   ] },
   { id: 'd0_liv_audition', nodes: [
-    line('n0', 'npc_audition_judge', 'JYP, SM, 더블랙레이블... 붙은 데가 이렇게 많은데 왜 여길?', 'n1'),
+    line('n0', 'npc_audition_judge', '대형 기획사 여러 곳에 붙었다면서? 그런데 왜 여길?', 'n1'),
     line('n1', 'liv', '출구 없는 매력을 가진 리브입니다. 여기서 시작하고 싶어요.', 'n2'),
     line('n2', 'npc_audition_judge', '그 자신감, 무대에서 보자.'),
   ] },

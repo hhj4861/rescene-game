@@ -18,7 +18,7 @@
 ########################################
 @objects
 spawn start 2 13
-spawn from_alley 37 13
+spawn from_alley 35 13
 spawn from_exam 31 2
 savepoint scent_practice 4 13
 npc npc_dance_teacher 7 13

@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+type GameLike = { scene: { isActive(key: string): boolean } };
+
 test('boots into the prologue map and survives movement and an attack without console errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
@@ -15,7 +17,12 @@ test('boots into the prologue map and survives movement and an attack without co
   await page.keyboard.press('Enter');                    // → Cutscene
   await page.waitForTimeout(300);
   for (let i = 0; i < 3; i++) { await page.keyboard.press('Enter'); await page.waitForTimeout(250); } // 줄 2개 + 종료
-  await page.waitForTimeout(1200);                       // World create + fadeIn
+
+  await expect.poll(
+    () => page.evaluate(() => (window as unknown as { __game: GameLike }).__game.scene.isActive('World')),
+    { timeout: 10_000 },
+  ).toBe(true);
+  await page.waitForTimeout(400);
 
   await page.keyboard.down('ArrowRight');
   await page.waitForTimeout(600);

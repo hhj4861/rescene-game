@@ -18,7 +18,7 @@
 ########################################
 @objects
 spawn start 2 13
-spawn from_practice 2 13
+spawn from_practice 4 13
 spawn from_rooftop 36 2
 savepoint scent_alley 4 13
 npc npc_clerk 8 13

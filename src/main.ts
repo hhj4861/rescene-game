@@ -9,7 +9,7 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { TitleScene } from './scenes/TitleScene';
 import { CharacterSelectScene } from './scenes/CharacterSelectScene';
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
@@ -19,3 +19,4 @@ new Phaser.Game({
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: [BootScene, PreloadScene, TitleScene, CharacterSelectScene, WorldScene, HudScene, DialogueScene, CutsceneScene],
 });
+(window as unknown as { __game: Phaser.Game }).__game = game;

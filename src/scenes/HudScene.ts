@@ -51,7 +51,7 @@ export class HudScene extends Phaser.Scene {
       return { box, name, cd };
     });
 
-    this.add.text(GAME_WIDTH - 12, barY + 48, '←→ 이동  Space 점프  ↑ 상호작용/사다리  ↓+Space 내려가기  A 공격  S/D 스킬  F 회복', SMALL_TEXT).setOrigin(1, 0.5);
+    this.add.text(GAME_WIDTH - 12, barY - 8, '←→ 이동  Space 점프  ↑ 상호작용/사다리  ↓+Space 내려가기  A 공격  S/D 스킬  F 회복', SMALL_TEXT).setOrigin(1, 1);
     this.mapName = this.add.text(8, 8, '', style(14, '#ffffff', { stroke: '#000000', strokeThickness: 3 }));
     this.tracker = this.add.text(GAME_WIDTH - 8, 8, '', style(12, '#c0caf5', { align: 'right', stroke: '#000000', strokeThickness: 3 })).setOrigin(1, 0);
 

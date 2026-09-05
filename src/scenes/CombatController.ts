@@ -205,6 +205,7 @@ export class CombatController {
 
     if (def.ai === 'boss') {
       this.gs.flags.add(`boss_${def.id}_defeated`);
+      this.gs.bus.emit('changed', undefined);
       this.boss = null;
       for (const ep of this.enemyProjectiles.getChildren()) ep.destroy();
     }

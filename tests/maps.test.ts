@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseAsciiMap } from '../tools/ascii-map';
+import { parseAsciiMap, toTiled } from '../tools/ascii-map';
 import { MAPS, getMap } from '../src/data/maps';
 import { getEnemy, getNpc } from '../src/data/index';
 
@@ -36,7 +36,7 @@ describe('map sources', () => {
   it('generated json matches sources (run npm run maps)', () => {
     for (const m of MAPS) {
       const json = JSON.parse(readFileSync(join('public/assets/maps', m.file), 'utf8'));
-      expect(json.width, m.id).toBe(byId.get(m.id)!.rows[0]!.length);
+      expect(json).toEqual(toTiled(byId.get(m.id)!));
     }
   });
 });

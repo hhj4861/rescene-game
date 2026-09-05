@@ -14,6 +14,6 @@
 ........................
 ########################
 @objects
-spawn start 2 10
+spawn start 4 10
 boss boss_monthly_judges 18 10
 portal to_practice 1 10 target=ch1_practice spawn=from_exam

@@ -57,6 +57,7 @@ export class WorldScene extends Phaser.Scene {
 
   create(): void {
     this.transitioning = false;
+    this.portalLabels.clear();
     this.session = getSession(this);
     const gs = this.session.gs;
 

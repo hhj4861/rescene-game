@@ -14,7 +14,7 @@
 ..............................
 ##############################
 @objects
-spawn start 2 10
+spawn start 4 10
 savepoint scent_rooftop 4 10
 npc npc_may 27 10
 enemy enemy_selfdoubt 10 10
