@@ -119,7 +119,8 @@ export class WorldScene extends Phaser.Scene {
     if (this.transitioning) return;
     const probe = this.ladders.getTileAtWorldXY(this.player.x, this.player.y - 20);
     const onLadder = !!probe && probe.index > 0;
-    if (!onLadder && Phaser.Input.Keyboard.JustDown(this.cursors.up)) this.interact();
+    const upJustPressed = Phaser.Input.Keyboard.JustDown(this.cursors.up);
+    if (!onLadder && upJustPressed) this.interact();
     this.player.applyMovement(
       {
         left: this.cursors.left.isDown,
