@@ -88,3 +88,44 @@ export const MemeDefSchema = z.object({
   passive: z.object({ key: PassiveKeySchema, value: z.number() }).optional(),
 });
 export type MemeDef = z.infer<typeof MemeDefSchema>;
+
+export const ObjectiveSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('kill'), target: z.string().min(1), count: z.number().int().positive() }),
+  z.object({ kind: z.literal('collect'), target: z.string().min(1), count: z.number().int().positive() }),
+  z.object({ kind: z.literal('talk'), target: z.string().min(1), dialogue: z.string().optional() }),
+  z.object({ kind: z.literal('reach'), target: z.string().min(1) }),
+  z.object({ kind: z.literal('minigame'), target: z.string().min(1), score: z.number() }),
+  z.object({ kind: z.literal('emote'), target: z.string().min(1), map: z.string().min(1) }),
+]);
+export type Objective = z.infer<typeof ObjectiveSchema>;
+
+export const RewardSchema = z.object({
+  xp: z.number().int().min(0).optional(),
+  hearts: z.number().int().min(0).optional(),
+  items: z.array(z.object({ id: z.string().min(1), count: z.number().int().positive() })).optional(),
+  meme: z.string().optional(),
+  fame: z.number().min(0).optional(),
+  flags: z.array(z.string()).optional(),
+  openMemeSlot: z.boolean().optional(),
+});
+export type Reward = z.infer<typeof RewardSchema>;
+
+export const QuestDefSchema = z.object({
+  id: z.string().min(1),
+  chapter: z.number().int().min(0),
+  type: z.enum(['main', 'side']),
+  title: z.string().min(1),
+  description: z.string(),
+  giver: z.string().min(1),
+  map: z.string().min(1),
+  requires: z.object({
+    level: z.number().int().optional(),
+    questsDone: z.array(z.string()).optional(),
+    flags: z.array(z.string()).optional(),
+    member: MemberIdSchema.optional(),
+  }).optional(),
+  objectives: z.array(ObjectiveSchema).min(1),
+  rewards: RewardSchema,
+  dialogues: z.object({ offer: z.string().min(1), inProgress: z.string().min(1), complete: z.string().min(1) }),
+});
+export type QuestDef = z.infer<typeof QuestDefSchema>;
