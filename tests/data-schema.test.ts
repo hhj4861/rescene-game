@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { MEMBERS } from '../src/data/members';
 import { SKILLS } from '../src/data/skills';
-import { MemberDefSchema, SkillDefSchema } from '../src/data/schema';
-import { getMember, getSkill, validateAllData } from '../src/data/index';
+import { MemberDefSchema, SkillDefSchema, EnemyDefSchema, ItemDefSchema, MemeDefSchema } from '../src/data/schema';
+import { getMember, getSkill, validateAllData, ENEMIES, ITEMS, MEMES, getEnemy, getItem, getMeme } from '../src/data/index';
 import { MEMBER_IDS } from '../src/systems/types';
 
 describe('members', () => {
@@ -46,5 +46,24 @@ describe('validateAllData', () => {
   });
   it('getSkill throws on unknown id', () => {
     expect(() => getSkill('nope')).toThrow(/nope/);
+  });
+});
+
+describe('enemies, items, memes', () => {
+  it('pass their schemas', () => {
+    ENEMIES.forEach((e) => expect(() => EnemyDefSchema.parse(e), e.id).not.toThrow());
+    ITEMS.forEach((i) => expect(() => ItemDefSchema.parse(i), i.id).not.toThrow());
+    MEMES.forEach((m) => expect(() => MemeDefSchema.parse(m), m.id).not.toThrow());
+  });
+  it('enemy drops reference existing items', () => {
+    for (const e of ENEMIES) for (const d of e.drops) expect(() => getItem(d.itemId), `${e.id} -> ${d.itemId}`).not.toThrow();
+  });
+  it('has one signature food per member', () => {
+    const foods = ITEMS.filter((i) => i.type === 'consumable');
+    expect(foods.map((f) => f.id).sort()).toEqual(['food_malatang', 'food_mulhoe', 'food_seolleongtang', 'food_tteokguk', 'food_yeopddeok']);
+  });
+  it('getters throw on unknown ids', () => {
+    expect(() => getEnemy('x')).toThrow(/x/);
+    expect(() => getMeme('x')).toThrow(/x/);
   });
 });

@@ -1,12 +1,18 @@
 import type { MemberId } from '../systems/types';
-import { MemberDefSchema, SkillDefSchema, type MemberDef, type SkillDef } from './schema';
+import { MemberDefSchema, SkillDefSchema, EnemyDefSchema, ItemDefSchema, MemeDefSchema, type MemberDef, type SkillDef, type EnemyDef, type ItemDef, type MemeDef } from './schema';
 import { MEMBERS } from './members';
 import { SKILLS } from './skills';
+import { ENEMIES } from './enemies';
+import { ITEMS } from './items';
+import { MEMES } from './memes';
 
-export { MEMBERS, SKILLS };
+export { MEMBERS, SKILLS, ENEMIES, ITEMS, MEMES };
 
 const memberById = new Map(MEMBERS.map((m) => [m.id, m]));
 const skillById = new Map(SKILLS.map((s) => [s.id, s]));
+const enemyById = new Map(ENEMIES.map((e) => [e.id, e]));
+const itemById = new Map(ITEMS.map((i) => [i.id, i]));
+const memeById = new Map(MEMES.map((m) => [m.id, m]));
 
 export function getMember(id: MemberId): MemberDef {
   const m = memberById.get(id);
@@ -18,6 +24,24 @@ export function getSkill(id: string): SkillDef {
   const s = skillById.get(id);
   if (!s) throw new Error(`unknown skill: ${id}`);
   return s;
+}
+
+export function getEnemy(id: string): EnemyDef {
+  const e = enemyById.get(id);
+  if (!e) throw new Error(`unknown enemy: ${id}`);
+  return e;
+}
+
+export function getItem(id: string): ItemDef {
+  const i = itemById.get(id);
+  if (!i) throw new Error(`unknown item: ${id}`);
+  return i;
+}
+
+export function getMeme(id: string): MemeDef {
+  const m = memeById.get(id);
+  if (!m) throw new Error(`unknown meme: ${id}`);
+  return m;
 }
 
 function assertUnique(label: string, ids: string[]): void {
@@ -40,4 +64,11 @@ export function validateAllData(): void {
       if (s.member !== m.id) throw new Error(`skill ${sid} belongs to ${s.member}, listed under ${m.id}`);
     }
   }
+  ENEMIES.forEach((e) => EnemyDefSchema.parse(e));
+  ITEMS.forEach((i) => ItemDefSchema.parse(i));
+  MEMES.forEach((m) => MemeDefSchema.parse(m));
+  assertUnique('enemy', ENEMIES.map((e) => e.id));
+  assertUnique('item', ITEMS.map((i) => i.id));
+  assertUnique('meme', MEMES.map((m) => m.id));
+  for (const e of ENEMIES) for (const d of e.drops) getItem(d.itemId);
 }

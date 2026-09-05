@@ -45,3 +45,46 @@ export const SkillDefSchema = z.object({
   effects: z.array(SkillEffectSchema).min(1),
 });
 export type SkillDef = z.infer<typeof SkillDefSchema>;
+
+export const EnemyDefSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  chapter: z.number().int().min(0),
+  hp: z.number().positive(),
+  atk: z.number().min(0),
+  def: z.number().min(0),
+  spd: z.number().min(0),
+  xp: z.number().int().min(0),
+  hearts: z.tuple([z.number().int().min(0), z.number().int().min(0)]),
+  ai: z.enum(['patrol', 'chase', 'boss']),
+  width: z.number().positive(),
+  height: z.number().positive(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  drops: z.array(z.object({ itemId: z.string().min(1), chance: z.number().min(0).max(1) })),
+});
+export type EnemyDef = z.infer<typeof EnemyDefSchema>;
+
+export const EquipSlotSchema = z.enum(['inear', 'outfit', 'mic', 'shoes']);
+export type EquipSlot = z.infer<typeof EquipSlotSchema>;
+
+const ItemBase = { id: z.string().min(1), name: z.string().min(1), description: z.string(), price: z.number().int().min(0) };
+export const ItemDefSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('consumable'), ...ItemBase, heal: z.object({ hp: z.number().optional(), mp: z.number().optional() }) }),
+  z.object({ type: z.literal('equip'), ...ItemBase, slot: EquipSlotSchema, stats: StatsSchema.partial() }),
+  z.object({ type: z.literal('etc'), ...ItemBase }),
+  z.object({ type: z.literal('photocard'), ...ItemBase, member: MemberIdSchema }),
+]);
+export type ItemDef = z.infer<typeof ItemDefSchema>;
+
+export const PassiveKeySchema = z.enum(['hp', 'mp', 'atk', 'def', 'spd', 'luk', 'aoeRange', 'foodHeal', 'fameGain', 'statusDuration']);
+export type PassiveKey = z.infer<typeof PassiveKeySchema>;
+
+export const MemeDefSchema = z.object({
+  id: z.string().min(1),
+  member: MemberIdSchema,
+  text: z.string().min(1),
+  origin: z.string().min(1),
+  note: z.string(),
+  passive: z.object({ key: PassiveKeySchema, value: z.number() }).optional(),
+});
+export type MemeDef = z.infer<typeof MemeDefSchema>;
