@@ -3,7 +3,7 @@ import { getItem, getMeme, getMember } from '../data/index';
 import type { QuestDef, Reward } from '../data/schema';
 import { addItem, emptyInventory, equipmentStats, type InventoryState } from '../systems/inventory';
 import { emptyMemeState, openMemeSlot, passiveTotals, unlockMeme, type MemeState } from '../systems/memes';
-import { applyXp, statsForLevel } from '../systems/progression';
+import { applyXp, statsForLevel, xpForLevel } from '../systems/progression';
 import { QuestEngine, emptyQuestState, type GameEvent, type QuestContext, type QuestState } from '../systems/quest';
 import { emptySkillRuntime, type SkillRuntime } from '../systems/skills';
 import { STAT_KEYS, type MemberId, type PlayerState, type Stats } from '../systems/types';
@@ -114,6 +114,10 @@ export class GameState {
     const passives = passiveTotals(this.memes, getMeme);
     for (const k of STAT_KEYS) stats[k] += (equip[k] ?? 0) + (passives[k] ?? 0);
     return stats;
+  }
+
+  xpNeeded(): number {
+    return xpForLevel(this.player.level);
   }
 
   private changed(): void {
