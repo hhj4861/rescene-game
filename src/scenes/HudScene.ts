@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import { SCENE } from '../core/AssetKeys';
 import { getSession } from '../core/session';
-import { getMap, getMember, getSkill } from '../data/index';
+import { getMap, getMember, getMeme, getQuest, getSkill } from '../data/index';
 import { describeObjective } from '../systems/questText';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { Bar } from '../ui/Bar';
+import { ToastQueue } from '../ui/Toast';
 import { SMALL_TEXT, style } from '../ui/textStyles';
 
 const SLOT_KEYS = ['A', 'S', 'D'] as const;
@@ -19,7 +20,8 @@ export class HudScene extends Phaser.Scene {
   private mapName!: Phaser.GameObjects.Text;
   private tracker!: Phaser.GameObjects.Text;
   private slots: { box: Phaser.GameObjects.Rectangle; name: Phaser.GameObjects.Text; cd: Phaser.GameObjects.Text }[] = [];
-  private unsubscribe: (() => void) | null = null;
+  private toasts!: ToastQueue;
+  private unsubs: (() => void)[] = [];
 
   constructor() {
     super(SCENE.hud);
@@ -50,8 +52,15 @@ export class HudScene extends Phaser.Scene {
     this.mapName = this.add.text(8, 8, '', style(14, '#ffffff', { stroke: '#000000', strokeThickness: 3 }));
     this.tracker = this.add.text(GAME_WIDTH - 8, 8, '', style(12, '#c0caf5', { align: 'right', stroke: '#000000', strokeThickness: 3 })).setOrigin(1, 0);
 
-    this.unsubscribe = gs.bus.on('changed', () => this.refresh());
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribe?.());
+    this.toasts = new ToastQueue(this, GAME_WIDTH / 2, 40);
+    this.unsubs = [
+      gs.bus.on('changed', () => this.refresh()),
+      gs.bus.on('questStarted', ({ questId }) => this.toasts.push(`퀘스트 수락: ${getQuest(questId).title}`, '#7dcfff')),
+      gs.bus.on('questCompleted', ({ questId, reward }) => this.toasts.push(`퀘스트 완료: ${getQuest(questId).title}  +${reward.xp ?? 0} EXP  +${reward.hearts ?? 0} ♥`, '#ffd166')),
+      gs.bus.on('memeUnlocked', ({ memeId }) => this.toasts.push(`유행어 획득: "${getMeme(memeId).text}"`, '#bb9af7')),
+      gs.bus.on('levelup', ({ level }) => this.toasts.push(`LEVEL UP! Lv.${level}`, '#9ece6a')),
+    ];
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubs.forEach((u) => u()));
     this.refresh();
   }
 

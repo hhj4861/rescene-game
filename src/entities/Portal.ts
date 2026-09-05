@@ -6,7 +6,7 @@ export class Portal extends Phaser.Physics.Arcade.Image {
   readonly target: string;
   readonly spawn: string;
   readonly requiresFlag: string | undefined;
-  readonly locked: boolean;
+  locked: boolean;
 
   constructor(scene: Phaser.Scene, obj: MapObject, flags: Set<string>) {
     const requiresFlag = obj.props.requiresFlag;
@@ -19,5 +19,10 @@ export class Portal extends Phaser.Physics.Arcade.Image {
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
     this.setOrigin(0.5, 1).setAlpha(0.85).setDepth(5);
+  }
+
+  unlock(): void {
+    this.locked = false;
+    this.setTexture(TEX.portal);
   }
 }

@@ -87,6 +87,17 @@ describe('quests through GameState', () => {
   });
 });
 
+describe('startQuest', () => {
+  it('startQuest emits questStarted', () => {
+    const gs = GameState.newGame('woni', QUESTS);
+    const started: string[] = [];
+    gs.bus.on('questStarted', (p) => started.push(p.questId));
+    gs.startQuest('q1');
+    expect(started).toEqual(['q1']);
+    expect(gs.quests.status('q1')).toBe('active');
+  });
+});
+
 describe('snapshot round trip', () => {
   it('restores player, quests, flags and location', () => {
     const gs = GameState.newGame('zena', QUESTS);

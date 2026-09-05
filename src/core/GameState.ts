@@ -30,6 +30,7 @@ export type GameEvents = {
   levelup: { level: number };
   died: undefined;
   questCompletable: { questId: string };
+  questStarted: { questId: string };
   questCompleted: { questId: string; reward: Reward };
   memeUnlocked: { memeId: string };
 };
@@ -176,6 +177,12 @@ export class GameState {
     for (const questId of ids) this.bus.emit('questCompletable', { questId });
     if (ids.length) this.changed();
     return ids;
+  }
+
+  startQuest(id: string): void {
+    this.quests.start(id);
+    this.bus.emit('questStarted', { questId: id });
+    this.changed();
   }
 
   completeQuest(id: string): Reward {

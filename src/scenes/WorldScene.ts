@@ -9,7 +9,9 @@ import { ScentSavePoint } from '../entities/ScentSavePoint';
 import { removeItem } from '../systems/inventory';
 import { passiveTotals } from '../systems/memes';
 import { DEFAULT_MOVE_CONFIG, type MoveConfig } from '../systems/movement';
+import { markerFor, pickNpcAction } from '../systems/npcInteraction';
 import { saveGame } from '../systems/save';
+import type { Reward } from '../data/schema';
 import { floatText } from '../ui/FloatText';
 import { SMALL_TEXT } from '../ui/textStyles';
 import { CombatController } from './CombatController';
@@ -30,6 +32,8 @@ export class WorldScene extends Phaser.Scene {
   private player!: Player;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private portals: Portal[] = [];
+  private portalLabels = new Map<Portal, Phaser.GameObjects.Text>();
+  private unsubChanged: (() => void) | null = null;
   private savepoints: ScentSavePoint[] = [];
   private npcs: Npc[] = [];
   private transitioning = false;
@@ -76,7 +80,8 @@ export class WorldScene extends Phaser.Scene {
 
     this.portals = objectsOf(this.map, 'portals').map((o) => new Portal(this, o, gs.flags));
     this.savepoints = objectsOf(this.map, 'savepoints').map((o) => new ScentSavePoint(this, o));
-    for (const p of this.portals) this.add.text(p.x, p.y - 70, p.locked ? '잠김' : getMap(p.target).name, SMALL_TEXT).setOrigin(0.5).setDepth(6);
+    for (const p of this.portals) this.portalLabels.set(p, this.add.text(p.x, p.y - 70, '', SMALL_TEXT).setOrigin(0.5).setDepth(6));
+    this.refreshPortals();
     for (const s of this.savepoints) this.add.text(s.x, s.y - 46, '향기', SMALL_TEXT).setOrigin(0.5).setDepth(6);
     this.npcs = objectsOf(this.map, 'spawns_npc')
       .map((o) => ({ o, def: getNpc(o.name) }))
@@ -101,6 +106,10 @@ export class WorldScene extends Phaser.Scene {
     this.keyS = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S);
     this.keyD = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D);
     this.keyF = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+
+    this.refreshMarkers();
+    this.unsubChanged = gs.bus.on('changed', () => { this.refreshMarkers(); this.refreshPortals(); });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubChanged?.());
   }
 
   private moveConfig(): MoveConfig {
@@ -131,10 +140,34 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private talkTo(npc: Npc): void {
-    const scriptId = npc.dialogueOverride ?? npc.def.dialogue;
-    this.openDialogue(scriptId, () => {
-      this.session.gs.report({ type: 'npc_talked', npcId: npc.def.id, dialogueId: scriptId });
+    const gs = this.session.gs;
+    const action = pickNpcAction(gs.quests, npc.def.id, npc.dialogueOverride ?? npc.def.dialogue);
+    this.openDialogue(action.scriptId, () => {
+      gs.report({ type: 'npc_talked', npcId: npc.def.id, dialogueId: action.scriptId });
+      if (action.kind === 'offer') gs.startQuest(action.questId);
+      if (action.kind === 'complete') this.afterQuestComplete(action.questId, gs.completeQuest(action.questId));
+      this.refreshMarkers();
     });
+  }
+
+  /** Task 22에서 챕터 클리어 컷신·자동 저장을 추가한다 */
+  private afterQuestComplete(_questId: string, _reward: Reward): void {
+    this.refreshPortals();
+  }
+
+  private refreshMarkers(): void {
+    for (const n of this.npcs) {
+      const m = markerFor(this.session.gs.quests, n.def.id);
+      n.setMarker(m?.text ?? '', m?.color ?? '#ffffff');
+    }
+  }
+
+  private refreshPortals(): void {
+    const flags = this.session.gs.flags;
+    for (const p of this.portals) {
+      if (p.locked && p.requiresFlag && flags.has(p.requiresFlag)) p.unlock();
+      this.portalLabels.get(p)?.setText(p.locked ? '잠김' : getMap(p.target).name);
+    }
   }
 
   private transitionTo(mapId: string, spawnId: string): void {
