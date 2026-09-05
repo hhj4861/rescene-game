@@ -6,6 +6,7 @@ import { MEMBERS, QUESTS, getSkill } from '../data/index';
 import { createLocalStorageStore } from '../systems/save';
 import { SMALL_TEXT, TITLE_TEXT, UI_TEXT, style } from '../ui/textStyles';
 import { GAME_WIDTH } from '../config';
+import type { CutsceneData } from './CutsceneScene';
 
 export class CharacterSelectScene extends Phaser.Scene {
   private index = 0;
@@ -59,6 +60,9 @@ export class CharacterSelectScene extends Phaser.Scene {
     const m = MEMBERS[this.index]!;
     const gs = GameState.newGame(m.id, QUESTS);
     setSession(this, { gs, slot: this.slot, store: createLocalStorageStore(window.localStorage) });
-    this.scene.start(SCENE.world, { mapId: gs.location.mapId, spawnId: gs.location.spawnId });
+    this.scene.start(SCENE.cutscene, {
+      cutsceneId: `ch0_intro_${m.id}`,
+      next: { start: SCENE.world, data: { mapId: gs.location.mapId, spawnId: gs.location.spawnId } },
+    } satisfies CutsceneData);
   }
 }

@@ -16,6 +16,7 @@ import type { Boss } from '../entities/Boss';
 import { floatText } from '../ui/FloatText';
 import { SMALL_TEXT } from '../ui/textStyles';
 import { CombatController } from './CombatController';
+import type { CutsceneData } from './CutsceneScene';
 import type { DialogueData } from './DialogueScene';
 import { findSpawn, objectsOf } from './worldObjects';
 
@@ -114,6 +115,11 @@ export class WorldScene extends Phaser.Scene {
     this.refreshMarkers();
     this.unsubChanged = gs.bus.on('changed', () => { this.refreshMarkers(); this.refreshPortals(); });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubChanged?.());
+
+    if (def.chapter >= 1 && !gs.flags.has(`seen_ch${def.chapter}_intro`)) {
+      gs.flags.add(`seen_ch${def.chapter}_intro`);
+      this.playCutscene(`ch${def.chapter}_intro`);
+    }
   }
 
   private moveConfig(): MoveConfig {
@@ -158,9 +164,21 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  /** Task 22에서 챕터 클리어 컷신·자동 저장을 추가한다 */
-  private afterQuestComplete(_questId: string, _reward: Reward): void {
+  private afterQuestComplete(_questId: string, reward: Reward): void {
     this.refreshPortals();
+    for (const f of reward.flags ?? []) {
+      const m = /^ch(\d+)_clear$/.exec(f);
+      if (!m) continue;
+      const gs = this.session.gs;
+      gs.savedAt = Date.now();
+      saveGame(this.session.store, this.session.slot, gs.snapshot());
+      this.playCutscene(`ch${m[1]}_clear`);
+    }
+  }
+
+  private playCutscene(cutsceneId: string): void {
+    this.scene.pause();
+    this.scene.launch(SCENE.cutscene, { cutsceneId, next: { resume: SCENE.world } } satisfies CutsceneData);
   }
 
   private refreshMarkers(): void {
@@ -195,12 +213,18 @@ export class WorldScene extends Phaser.Scene {
     floatText(this, this.player.x, this.player.y - 60, '향기를 남겼다 (저장됨)', '#ff9e64');
   }
 
-  /** 수직 슬라이스 임시 처리: Task 23에서 컷·메시지 포함 버전으로 교체 */
   private onPlayerDied(): void {
-    const gs = this.session.gs;
-    const max = gs.maxStats();
-    gs.heal(Math.floor(max.hp / 2), Math.floor(max.mp / 2));
-    this.transitionTo(gs.location.mapId, gs.location.spawnId);
+    if (this.transitioning) return;
+    this.transitioning = true;
+    this.player.setVelocity(0, 0).setTint(0x565f89);
+    floatText(this, this.player.x, this.player.y - 60, '무대 실수...', '#f7768e', 18);
+    this.cameras.main.fadeOut(900, 0, 0, 0);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      const gs = this.session.gs;
+      const max = gs.maxStats();
+      gs.heal(Math.floor(max.hp / 2), Math.floor(max.mp / 2));
+      this.scene.restart({ mapId: gs.location.mapId, spawnId: gs.location.spawnId } satisfies WorldData);
+    });
   }
 
   update(_time: number, delta: number): void {

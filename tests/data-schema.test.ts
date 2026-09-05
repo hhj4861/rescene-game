@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { MEMBERS } from '../src/data/members';
 import { SKILLS } from '../src/data/skills';
 import { MemberDefSchema, SkillDefSchema, EnemyDefSchema, ItemDefSchema, MemeDefSchema, NpcDefSchema, CutsceneDefSchema, DialogueScriptSchema, QuestDefSchema } from '../src/data/schema';
-import { getMember, getSkill, validateAllData, ENEMIES, ITEMS, MEMES, getEnemy, getItem, getMeme, getDialogue, getNpc, speakerName } from '../src/data/index';
+import { getMember, getSkill, validateAllData, ENEMIES, ITEMS, MEMES, getEnemy, getItem, getMeme, getDialogue, getNpc, speakerName, getCutscene } from '../src/data/index';
 import { MEMBER_IDS } from '../src/systems/types';
 import { NPCS, DIALOGUES, CUTSCENES, QUESTS } from '../src/data/chapters/index';
 import { MAPS } from '../src/data/maps';
@@ -110,5 +110,15 @@ describe('chapter 1 quests', () => {
     expect(q.objectives).toEqual([{ kind: 'kill', target: 'boss_monthly_judges', count: 1 }]);
     expect(q.rewards.openMemeSlot).toBe(true);
     expect(q.rewards.flags).toContain('ch1_clear');
+  });
+});
+
+describe('chapter clear cutscenes', () => {
+  it('exist for every ch<N>_clear reward flag', () => {
+    for (const q of QUESTS) for (const f of q.rewards.flags ?? []) {
+      const m = /^ch(\d+)_clear$/.exec(f);
+      if (m) expect(() => getCutscene(`ch${m[1]}_clear`), `${q.id}: ${f}`).not.toThrow();
+    }
+    expect(() => getCutscene('ch1_clear')).not.toThrow();
   });
 });

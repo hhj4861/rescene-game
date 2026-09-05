@@ -135,6 +135,10 @@ export function validateAllData(): void {
     for (const it of q.rewards.items ?? []) getItem(it.id);
     if (q.rewards.meme) getMeme(q.rewards.meme);
     for (const id of q.requires?.questsDone ?? []) getQuest(id);
+    for (const f of q.rewards.flags ?? []) {
+      const m = /^ch(\d+)_clear$/.exec(f);
+      if (m) getCutscene(`ch${m[1]}_clear`);
+    }
   }
   for (const m of MEMBERS) { getMap(m.prologueMap); getCutscene(`ch0_intro_${m.id}`); }
 }
