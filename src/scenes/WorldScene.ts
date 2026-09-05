@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { SCENE, TEX, mapKey } from '../core/AssetKeys';
 import { getSession, type Session } from '../core/session';
-import { getItem, getMap, getMember, getMeme, getSkill } from '../data/index';
+import { getItem, getMap, getMember, getMeme, getNpc, getSkill } from '../data/index';
+import { Npc } from '../entities/Npc';
 import { Player } from '../entities/Player';
 import { Portal } from '../entities/Portal';
 import { ScentSavePoint } from '../entities/ScentSavePoint';
@@ -12,6 +13,7 @@ import { saveGame } from '../systems/save';
 import { floatText } from '../ui/FloatText';
 import { SMALL_TEXT } from '../ui/textStyles';
 import { CombatController } from './CombatController';
+import type { DialogueData } from './DialogueScene';
 import { findSpawn, objectsOf } from './worldObjects';
 
 export interface WorldData {
@@ -29,6 +31,7 @@ export class WorldScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private portals: Portal[] = [];
   private savepoints: ScentSavePoint[] = [];
+  private npcs: Npc[] = [];
   private transitioning = false;
   private combat!: CombatController;
   private keyA!: Phaser.Input.Keyboard.Key;
@@ -75,6 +78,10 @@ export class WorldScene extends Phaser.Scene {
     this.savepoints = objectsOf(this.map, 'savepoints').map((o) => new ScentSavePoint(this, o));
     for (const p of this.portals) this.add.text(p.x, p.y - 70, p.locked ? '잠김' : getMap(p.target).name, SMALL_TEXT).setOrigin(0.5).setDepth(6);
     for (const s of this.savepoints) this.add.text(s.x, s.y - 46, '향기', SMALL_TEXT).setOrigin(0.5).setDepth(6);
+    this.npcs = objectsOf(this.map, 'spawns_npc')
+      .map((o) => ({ o, def: getNpc(o.name) }))
+      .filter(({ def }) => def.member !== gs.player.member)
+      .map(({ o, def }) => new Npc(this, o.x, o.y, def, o.props.dialogue));
     this.cameras.main.fadeIn(200, 0, 0, 0);
 
     this.combat = new CombatController(this, this.player, gs, [ground, platforms]);
@@ -104,8 +111,10 @@ export class WorldScene extends Phaser.Scene {
     return Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), obj.getBounds());
   }
 
-  /** ↑ 키 상호작용. 우선순위: 포탈 → 향기 (Task 20에서 NPC가 앞에 추가된다) */
+  /** ↑ 키 상호작용. 우선순위: NPC → 포탈 → 향기 */
   private interact(): void {
+    const npc = this.npcs.find((n) => this.overlapsPlayer(n));
+    if (npc) { this.talkTo(npc); return; }
     const portal = this.portals.find((p) => this.overlapsPlayer(p));
     if (portal) {
       if (portal.locked) floatText(this, this.player.x, this.player.y - 60, '아직 열리지 않은 문이다', '#a9b1d6');
@@ -114,6 +123,18 @@ export class WorldScene extends Phaser.Scene {
     }
     const scent = this.savepoints.find((s) => this.overlapsPlayer(s));
     if (scent) this.saveAt(scent.saveName);
+  }
+
+  openDialogue(scriptId: string, onDone?: (flags: Set<string>) => void): void {
+    this.scene.pause();
+    this.scene.launch(SCENE.dialogue, { scriptId, onDone } satisfies DialogueData);
+  }
+
+  private talkTo(npc: Npc): void {
+    const scriptId = npc.dialogueOverride ?? npc.def.dialogue;
+    this.openDialogue(scriptId, () => {
+      this.session.gs.report({ type: 'npc_talked', npcId: npc.def.id, dialogueId: scriptId });
+    });
   }
 
   private transitionTo(mapId: string, spawnId: string): void {
