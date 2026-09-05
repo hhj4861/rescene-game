@@ -10,6 +10,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   readonly def: EnemyDef;
   hp: number;
   stunnedUntil = 0;
+  invulnerableUntil = 0;
   statMods: Partial<Record<StatKey, { ratio: number; until: number }>> = {};
   dots: Dot[] = [];
   dir: 1 | -1 = -1;

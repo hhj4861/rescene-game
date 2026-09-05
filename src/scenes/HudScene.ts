@@ -7,6 +7,7 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { Bar } from '../ui/Bar';
 import { ToastQueue } from '../ui/Toast';
 import { SMALL_TEXT, style } from '../ui/textStyles';
+import type { WorldScene } from './WorldScene';
 
 const SLOT_KEYS = ['A', 'S', 'D'] as const;
 
@@ -22,6 +23,8 @@ export class HudScene extends Phaser.Scene {
   private slots: { box: Phaser.GameObjects.Rectangle; name: Phaser.GameObjects.Text; cd: Phaser.GameObjects.Text }[] = [];
   private toasts!: ToastQueue;
   private unsubs: (() => void)[] = [];
+  private bossBar!: Bar;
+  private bossName!: Phaser.GameObjects.Text;
 
   constructor() {
     super(SCENE.hud);
@@ -51,6 +54,10 @@ export class HudScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH - 12, barY + 48, '←→ 이동  Space 점프  ↑ 상호작용/사다리  ↓+Space 내려가기  A 공격  S/D 스킬  F 회복', SMALL_TEXT).setOrigin(1, 0.5);
     this.mapName = this.add.text(8, 8, '', style(14, '#ffffff', { stroke: '#000000', strokeThickness: 3 }));
     this.tracker = this.add.text(GAME_WIDTH - 8, 8, '', style(12, '#c0caf5', { align: 'right', stroke: '#000000', strokeThickness: 3 })).setOrigin(1, 0);
+
+    this.bossName = this.add.text(GAME_WIDTH / 2, 70, '', style(14, '#bb9af7', { fontStyle: 'bold', stroke: '#000000', strokeThickness: 3 })).setOrigin(0.5).setVisible(false);
+    this.bossBar = new Bar(this, GAME_WIDTH / 2 - 200, 92, 400, 12, '#bb9af7');
+    this.bossBar.setVisible(false);
 
     this.toasts = new ToastQueue(this, GAME_WIDTH / 2, 40);
     this.unsubs = [
@@ -99,5 +106,12 @@ export class HudScene extends Phaser.Scene {
       this.slots[i]!.cd.setText(left > 0 ? `${(left / 1000).toFixed(1)}s` : '');
       this.slots[i]!.box.setFillStyle(left > 0 ? 0x1a1b26 : 0x24283b);
     });
+    const boss = (this.scene.get(SCENE.world) as WorldScene).activeBoss();
+    this.bossName.setVisible(!!boss);
+    this.bossBar.setVisible(!!boss);
+    if (boss) {
+      this.bossName.setText(`${boss.def.name} — ${['', '보컬', '댄스', '랩'][boss.phase]}`);
+      this.bossBar.set(boss.hp / boss.def.hp, `${Math.max(0, boss.hp)}/${boss.def.hp}`);
+    }
   }
 }

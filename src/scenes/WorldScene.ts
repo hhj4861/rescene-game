@@ -12,6 +12,7 @@ import { DEFAULT_MOVE_CONFIG, type MoveConfig } from '../systems/movement';
 import { markerFor, pickNpcAction } from '../systems/npcInteraction';
 import { saveGame } from '../systems/save';
 import type { Reward } from '../data/schema';
+import type { Boss } from '../entities/Boss';
 import { floatText } from '../ui/FloatText';
 import { SMALL_TEXT } from '../ui/textStyles';
 import { CombatController } from './CombatController';
@@ -91,6 +92,9 @@ export class WorldScene extends Phaser.Scene {
 
     this.combat = new CombatController(this, this.player, gs, [ground, platforms]);
     for (const o of objectsOf(this.map, 'spawns_enemy')) this.combat.spawnEnemy(o.name, o.x, o.y);
+    for (const o of objectsOf(this.map, 'bosses')) {
+      if (!gs.flags.has(`boss_${o.name}_defeated`)) this.combat.spawnBoss(o.name, o.x, o.y);
+    }
     this.combat.onPlayerDied = () => this.onPlayerDied();
     this.keyA = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A);
 
@@ -137,6 +141,10 @@ export class WorldScene extends Phaser.Scene {
   openDialogue(scriptId: string, onDone?: (flags: Set<string>) => void): void {
     this.scene.pause();
     this.scene.launch(SCENE.dialogue, { scriptId, onDone } satisfies DialogueData);
+  }
+
+  activeBoss(): Boss | null {
+    return this.combat?.boss ?? null;
   }
 
   private talkTo(npc: Npc): void {

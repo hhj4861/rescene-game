@@ -2,8 +2,10 @@ import Phaser from 'phaser';
 import type { GameState } from '../core/GameState';
 import { getEnemy, getItem } from '../data/index';
 import type { SkillDef, SkillEffect } from '../data/schema';
+import { Boss } from '../entities/Boss';
 import { DropItem } from '../entities/DropItem';
 import { Enemy } from '../entities/Enemy';
+import { EnemyProjectile } from '../entities/EnemyProjectile';
 import type { Player } from '../entities/Player';
 import { Projectile } from '../entities/Projectile';
 import { calculateDamage } from '../systems/combat';
@@ -21,6 +23,8 @@ export class CombatController {
   readonly enemies: Phaser.Physics.Arcade.Group;
   readonly projectiles: Phaser.Physics.Arcade.Group;
   readonly drops: Phaser.Physics.Arcade.Group;
+  readonly enemyProjectiles: Phaser.Physics.Arcade.Group;
+  boss: Boss | null = null;
   buffs: Buff[] = [];
   counterUntil = 0;
   counterMultiplier = 1;
@@ -35,6 +39,15 @@ export class CombatController {
     this.enemies = scene.physics.add.group();
     this.projectiles = scene.physics.add.group();
     this.drops = scene.physics.add.group();
+    this.enemyProjectiles = scene.physics.add.group();
+    // Phaser.Physics.Arcade.Group re-applies its `defaults` (allowGravity: true, velocityX/Y:
+    // 0, ...) to every member on add() -- even one whose body is already configured -- which
+    // would silently stomp EnemyProjectile's own setAllowGravity(false)/setVelocityX() the
+    // instant spawnBoss() adds it to this group, turning every shot into a dead drop instead
+    // of a horizontal shot. Clearing `defaults` (Phaser's own documented escape hatch) leaves
+    // each projectile's own constructor-set body state alone.
+    this.enemyProjectiles.defaults = {} as Phaser.Types.Physics.Arcade.PhysicsGroupDefaults;
+    scene.physics.add.overlap(player, this.enemyProjectiles, (_p, ep) => this.onEnemyProjectile(ep as EnemyProjectile));
     for (const layer of solids) {
       scene.physics.add.collider(this.enemies, layer);
       scene.physics.add.collider(this.drops, layer);
@@ -64,6 +77,17 @@ export class CombatController {
     enemy.setData('spawn', { id, x, y, respawnMs } satisfies SpawnRecord);
     this.enemies.add(enemy);
     return enemy;
+  }
+
+  spawnBoss(id: string, x: number, y: number): Boss {
+    const boss = new Boss(this.scene, x, y, getEnemy(id));
+    boss.setData('spawn', { id, x, y, respawnMs: 0 } satisfies SpawnRecord);
+    boss.fire = (fx, fy, dir, speed, range, mult) => this.enemyProjectiles.add(new EnemyProjectile(this.scene, fx, fy, dir, speed, range, boss.stats(), mult));
+    boss.onPhaseChange = (_phase, name) => floatText(this.scene, boss.x, boss.y - boss.def.height - 20, name, '#bb9af7', 18);
+    this.enemies.add(boss);
+    this.boss = boss;
+    floatText(this.scene, boss.x, boss.y - boss.def.height - 20, '1라운드: 보컬', '#bb9af7', 18);
+    return boss;
   }
 
   private hasFloor = (x: number, y: number): boolean =>
@@ -141,6 +165,10 @@ export class CombatController {
   }
 
   private hitEnemy(enemy: Enemy, skill: SkillDef, knockbackX: number, attached: Extract<SkillEffect, { kind: 'dot' | 'debuff' }>[], stunUntil: number | null): void {
+    if (this.scene.time.now < enemy.invulnerableUntil) {
+      floatText(this.scene, enemy.x, enemy.y - enemy.def.height, 'MISS', '#a9b1d6', 12);
+      return;
+    }
     const now = this.scene.time.now;
     const mult = skillMultiplier(skill, skillLevelOf(this.gs.player, skill.id));
     const dmg = calculateDamage(this.effectiveStats(), enemy.stats(), mult, Math.random);
@@ -169,6 +197,12 @@ export class CombatController {
     floatText(this.scene, x, y - 20, `+${def.xp} EXP`, '#7dcfff', 12);
     if (levels > 0) floatText(this.scene, this.player.x, this.player.y - 80, `LEVEL UP! Lv.${this.gs.player.level}`, '#ffd166', 20);
     this.gs.report({ type: 'enemy_killed', enemyId: def.id });
+
+    if (def.ai === 'boss') {
+      this.gs.flags.add(`boss_${def.id}_defeated`);
+      this.boss = null;
+      for (const ep of this.enemyProjectiles.getChildren()) ep.destroy();
+    }
 
     if (def.ai !== 'boss' && spawn.respawnMs > 0) {
       this.scene.time.delayedCall(spawn.respawnMs, () => { if (this.scene.scene.isActive()) this.spawnEnemy(spawn.id, spawn.x, spawn.y, spawn.respawnMs); });
@@ -209,6 +243,28 @@ export class CombatController {
     this.player.invulnerableUntil = now + CONTACT_IFRAMES_MS;
     this.player.setVelocity(dir * 220, -200);
     this.scene.tweens.add({ targets: this.player, alpha: 0.3, yoyo: true, repeat: 3, duration: 75, onComplete: () => this.player.setAlpha(1) });
+    if (this.gs.takeDamage(dmg.amount)) this.onPlayerDied();
+  }
+
+  private onEnemyProjectile(ep: EnemyProjectile): void {
+    if (!ep.active) return;
+    const now = this.scene.time.now;
+    if (now < this.player.invulnerableUntil) return;
+    const knockbackDir = Math.sign(ep.body.velocity.x);
+    ep.destroy();
+    if (now < this.counterUntil && this.boss) {
+      this.counterUntil = 0;
+      const dmg = calculateDamage(this.effectiveStats(), this.boss.stats(), this.counterMultiplier, Math.random);
+      damagePopup(this.scene, this.boss.x, this.boss.y - this.boss.def.height, dmg.amount, true);
+      floatText(this.scene, this.player.x, this.player.y - 70, '카운터!', '#bb9af7', 16);
+      if (this.boss.takeHit(dmg.amount)) this.killEnemy(this.boss);
+      this.player.invulnerableUntil = now + CONTACT_IFRAMES_MS;
+      return;
+    }
+    const dmg = calculateDamage(ep.attacker, this.effectiveStats(), ep.multiplier, Math.random);
+    damagePopup(this.scene, this.player.x, this.player.y - 56, dmg.amount, dmg.crit, true);
+    this.player.invulnerableUntil = now + CONTACT_IFRAMES_MS;
+    this.player.setVelocity(knockbackDir * 200, -160);
     if (this.gs.takeDamage(dmg.amount)) this.onPlayerDied();
   }
 
