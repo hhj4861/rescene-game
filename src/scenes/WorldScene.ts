@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { SCENE, TEX, mapKey } from '../core/AssetKeys';
 import { getSession, type Session } from '../core/session';
-import { getMap } from '../data/index';
+import { getMap, getSkill } from '../data/index';
 import { Player } from '../entities/Player';
 import { Portal } from '../entities/Portal';
 import { ScentSavePoint } from '../entities/ScentSavePoint';
@@ -9,6 +9,7 @@ import { DEFAULT_MOVE_CONFIG, type MoveConfig } from '../systems/movement';
 import { saveGame } from '../systems/save';
 import { floatText } from '../ui/FloatText';
 import { SMALL_TEXT } from '../ui/textStyles';
+import { CombatController } from './CombatController';
 import { findSpawn, objectsOf } from './worldObjects';
 
 export interface WorldData {
@@ -27,6 +28,8 @@ export class WorldScene extends Phaser.Scene {
   private portals: Portal[] = [];
   private savepoints: ScentSavePoint[] = [];
   private transitioning = false;
+  private combat!: CombatController;
+  private keyA!: Phaser.Input.Keyboard.Key;
 
   constructor() {
     super(SCENE.world);
@@ -67,6 +70,11 @@ export class WorldScene extends Phaser.Scene {
     for (const p of this.portals) this.add.text(p.x, p.y - 70, p.locked ? '잠김' : getMap(p.target).name, SMALL_TEXT).setOrigin(0.5).setDepth(6);
     for (const s of this.savepoints) this.add.text(s.x, s.y - 46, '향기', SMALL_TEXT).setOrigin(0.5).setDepth(6);
     this.cameras.main.fadeIn(200, 0, 0, 0);
+
+    this.combat = new CombatController(this, this.player, gs, [ground, platforms]);
+    for (const o of objectsOf(this.map, 'spawns_enemy')) this.combat.spawnEnemy(o.name, o.x, o.y);
+    this.combat.onPlayerDied = () => this.onPlayerDied();
+    this.keyA = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A);
 
     this.cursors = this.input.keyboard!.createCursorKeys();
 
@@ -114,6 +122,14 @@ export class WorldScene extends Phaser.Scene {
     floatText(this, this.player.x, this.player.y - 60, '향기를 남겼다 (저장됨)', '#ff9e64');
   }
 
+  /** 수직 슬라이스 임시 처리: Task 23에서 컷·메시지 포함 버전으로 교체 */
+  private onPlayerDied(): void {
+    const gs = this.session.gs;
+    const max = gs.maxStats();
+    gs.heal(Math.floor(max.hp / 2), Math.floor(max.mp / 2));
+    this.transitionTo(gs.location.mapId, gs.location.spawnId);
+  }
+
   update(_time: number, delta: number): void {
     this.session.gs.playTimeMs += delta;
     if (this.transitioning) return;
@@ -121,6 +137,8 @@ export class WorldScene extends Phaser.Scene {
     const onLadder = !!probe && probe.index > 0;
     const upJustPressed = Phaser.Input.Keyboard.JustDown(this.cursors.up);
     if (!onLadder && upJustPressed) this.interact();
+    if (Phaser.Input.Keyboard.JustDown(this.keyA)) this.combat.castSkill(getSkill(`${this.session.gs.player.member}_basic`));
+    this.combat.update(this.time.now);
     this.player.applyMovement(
       {
         left: this.cursors.left.isDown,
