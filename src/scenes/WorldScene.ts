@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { SCENE, TEX, mapKey } from '../core/AssetKeys';
 import { getSession, type Session } from '../core/session';
-import { getItem, getMap, getMember, getMeme, getNpc, getSkill } from '../data/index';
+import { getItem, getMap, getMember, getMeme, getNpc, getSkill, hasItem } from '../data/index';
 import { Npc } from '../entities/Npc';
 import { Player } from '../entities/Player';
 import { Portal } from '../entities/Portal';
@@ -118,7 +118,7 @@ export class WorldScene extends Phaser.Scene {
 
     if (def.chapter >= 1 && !gs.flags.has(`seen_ch${def.chapter}_intro`)) {
       gs.flags.add(`seen_ch${def.chapter}_intro`);
-      this.playCutscene(`ch${def.chapter}_intro`);
+      this.events.once(Phaser.Scenes.Events.CREATE, () => this.playCutscene(`ch${def.chapter}_intro`));
     }
   }
 
@@ -270,7 +270,7 @@ export class WorldScene extends Phaser.Scene {
 
   private useFirstConsumable(): void {
     const gs = this.session.gs;
-    const food = Object.keys(gs.inventory.items).map((id) => getItem(id)).find((it) => it.type === 'consumable');
+    const food = Object.keys(gs.inventory.items).filter(hasItem).map((id) => getItem(id)).find((it) => it.type === 'consumable');
     if (!food || food.type !== 'consumable') {
       floatText(this, this.player.x, this.player.y - 60, '먹을 게 없다', '#a9b1d6');
       return;

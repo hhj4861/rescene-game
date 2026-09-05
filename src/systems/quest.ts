@@ -56,14 +56,24 @@ function objectiveDelta(o: Objective, ev: GameEvent): number {
 
 export class QuestEngine {
   private readonly byId: Map<string, QuestDef>;
+  private state: QuestState;
 
   constructor(
     private readonly defs: QuestDef[],
-    private state: QuestState,
+    state: QuestState,
     private readonly flags: Set<string>,
     private readonly ctx: QuestContext,
   ) {
     this.byId = new Map(defs.map((q) => [q.id, q]));
+    const droppedActive = Object.keys(state.active).filter((id) => !this.byId.has(id));
+    const droppedDone = state.done.filter((id) => !this.byId.has(id));
+    if (droppedActive.length || droppedDone.length) {
+      console.warn('QuestEngine: dropping unknown quest ids', { active: droppedActive, done: droppedDone });
+    }
+    this.state = {
+      active: Object.fromEntries(Object.entries(state.active).filter(([id]) => this.byId.has(id))),
+      done: state.done.filter((id) => this.byId.has(id)),
+    };
   }
 
   getState(): QuestState {

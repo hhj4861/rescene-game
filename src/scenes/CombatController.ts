@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { GameState } from '../core/GameState';
-import { getEnemy, getItem } from '../data/index';
+import { getEnemy, getItem, hasItem } from '../data/index';
 import type { SkillDef, SkillEffect } from '../data/schema';
 import { Boss } from '../entities/Boss';
 import { DropItem } from '../entities/DropItem';
@@ -220,7 +220,7 @@ export class CombatController {
     if (d.kind === 'hearts') {
       this.gs.addHearts(d.amount);
       floatText(this.scene, this.player.x, this.player.y - 60, `+${d.amount} ♥`, '#f7768e', 12);
-    } else if (d.itemId) {
+    } else if (d.itemId && hasItem(d.itemId)) {
       this.gs.inventory = addItem(this.gs.inventory, d.itemId, d.amount);
       this.gs.report({ type: 'item_collected', itemId: d.itemId, count: d.amount });
       this.gs.bus.emit('changed', undefined);

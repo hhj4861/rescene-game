@@ -107,3 +107,12 @@ describe('self-talk objectives', () => {
     expect(asMay.progress('q_self')).toEqual([1, 0]);
   });
 });
+
+describe('content id drift', () => {
+  it('drops unknown active/done quest ids on construction and keeps working', () => {
+    const state = { ...emptyQuestState(), active: { ghost: [0] }, done: ['q_a', 'phantom'] };
+    const engine2 = new QuestEngine(DEFS, state, new Set(), { level: 1, member: 'woni' });
+    expect(engine2.getState()).toEqual({ active: {}, done: ['q_a'] });
+    expect(() => engine2.report({ type: 'enemy_killed', enemyId: 'slime' })).not.toThrow();
+  });
+});

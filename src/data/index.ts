@@ -56,6 +56,10 @@ export function getMeme(id: string): MemeDef {
   return m;
 }
 
+export function hasMeme(id: string): boolean { return memeById.has(id); }
+export function hasItem(id: string): boolean { return itemById.has(id); }
+export function hasQuest(id: string): boolean { return questById.has(id); }
+
 export function getNpc(id: string): NpcDef {
   const n = npcById.get(id);
   if (!n) throw new Error(`unknown npc: ${id}`);

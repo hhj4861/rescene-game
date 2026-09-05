@@ -49,7 +49,16 @@ export class TitleScene extends Phaser.Scene {
 
   private confirm(forceNew: boolean): void {
     const slot = this.selected;
-    const snap = forceNew ? null : loadGame(this.store, slot);
+    let snap: ReturnType<typeof loadGame> = null;
+    if (!forceNew) {
+      try {
+        snap = loadGame(this.store, slot);
+      } catch (err) {
+        console.warn('save slot unreadable', err);
+        this.store.clear(slot);
+        snap = null;
+      }
+    }
     if (!snap) {
       this.scene.start(SCENE.select, { slot });
       return;

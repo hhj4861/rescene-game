@@ -1,5 +1,5 @@
 import { EventBus } from './EventBus';
-import { getItem, getMeme, getMember } from '../data/index';
+import { getItem, getMeme, getMember, hasMeme } from '../data/index';
 import type { QuestDef, Reward } from '../data/schema';
 import { addItem, emptyInventory, equipmentStats, type InventoryState } from '../systems/inventory';
 import { emptyMemeState, openMemeSlot, passiveTotals, unlockMeme, type MemeState } from '../systems/memes';
@@ -112,7 +112,7 @@ export class GameState {
     const def = getMember(this.player.member);
     const stats = statsForLevel(def.baseStats, def.growth, this.player.level);
     const equip = equipmentStats(this.inventory, getItem);
-    const passives = passiveTotals(this.memes, getMeme);
+    const passives = passiveTotals({ ...this.memes, equipped: this.memes.equipped.filter((id) => id !== null && hasMeme(id)) }, getMeme);
     for (const k of STAT_KEYS) stats[k] += (equip[k] ?? 0) + (passives[k] ?? 0);
     return stats;
   }

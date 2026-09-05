@@ -98,6 +98,15 @@ describe('startQuest', () => {
   });
 });
 
+describe('content id drift', () => {
+  it('ignores unknown equipped meme ids in maxStats without throwing', () => {
+    const gs = GameState.newGame('woni', QUESTS);
+    gs.memes = { unlocked: ['nope'], equipped: ['nope'] };
+    expect(() => gs.maxStats()).not.toThrow();
+    expect(gs.maxStats()).toEqual({ hp: 120, mp: 40, atk: 8, def: 8, spd: 5, luk: 3 });
+  });
+});
+
 describe('snapshot round trip', () => {
   it('restores player, quests, flags and location', () => {
     const gs = GameState.newGame('zena', QUESTS);
