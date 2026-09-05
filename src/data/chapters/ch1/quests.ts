@@ -1,0 +1,36 @@
+import type { QuestDef } from '../../schema';
+
+export const CH1_QUESTS: QuestDef[] = [
+  { id: 'q1_01', chapter: 1, type: 'main', title: '첫 연습', description: '연습실의 졸음 슬라임 5마리를 쫓아내자.',
+    giver: 'npc_dance_teacher', map: 'ch1_practice',
+    objectives: [{ kind: 'kill', target: 'enemy_sleep_slime', count: 5 }],
+    rewards: { xp: 60, hearts: 20, fame: 1 },
+    dialogues: { offer: 'd1_q01_offer', inProgress: 'd1_q01_progress', complete: 'd1_q01_complete' } },
+  { id: 'q1_02', chapter: 1, type: 'main', title: '편의점 심부름', description: '골목의 근육통 버섯이 떨어뜨리는 야식 재료 3개를 모으자.',
+    giver: 'npc_manager', map: 'ch1_practice', requires: { questsDone: ['q1_01'] },
+    objectives: [{ kind: 'collect', target: 'etc_snack_ingredient', count: 3 }],
+    rewards: { xp: 80, hearts: 30, items: [{ id: 'food_yeopddeok', count: 2 }] },
+    dialogues: { offer: 'd1_q02_offer', inProgress: 'd1_q02_progress', complete: 'd1_q02_complete' } },
+  { id: 'q1_03', chapter: 1, type: 'main', title: '막내의 한 마디', description: '숙소 대신 연습실에 남은 멤버들과 이야기하자. 제나는 한 시간에 한 마디만 한다.',
+    giver: 'npc_manager', map: 'ch1_practice', requires: { questsDone: ['q1_02'] },
+    objectives: [
+      { kind: 'talk', target: 'npc_zena', dialogue: 'd1_zena_word' },
+      { kind: 'talk', target: 'npc_minami', dialogue: 'd1_minami_korean' },
+      { kind: 'talk', target: 'npc_liv', dialogue: 'd1_liv_motto' },
+    ],
+    rewards: { xp: 100, hearts: 30, meme: 'liv_motto', fame: 1 },
+    dialogues: { offer: 'd1_q03_offer', inProgress: 'd1_q03_progress', complete: 'd1_q03_complete' } },
+  { id: 'q1_04', chapter: 1, type: 'main', title: '메이를 붙잡아', description: '옥상의 자기의심 그림자를 물리치고 메이와 이야기하자.',
+    giver: 'npc_manager', map: 'ch1_practice', requires: { questsDone: ['q1_03'] },
+    objectives: [
+      { kind: 'kill', target: 'enemy_selfdoubt', count: 3 },
+      { kind: 'talk', target: 'npc_may', dialogue: 'd1_may_stay' },
+    ],
+    rewards: { xp: 150, hearts: 50, meme: 'may_grip', fame: 2, flags: ['q1_04_done'] },
+    dialogues: { offer: 'd1_q04_offer', inProgress: 'd1_q04_progress', complete: 'd1_q04_complete' } },
+  { id: 'q1_05', chapter: 1, type: 'main', title: '월말평가', description: '평가장의 심사위원단 앞에서 한 달의 연습을 증명하자.',
+    giver: 'npc_dance_teacher', map: 'ch1_practice', requires: { questsDone: ['q1_04'] },
+    objectives: [{ kind: 'kill', target: 'boss_monthly_judges', count: 1 }],
+    rewards: { xp: 400, hearts: 150, meme: 'woni_ui', openMemeSlot: true, fame: 5, flags: ['ch1_clear'] },
+    dialogues: { offer: 'd1_q05_offer', inProgress: 'd1_q05_progress', complete: 'd1_q05_complete' } },
+];

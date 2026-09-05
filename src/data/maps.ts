@@ -8,6 +8,8 @@ export interface MapDef {
 export const MAPS: MapDef[] = [
   { id: 'ch1_practice', name: '더뮤즈 연습실 (야간)', chapter: 1, file: 'ch1_practice.json' },
   { id: 'ch1_alley', name: '편의점 골목', chapter: 1, file: 'ch1_alley.json' },
+  { id: 'ch1_rooftop', name: '옥상', chapter: 1, file: 'ch1_rooftop.json' },
+  { id: 'ch1_exam', name: '월말평가장', chapter: 1, file: 'ch1_exam.json' },
   { id: 'ch0_geoje', name: '거제 바닷가', chapter: 0, file: 'ch0_geoje.json' },
   { id: 'ch0_suwon', name: '수원 오디션 복도', chapter: 0, file: 'ch0_suwon.json' },
   { id: 'ch0_chiba', name: '치바 야치요 골목', chapter: 0, file: 'ch0_chiba.json' },

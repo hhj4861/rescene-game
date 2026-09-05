@@ -97,3 +97,13 @@ describe('completion', () => {
     expect(restored.status('q_a')).toBe('active');
   });
 });
+
+describe('self-talk objectives', () => {
+  it('auto-completes talk objectives targeting the player\'s own member npc', () => {
+    const defs: QuestDef[] = [{ id: 'q_self', chapter: 1, type: 'main', title: 's', description: '', giver: 'npc_manager', map: 'm',
+      objectives: [{ kind: 'talk', target: 'npc_may' }, { kind: 'talk', target: 'npc_zena' }], rewards: {}, dialogues: dlg }];
+    const asMay = new QuestEngine(defs, emptyQuestState(), new Set(), { level: 1, member: 'may' });
+    asMay.start('q_self');
+    expect(asMay.progress('q_self')).toEqual([1, 0]);
+  });
+});

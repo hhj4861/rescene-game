@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { MEMBERS } from '../src/data/members';
 import { SKILLS } from '../src/data/skills';
-import { MemberDefSchema, SkillDefSchema, EnemyDefSchema, ItemDefSchema, MemeDefSchema, NpcDefSchema, CutsceneDefSchema, DialogueScriptSchema } from '../src/data/schema';
+import { MemberDefSchema, SkillDefSchema, EnemyDefSchema, ItemDefSchema, MemeDefSchema, NpcDefSchema, CutsceneDefSchema, DialogueScriptSchema, QuestDefSchema } from '../src/data/schema';
 import { getMember, getSkill, validateAllData, ENEMIES, ITEMS, MEMES, getEnemy, getItem, getMeme, getDialogue, getNpc, speakerName } from '../src/data/index';
 import { MEMBER_IDS } from '../src/systems/types';
-import { NPCS, DIALOGUES, CUTSCENES } from '../src/data/chapters/index';
+import { NPCS, DIALOGUES, CUTSCENES, QUESTS } from '../src/data/chapters/index';
 import { MAPS } from '../src/data/maps';
 
 describe('members', () => {
@@ -92,5 +92,23 @@ describe('chapter 0 content', () => {
   });
   it('member npcs are tagged with their member', () => {
     for (const m of MEMBERS) expect(getNpc(`npc_${m.id}`).member).toBe(m.id);
+  });
+});
+
+describe('chapter 1 quests', () => {
+  it('pass the schema and validateAllData resolves every reference', () => {
+    QUESTS.forEach((q) => expect(() => QuestDefSchema.parse(q), q.id).not.toThrow());
+    expect(() => validateAllData()).not.toThrow();
+  });
+  it('form an unbroken main chain q1_01..q1_05', () => {
+    const main = QUESTS.filter((q) => q.chapter === 1 && q.type === 'main').map((q) => q.id);
+    expect(main).toEqual(['q1_01', 'q1_02', 'q1_03', 'q1_04', 'q1_05']);
+    for (let i = 1; i < main.length; i++) expect(QUESTS.find((q) => q.id === main[i])!.requires?.questsDone).toEqual([main[i - 1]]);
+  });
+  it('q1_05 kills the boss and opens a meme slot', () => {
+    const q = QUESTS.find((q) => q.id === 'q1_05')!;
+    expect(q.objectives).toEqual([{ kind: 'kill', target: 'boss_monthly_judges', count: 1 }]);
+    expect(q.rewards.openMemeSlot).toBe(true);
+    expect(q.rewards.flags).toContain('ch1_clear');
   });
 });

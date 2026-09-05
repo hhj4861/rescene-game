@@ -116,7 +116,9 @@ export class QuestEngine {
 
   start(id: string): void {
     if (this.status(id) !== 'available') throw new Error(`quest ${id} is not available`);
-    this.state = { ...this.state, active: { ...this.state.active, [id]: this.def(id).objectives.map(() => 0) } };
+    const self = `npc_${this.ctx.member}`;
+    const initial = this.def(id).objectives.map((o) => (o.kind === 'talk' && o.target === self ? 1 : 0));
+    this.state = { ...this.state, active: { ...this.state.active, [id]: initial } };
   }
 
   report(ev: GameEvent): string[] {
