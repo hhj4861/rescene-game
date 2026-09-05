@@ -166,3 +166,19 @@ export const DialogueScriptSchema = z
     }
   });
 export type DialogueScript = z.infer<typeof DialogueScriptSchema>;
+
+export const NpcDefSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  dialogue: z.string().min(1),
+  member: MemberIdSchema.optional(),
+});
+export type NpcDef = z.infer<typeof NpcDefSchema>;
+
+export const CutsceneDefSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  lines: z.array(z.string().min(1)).min(1),
+});
+export type CutsceneDef = z.infer<typeof CutsceneDefSchema>;

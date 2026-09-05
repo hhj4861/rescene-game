@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { MEMBERS } from '../src/data/members';
 import { SKILLS } from '../src/data/skills';
-import { MemberDefSchema, SkillDefSchema, EnemyDefSchema, ItemDefSchema, MemeDefSchema } from '../src/data/schema';
-import { getMember, getSkill, validateAllData, ENEMIES, ITEMS, MEMES, getEnemy, getItem, getMeme } from '../src/data/index';
+import { MemberDefSchema, SkillDefSchema, EnemyDefSchema, ItemDefSchema, MemeDefSchema, NpcDefSchema, CutsceneDefSchema, DialogueScriptSchema } from '../src/data/schema';
+import { getMember, getSkill, validateAllData, ENEMIES, ITEMS, MEMES, getEnemy, getItem, getMeme, getDialogue, getNpc, speakerName } from '../src/data/index';
 import { MEMBER_IDS } from '../src/systems/types';
+import { NPCS, DIALOGUES, CUTSCENES } from '../src/data/chapters/index';
+import { MAPS } from '../src/data/maps';
 
 describe('members', () => {
   it('has exactly the five members', () => {
@@ -65,5 +67,30 @@ describe('enemies, items, memes', () => {
   it('getters throw on unknown ids', () => {
     expect(() => getEnemy('x')).toThrow(/x/);
     expect(() => getMeme('x')).toThrow(/x/);
+  });
+});
+
+describe('chapter 0 content', () => {
+  it('npcs, dialogues and cutscenes pass their schemas', () => {
+    NPCS.forEach((n) => expect(() => NpcDefSchema.parse(n), n.id).not.toThrow());
+    DIALOGUES.forEach((d) => expect(() => DialogueScriptSchema.parse(d), d.id).not.toThrow());
+    CUTSCENES.forEach((c) => expect(() => CutsceneDefSchema.parse(c), c.id).not.toThrow());
+  });
+  it('every npc default dialogue exists and every speaker resolves to a name', () => {
+    for (const n of NPCS) expect(() => getDialogue(n.dialogue), n.id).not.toThrow();
+    for (const d of DIALOGUES) for (const node of d.nodes) {
+      if (node.speaker === 'narrator') continue;
+      expect(speakerName(node.speaker), `${d.id}/${node.id}`).not.toBe('');
+    }
+  });
+  it('every member has a prologue map, intro cutscene and audition dialogue', () => {
+    for (const m of MEMBERS) {
+      expect(MAPS.some((map) => map.id === m.prologueMap), m.id).toBe(true);
+      expect(CUTSCENES.some((c) => c.id === `ch0_intro_${m.id}`), m.id).toBe(true);
+      expect(() => getDialogue(`d0_${m.id}_audition`), m.id).not.toThrow();
+    }
+  });
+  it('member npcs are tagged with their member', () => {
+    for (const m of MEMBERS) expect(getNpc(`npc_${m.id}`).member).toBe(m.id);
   });
 });

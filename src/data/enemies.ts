@@ -1,6 +1,8 @@
 import type { EnemyDef } from './schema';
 
 export const ENEMIES: EnemyDef[] = [
+  { id: 'enemy_nerves', name: '떨림', chapter: 0, hp: 15, atk: 2, def: 0, spd: 30, xp: 8, hearts: [1, 3],
+    ai: 'patrol', width: 28, height: 28, color: '#a9b1d6', drops: [] },
   { id: 'enemy_sleep_slime', name: '졸음 슬라임', chapter: 1, hp: 30, atk: 4, def: 1, spd: 40, xp: 12, hearts: [3, 6],
     ai: 'patrol', width: 36, height: 28, color: '#7aa2f7', drops: [{ itemId: 'food_mulhoe', chance: 0.05 }] },
   { id: 'enemy_sore_mushroom', name: '근육통 버섯', chapter: 1, hp: 45, atk: 6, def: 3, spd: 30, xp: 18, hearts: [4, 8],

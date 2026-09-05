@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseAsciiMap } from '../tools/ascii-map';
 import { MAPS, getMap } from '../src/data/maps';
-import { getEnemy } from '../src/data/index';
+import { getEnemy, getNpc } from '../src/data/index';
 
 const files = readdirSync('maps').filter((f) => f.endsWith('.txt'));
 const parsed = files.map((f) => parseAsciiMap(readFileSync(join('maps', f), 'utf8')));
@@ -29,6 +29,9 @@ describe('map sources', () => {
   });
   it('enemy and boss spawns reference existing enemies', () => {
     for (const p of parsed) for (const o of p.objects.filter((o) => o.type === 'enemy' || o.type === 'boss')) expect(() => getEnemy(o.name), `${p.id}/${o.name}`).not.toThrow();
+  });
+  it('npc spawns reference existing npcs', () => {
+    for (const p of parsed) for (const o of p.objects.filter((o) => o.type === 'npc')) expect(() => getNpc(o.name), `${p.id}/${o.name}`).not.toThrow();
   });
   it('generated json matches sources (run npm run maps)', () => {
     for (const m of MAPS) {
