@@ -41,12 +41,17 @@ export class CombatController {
     this.drops = scene.physics.add.group();
     this.enemyProjectiles = scene.physics.add.group();
     // Phaser.Physics.Arcade.Group re-applies its `defaults` (allowGravity: true, velocityX/Y:
-    // 0, ...) to every member on add() -- even one whose body is already configured -- which
-    // would silently stomp EnemyProjectile's own setAllowGravity(false)/setVelocityX() the
-    // instant spawnBoss() adds it to this group, turning every shot into a dead drop instead
-    // of a horizontal shot. Clearing `defaults` (Phaser's own documented escape hatch) leaves
-    // each projectile's own constructor-set body state alone.
-    this.enemyProjectiles.defaults = {} as Phaser.Types.Physics.Arcade.PhysicsGroupDefaults;
+    // 0, setCollideWorldBounds: false, ...) to every member on add() -- even one whose body is
+    // already configured -- which would silently stomp EnemyProjectile's own
+    // setAllowGravity(false)/setVelocityX() the instant spawnBoss() adds it to this group
+    // (turning every shot into a dead drop instead of a horizontal shot), and does the same to
+    // `projectiles` (player skill projectiles fall under gravity instead of flying), `drops`
+    // (lose their toss/bounce), and `enemies` (lose the setCollideWorldBounds(true) set in the
+    // Enemy constructor). Clearing `defaults` (Phaser's own documented escape hatch) leaves
+    // each member's own constructor-set body state alone.
+    for (const g of [this.enemies, this.projectiles, this.drops, this.enemyProjectiles]) {
+      g.defaults = {} as Phaser.Types.Physics.Arcade.PhysicsGroupDefaults;
+    }
     scene.physics.add.overlap(player, this.enemyProjectiles, (_p, ep) => this.onEnemyProjectile(ep as EnemyProjectile));
     for (const layer of solids) {
       scene.physics.add.collider(this.enemies, layer);
