@@ -124,7 +124,7 @@ export class CombatController {
     const rect = new Phaser.Geom.Rectangle(left, this.player.y - height, width, height);
     const flash = this.scene.add.rectangle(rect.centerX, rect.centerY, width, height, 0xffffff, 0.25).setDepth(9);
     this.scene.time.delayedCall(100, () => flash.destroy());
-    for (const obj of this.enemies.getChildren()) {
+    for (const obj of [...this.enemies.getChildren()]) {
       const enemy = obj as Enemy;
       if (!enemy.active || !Phaser.Geom.Intersects.RectangleToRectangle(rect, enemy.getBounds())) continue;
       const dir = enemy.x >= this.player.x ? 1 : -1;
@@ -215,7 +215,7 @@ export class CombatController {
   // ---------- 프레임 ----------
 
   update(now: number): void {
-    for (const obj of this.enemies.getChildren()) {
+    for (const obj of [...this.enemies.getChildren()]) {
       const enemy = obj as Enemy;
       if (!enemy.active) continue;
       enemy.updateAi(this.player, now, this.hasFloor);
