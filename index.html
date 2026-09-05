@@ -1,105 +1,15 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RESCENE RPG Prototype</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
-    <style>
-        body {
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #222;
-        }
-        canvas {
-            display: block;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>리센느스토리 (RESCENE STORY)</title>
+  <style>
+    body { margin: 0; background: #1a1a2e; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    canvas { display: block; image-rendering: pixelated; }
+  </style>
 </head>
 <body>
-    <script>
-        const config = {
-            type: Phaser.AUTO,
-            width: 800,
-            height: 600,
-            physics: {
-                default: 'arcade',
-                arcade: {
-                    gravity: { y: 800 },
-                    debug: false
-                }
-            },
-            scene: {
-                preload: preload,
-                create: create,
-                update: update
-            }
-        };
-
-        const game = new Phaser.Game(config);
-        let player;
-        let platforms;
-        let cursors;
-
-        function preload() {
-            // Assets will be preloaded here
-        }
-
-        function create() {
-            // Create textures using graphics
-            const graphics = this.make.graphics();
-
-            // Ground texture (purple)
-            graphics.fillStyle(0x800080, 1.0); // Purple color
-            graphics.fillRect(0, 0, 800, 40);
-            graphics.generateTexture('ground', 800, 40);
-            graphics.clear();
-
-            // Player texture (pink)
-            graphics.fillStyle(0xFFC0CB, 1.0); // Pink color
-            graphics.fillRect(0, 0, 40, 60);
-            graphics.generateTexture('playerTexture', 40, 60);
-            graphics.clear();
-
-            // Platforms setup
-            platforms = this.physics.add.staticGroup();
-            // Position at bottom center (x: 400, y: 580) since origin is center by default
-            platforms.create(400, 580, 'ground');
-
-            // Player setup
-            // Position near center, above the platform
-            player = this.physics.add.sprite(400, 450, 'playerTexture');
-
-            // Limit player inside screen
-            player.setCollideWorldBounds(true);
-
-            // Collider setup
-            this.physics.add.collider(player, platforms);
-
-            // Input setup
-            cursors = this.input.keyboard.createCursorKeys();
-        }
-
-        function update() {
-            // Movement logic
-            if (cursors.left.isDown) {
-                player.setVelocityX(-200);
-            }
-            else if (cursors.right.isDown) {
-                player.setVelocityX(200);
-            }
-            else {
-                player.setVelocityX(0);
-            }
-
-            // Jump logic
-            if ((cursors.up.isDown || cursors.space.isDown) && player.body.touching.down) {
-                player.setVelocityY(-550);
-            }
-        }
-    </script>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
