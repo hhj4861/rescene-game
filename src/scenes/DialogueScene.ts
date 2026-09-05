@@ -122,8 +122,8 @@ export class DialogueScene extends Phaser.Scene {
 
   private close(): void {
     const gs = getSession(this).gs;
-    this.args.onDone?.(gs.flags);
     this.scene.stop();
     this.scene.resume(SCENE.world);
+    this.args.onDone?.(gs.flags);
   }
 }
