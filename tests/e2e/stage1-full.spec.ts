@@ -7,7 +7,8 @@ type RunLike = { state: { gauge: number; score: number; hearts: number; lives: n
 type GameLike = { scene: { isActive(key: string): boolean }; registry: { get(key: string): RunLike | undefined } };
 type Hooks = {
   killAllEnemies(): void; enemyCount(): number; sectionIndex(): number; sectionPhase(): string;
-  warp(x: number): void; hurt(n: number): void; openChests(): void; pickupAll(): void; bossHp(): number | null;
+  warp(x: number): void; hurt(n: number): void; openChests(): void; pickupAll(): void; dropCount(): number;
+  lockLines(): number[]; bossHp(): number | null;
 };
 type Win = Window & { __game: GameLike; __rescene?: Hooks };
 
@@ -56,20 +57,26 @@ test('stage 1: full walkthrough to the boss, a death restart, and the clear tran
   page.on('pageerror', (e) => errors.push(e.message));
   await enterStage(page);
 
-  // 잠금선 x(타일 24열 × 32px 단위): A 768 · B 1536 · C 2304 · D 3072 · 보스 3840
-  const lockLines = [768, 1536, 2304, 3072];
-  for (let i = 0; i < lockLines.length; i++) {
+  // 잠금선 x 는 맵에서 읽는다(스테이지 1: 구간 4개 + 보스). 구간마다 전멸 → 상자 → 줍기 → 잠금선 넘기.
+  const lockLines = await hook(page, (h) => h.lockLines());
+  expect(lockLines.length).toBe(5);
+  const chestSections = [1, 3];                                         // stage1 데이터: B·D 에 chest·엘리트
+  for (let i = 0; i < lockLines.length - 1; i++) {
     expect(await hook(page, (h) => h.sectionIndex())).toBe(i);
     await clearSection(page);
-    await page.waitForTimeout(700);                                     // 상자·드랍이 바닥에 닿을 시간
-    await hook(page, (h) => h.openChests());
-    await page.waitForTimeout(600);                                     // 상자 열림 → 아이템 튀어나옴
+    const cardsBefore = (await runState(page)).cards.length;
+    if (chestSections.includes(i)) {
+      const dropsBefore = await hook(page, (h) => h.dropCount());
+      await hook(page, (h) => h.openChests());                          // 상자는 구간 클리어 즉시 생긴다
+      await expect.poll(() => hook(page, (h) => h.dropCount()), { timeout: 3_000 }).toBeGreaterThan(dropsBefore);
+    }
     await hook(page, (h) => h.pickupAll());
+    if (chestSections.includes(i)) expect((await runState(page)).cards.length).toBeGreaterThan(cardsBefore); // 엘리트 카드 확정
     await hook(page, (h, x: number) => h.warp(x), lockLines[i]! + 40);
-    await page.waitForTimeout(250);
+    await expect.poll(() => hook(page, (h) => h.sectionIndex()), { timeout: 3_000 }).toBe(i + 1);
   }
   const afterD = await runState(page);
-  expect(afterD.cards.length).toBeGreaterThanOrEqual(2);                // B·D 의 엘리트 카드 확정 드랍
+  expect(afterD.cards.length).toBeGreaterThanOrEqual(2);
   expect(afterD.score).toBeGreaterThan(0);
 
   // 보스 구간: 등장 확인 → 사망 → 같은 구간에서 재시작(목숨 -1) → 보스 다시 등장

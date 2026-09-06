@@ -126,9 +126,16 @@ export class SectionController {
     this.hooks.spawnBoss(this.stage.boss.id, at.x, at.y);
   }
 
+  /** 잠금선 x 목록(구간 순서, 마지막은 보스). 개발용 훅·e2e 가 읽는다. */
+  lockLines(): number[] {
+    return [...this.locks];
+  }
+
   private lock(lockLine: number): void {
     const maxX = Math.min(this.mapWidth, lockLine);
-    this.minX = Math.max(0, maxX - GAME_WIDTH);
+    // 구간이 한 화면(960)보다 넓으면 이전 잠금선까지 열어 둔다 — 잠기는 순간 플레이어(이전 잠금선 바로 뒤)가
+    // 바운드 밖에 있으면 Arcade 가 앞으로 순간이동시킨다.
+    this.minX = Math.max(0, Math.min(maxX - GAME_WIDTH, this.prevLockX(this.current)));
     this.hooks.setCameraBounds(this.minX, maxX, true);
   }
 

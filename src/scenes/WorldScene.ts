@@ -371,6 +371,8 @@ export class WorldScene extends Phaser.Scene {
       hurt: (n: number) => { this.run.takeHit(n); },
       openChests: () => { for (const c of [...this.chests.getChildren()]) this.openChest(c as Chest); },
       pickupAll: () => this.combat.pickupAll(),
+      dropCount: () => this.combat.drops.countActive(true),
+      lockLines: () => this.section.lockLines(),
       bossHp: () => this.combat.boss?.hp ?? null,
     };
   }
