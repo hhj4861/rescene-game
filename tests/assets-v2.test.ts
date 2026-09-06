@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { buildItemSheets, buildUiSheets } from '../tools/build-sprites-lib';
+import { buildItemSheets, buildTileset, buildUiSheets } from '../tools/build-sprites-lib';
 
 describe('item and ui sheets', () => {
   it('builds the expected files with the expected sizes', () => {
@@ -11,4 +11,18 @@ describe('item and ui sheets', () => {
     for (const m of ['woni', 'liv', 'minami', 'may', 'zena']) expect(ui.find((s) => s.file.endsWith(`life_${m}.png`))).toMatchObject({ width: 16, height: 16 });
   });
   it('generated files match sources (run npm run sprites)', () => { for (const s of [...buildItemSheets(), ...buildUiSheets()]) { expect(existsSync(s.file), s.file).toBe(true); expect(Buffer.compare(readFileSync(s.file), Buffer.from(s.png))).toBe(0); } });
+});
+
+describe('stage1 tileset', () => {
+  it('builds the stage1 tileset 96×32', () => {
+    const tileset = buildTileset('stage1');
+    expect(tileset.file).toBe('public/assets/tiles/stage1.png');
+    expect(tileset.width).toBe(96);
+    expect(tileset.height).toBe(32);
+  });
+  it('generated tileset png matches the source (run npm run sprites)', () => {
+    const tileset = buildTileset('stage1');
+    expect(existsSync(tileset.file), tileset.file).toBe(true);
+    expect(Buffer.compare(readFileSync(tileset.file), Buffer.from(tileset.png))).toBe(0);
+  });
 });

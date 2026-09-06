@@ -69,6 +69,16 @@ export function blit(dst: Uint8Array, dstW: number, dstH: number, src: Uint8Arra
   }
 }
 
+/** 각 셀을 2×2로 확대한다(디자인 시안의 16×16 타일을 32×32로 키울 때 쓴다). */
+export function scale2(grid: Grid): Grid {
+  const out: string[] = [];
+  for (const row of grid) {
+    const wide = [...row].map((ch) => ch + ch).join('');
+    out.push(wide, wide);
+  }
+  return out;
+}
+
 /** src 버퍼(폭 srcW)에서 (x, y)를 좌상단으로 하는 w×h 영역을 잘라낸다. */
 export function crop(src: Uint8Array, srcW: number, x: number, y: number, w: number, h: number): Uint8Array {
   const out = new Uint8Array(w * h * 4);

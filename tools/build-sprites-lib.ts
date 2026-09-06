@@ -8,7 +8,10 @@ import { ENEMY_SPRITES } from './sprites/enemies';
 import { CARD_FRAMES, CARD_H, CARD_PALETTE, CARD_W, CHEST_FRAMES, CHEST_H, CHEST_PALETTE, CHEST_W, HEART_FOODS, HEART_H, HEART_W, heartFrames } from './sprites/items';
 import { NPC_LOOKS } from './sprites/npcs';
 import { ATTACK_ARM, BASE_PALETTE, BODY, HAIR, HURT_EYES, LEGS, LOOKS, PROPS, SPRITE_H, SPRITE_W } from './sprites/templates';
+import { GROUND_TILE, LADDER_TILE, PLATFORM_TILE, TILE, TILESET_PALETTE } from './sprites/tiles';
 import { buildGoFrames, GO_H, GO_PALETTE, GO_W, HUD_HEART_EMPTY, HUD_HEART_FULL, HUD_HEART_H, HUD_HEART_W } from './sprites/ui';
+
+export const TILES_DIR = 'public/assets/tiles';
 
 export const SPRITES_DIR = 'public/assets/sprites';
 export const playerSheetFile = (member: MemberId): string => `${SPRITES_DIR}/player_${member}.png`;
@@ -139,4 +142,12 @@ export function buildUiSheets(): NamedSheet[] {
     return { file: `${SPRITES_DIR}/${lifeTex(m)}.png`, width: 16, height: 16, png: encodePng(16, 16, rgba) };
   });
   return [heartFull, heartEmpty, go, ...lives];
+}
+
+/** 스테이지 1 도트 타일셋(Task 16): gid 1 바닥·2 원웨이 발판·3 사다리, 각 32×32. */
+export function buildTileset(palette: 'stage1'): NamedSheet {
+  if (palette !== 'stage1') throw new Error(`unknown tileset palette ${palette}`);
+  const frames = [GROUND_TILE, PLATFORM_TILE, LADDER_TILE].map((g) => rasterize(g, TILESET_PALETTE, TILE, TILE));
+  const sheet = packSheet(frames, TILE, TILE);
+  return { file: `${TILES_DIR}/stage1.png`, width: sheet.width, height: sheet.height, png: encodePng(sheet.width, sheet.height, sheet.rgba) };
 }
