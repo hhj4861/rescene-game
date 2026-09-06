@@ -3,6 +3,7 @@ import { ENEMIES, MAPS, MEMBERS, NPCS } from '../data/index';
 import { SCENE, enemyTex, mapKey, npcTex, playerTex } from '../core/AssetKeys';
 import { heartTex, lifeTex, TEX2, tilesetTex } from '../core/ArcadeAssetKeys';
 import { ENEMY_ANIMS, NPC_ANIMS, NPC_FRAME, PLAYER_ANIMS, PLAYER_FRAME, enemyAnimKey, enemySheetUrl, npcAnimKey, npcSheetUrl, playerAnimKey, playerSheetUrl, type EnemyAnim, type NpcAnim, type PlayerAnim } from '../core/spriteFrames';
+import { voiceFileKey } from '../audio/VoiceFiles';
 import { makePlaceholderTextures } from '../ui/placeholders';
 import { UI_TEXT } from '../ui/textStyles';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
@@ -35,6 +36,11 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image(TEX2.hudHeartFull, `assets/sprites/${TEX2.hudHeartFull}.png`);
     this.load.image(TEX2.hudHeartEmpty, `assets/sprites/${TEX2.hudHeartEmpty}.png`);
     this.load.spritesheet(TEX2.go, `assets/sprites/${TEX2.go}.png`, { frameWidth: GO_FRAME.width, frameHeight: GO_FRAME.height });
+    // Task 29: 권리를 확보한 유행어 음성 파일이 있으면 manifest를 통해서만 로드한다(§9.3).
+    this.load.json('voice_manifest', 'assets/voice/manifest.json');
+    this.load.once('filecomplete-json-voice_manifest', (_key: string, _type: string, data: { files: string[] }) => {
+      for (const f of data.files) this.load.audio(voiceFileKey(f.replace(/\.(ogg|mp3)$/, '')), `assets/voice/${f}`);
+    });
   }
   create(): void {
     makePlaceholderTextures(this);
