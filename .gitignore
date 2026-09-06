@@ -3,3 +3,7 @@ dist
 test-results
 playwright-report
 .idea
+
+# 디자인 캔버스 시드 결과물(생성 파일, 수 MB)
+docs/design/*.html
+!docs/design/*.dc.html

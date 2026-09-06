@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "lint": "eslint src tests tools",
     "maps": "tsx tools/build-maps.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "sprites": "tsx tools/build-sprites.ts"
   },
   "dependencies": {
     "phaser": "^3.80.1",

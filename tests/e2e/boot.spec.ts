@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-type GameLike = { scene: { isActive(key: string): boolean } };
+type GameLike = { scene: { isActive(key: string): boolean }; textures: { get(key: string): { getFrameNames(): string[] } } };
 
 test('boots into the prologue map and survives movement and an attack without console errors', async ({ page }) => {
   const errors: string[] = [];
@@ -23,6 +23,8 @@ test('boots into the prologue map and survives movement and an attack without co
     { timeout: 10_000 },
   ).toBe(true);
   await page.waitForTimeout(400);
+  // 스프라이트시트가 실제로 로드됐는지(플레이스홀더로 대체되지 않았는지) 확인
+  expect(await page.evaluate(() => (window as unknown as { __game: GameLike }).__game.textures.get('player_liv').getFrameNames().length)).toBe(10);
 
   await page.keyboard.down('ArrowRight');
   await page.waitForTimeout(600);

@@ -1,0 +1,40 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1200,
+      "h": 1520,
+      "title": "B안 · 나이트 2.5등신 (추천)"
+    },
+    {
+      "file": "DirectionA.dc.html",
+      "x": 1300,
+      "y": 0,
+      "w": 900,
+      "h": 760,
+      "title": "A안 · 파스텔 2등신"
+    },
+    {
+      "file": "DirectionC.dc.html",
+      "x": 1300,
+      "y": 900,
+      "w": 900,
+      "h": 760,
+      "title": "C안 · 플랫 미니멀"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "decisions",
+      "x": 0,
+      "y": -170,
+      "w": 520,
+      "text": "정할 것\n1) A / B / C 중 방향 (B 추천)\n2) 멤버 포인트 컬러 — 원이만 공식 컬러(#045a42 계열), 나머지는 제안값\n3) 머리 모양은 스타일라이즈(닮게 그리지 않음)\n4) 의상 교체 범위: 연습복 → 데뷔 → Pretty Girl"
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

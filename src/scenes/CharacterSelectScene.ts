@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { SCENE, playerTex } from '../core/AssetKeys';
+import { playerAnimKey } from '../core/spriteFrames';
 import { GameState } from '../core/GameState';
 import { setSession } from '../core/session';
 import { MEMBERS, QUESTS, getSkill } from '../data/index';
@@ -28,7 +29,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     const startX = GAME_WIDTH / 2 - gap * 2;
     this.cards = MEMBERS.map((m, i) => {
       const c = this.add.container(startX + i * gap, 230);
-      c.add(this.add.image(0, 0, playerTex(m.id)).setScale(2));
+      c.add(this.add.sprite(0, 0, playerTex(m.id)).setScale(2).play(playerAnimKey(m.id, 'idle')));
       c.add(this.add.text(0, 70, m.name, UI_TEXT).setOrigin(0.5));
       c.add(this.add.text(0, 92, m.role, SMALL_TEXT).setOrigin(0.5));
       return c;

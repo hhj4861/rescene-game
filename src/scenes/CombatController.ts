@@ -110,6 +110,7 @@ export class CombatController {
     const r = cast(skill, this.gs.player, this.gs.skillRuntime, now);
     this.gs.player = r.player;
     this.gs.skillRuntime = r.rt;
+    this.player.playAttack();
     this.gs.bus.emit('changed', undefined);
 
     const attached = skill.effects.filter((e): e is Extract<SkillEffect, { kind: 'dot' | 'debuff' }> => e.kind === 'dot' || e.kind === 'debuff');
@@ -246,6 +247,7 @@ export class CombatController {
 
     const dmg = calculateDamage(enemy.stats(), this.effectiveStats(), 1, Math.random);
     damagePopup(this.scene, this.player.x, this.player.y - 56, dmg.amount, dmg.crit, true);
+    this.player.playHurt();
     this.player.invulnerableUntil = now + CONTACT_IFRAMES_MS;
     this.player.setVelocity(dir * 220, -200);
     this.scene.tweens.add({ targets: this.player, alpha: 0.3, yoyo: true, repeat: 3, duration: 75, onComplete: () => this.player.setAlpha(1) });
@@ -269,6 +271,7 @@ export class CombatController {
     }
     const dmg = calculateDamage(ep.attacker, this.effectiveStats(), ep.multiplier, Math.random);
     damagePopup(this.scene, this.player.x, this.player.y - 56, dmg.amount, dmg.crit, true);
+    this.player.playHurt();
     this.player.invulnerableUntil = now + CONTACT_IFRAMES_MS;
     this.player.setVelocity(knockbackDir * 200, -160);
     if (this.gs.takeDamage(dmg.amount)) this.onPlayerDied();

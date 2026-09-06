@@ -8,6 +8,7 @@
 ```bash
 npm install
 npm run maps     # maps/*.txt → public/assets/maps/*.json
+npm run sprites  # tools/sprites/templates.ts → public/assets/sprites/player_*.png
 npm run dev      # http://localhost:5173
 npm test         # Vitest (순수 로직·데이터 검증)
 npm run e2e      # Playwright 부트 스모크 (최초 1회 npx playwright install chromium)
@@ -36,6 +37,8 @@ npm run e2e      # Playwright 부트 스모크 (최초 1회 npx playwright insta
 - `src/data/` 멤버·스킬·적·아이템·유행어·챕터 콘텐츠 — zod로 검증
 - `src/scenes/`, `src/entities/`, `src/ui/` Phaser 표현 계층
 - `maps/` ASCII 맵 원본 → `tools/build-maps.ts` → Tiled 호환 JSON
+- `tools/sprites/templates.ts` ASCII 픽셀 템플릿(24×40, B안 나이트 2.5등신) → `tools/build-sprites.ts` → 멤버 스프라이트시트 PNG(32×48 × 10프레임: 대기 2·걷기 4·점프 1·공격 2·피격 1, 규격은 `src/core/spriteFrames.ts`)
+- `docs/design/` 캐릭터 아트 디렉션 시안 원본(`gen.mjs`로 아트보드 생성)
 
 설계: `docs/superpowers/specs/2026-09-04-rescene-story-design.md`
 계획: `docs/superpowers/plans/2026-09-04-vertical-slice-m0-m4.md`
