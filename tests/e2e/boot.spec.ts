@@ -3,8 +3,9 @@ import { test, expect, type Page } from '@playwright/test';
 // 스테이지 1 스모크: 부트 → 선택 → 인트로 → 첫 구간 웨이브 전멸 → GO → 필살기 1회 → 콘솔 오류 0.
 // 게임 내부는 window.__game(Phaser.Game)과 개발용 훅 window.__rescene(WorldScene)으로만 들여다본다.
 
+type SceneObject = { visible: boolean; texture?: { key: string }; anims?: { currentAnim?: { key: string } | null }; list?: SceneObject[] };
 type GameLike = {
-  scene: { isActive(key: string): boolean; getScene(key: string): { children: { list: { visible: boolean; texture?: { key: string } }[] } } | null };
+  scene: { isActive(key: string): boolean; getScene(key: string): { children: { list: SceneObject[] } } | null };
   textures: { exists(key: string): boolean; get(key: string): { getFrameNames(): string[] } };
   registry: { get(key: string): { state: { gauge: number; score: number; hearts: number } } | undefined };
 };
@@ -87,9 +88,21 @@ test('stage 1: clears the first section, shows GO and fires a super without cons
   await hook(page, (h) => h.fillGauge());
   expect(await gauge(page)).toBe(100);
   await tap(page, 'KeyS');
+  // 캐릭터 v2: 컷인은 초상화 텍스처(portrait_<member>)를 쓰고, 플레이어는 super 포즈 2프레임 루프를 돈다.
+  const superFx = (): Promise<{ cutin: boolean; playerAnim: string | null }> => page.evaluate(() => {
+    const world = (window as unknown as Win).__game?.scene.getScene('World');
+    // 초상화는 컨테이너(백판 + 이미지) 안에 있으므로 한 단계 펼친다.
+    const list = (world?.children.list ?? []).flatMap((o) => [o, ...(o.list ?? [])]);
+    const cutin = list.some((o) => o.visible && !!o.texture?.key.startsWith('portrait_'));
+    const player = list.find((o) => o.texture?.key === 'player_woni');
+    return { cutin, playerAnim: player?.anims?.currentAnim?.key ?? null };
+  });
+  await expect.poll(superFx, { timeout: 1_000 }).toEqual({ cutin: true, playerAnim: 'player_woni_super' });
+  await page.screenshot({ path: 'test-results/stage1-cutin.png' });
   await expect.poll(() => gauge(page), { timeout: 3_000 }).toBe(0);
   await page.waitForTimeout(1500);                                      // 연출 종료(physics.resume)까지
   expect(await isActive(page, 'World')).toBe(true);
+  expect((await superFx()).cutin).toBe(false);                          // 컷인은 연출 끝에 지워진다
 
   await page.screenshot({ path: 'test-results/stage1.png' });
   expect(errors).toEqual([]);

@@ -4,7 +4,8 @@ import { test, expect, type Page } from '@playwright/test';
 // S3 구간 C 의 중간보스(TOP100 문지기)·S4 구간 D 의 점프대·보스 기믹(불사)까지 훑되, slayBoss 로
 // 기믹을 무시하고 처치한다. 스테이지 5 뒤에는 결과 화면에서 Enter 로 엔딩까지 확인한다. 콘솔 오류는 0이어야 한다.
 
-type GameLike = { scene: { isActive(key: string): boolean } };
+type SceneObject = { visible: boolean; texture?: { key: string } };
+type GameLike = { scene: { isActive(key: string): boolean; getScene(key: string): { children: { list: SceneObject[] } } | null } };
 type Hooks = {
   killAllEnemies(): void; enemyCount(): number; sectionIndex(): number; sectionPhase(): string;
   warp(x: number): void; lockLines(): number[]; bossHp(): number | null; bossName(): string | null; slayBoss(): void;
@@ -116,6 +117,11 @@ function trackErrors(page: Page): string[] {
 test('stage 2: 데뷔 — 구간 4개 주파 후 첫 카메라(렌즈 기믹) 처치', async ({ page }) => {
   const errors = trackErrors(page);
   await enterStage(page, 2);
+  // 캐릭터 v2: 스테이지 2 는 데뷔 의상 시트(player_<m>_debut)로 플레이어를 만든다(첫 멤버 = 원이).
+  const worldTextures = (): Promise<string[]> =>
+    page.evaluate(() => ((window as unknown as Win).__game?.scene.getScene('World')?.children.list ?? []).map((o) => o.texture?.key ?? ''));
+  expect(await worldTextures()).toContain('player_woni_debut');
+  await page.screenshot({ path: 'test-results/stage2-world.png' });
   await clearAllSections(page);
   await slayStageBoss(page, '첫 카메라');
   await page.screenshot({ path: 'test-results/stage2.png' });

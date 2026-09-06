@@ -3,8 +3,12 @@ import { test, expect, type Page } from '@playwright/test';
 // 스테이지 1 전 구간 주파: 개발용 훅으로 웨이브를 전멸시키고 잠금선을 넘어 보스까지 간다.
 // 엘리트 카드 드랍·상자·응원 NPC·보스 페이즈·사망 재시작·스테이지 클리어 전환에서 콘솔 오류가 없어야 한다.
 
-type RunState = { gauge: number; score: number; hearts: number; lives: number; cards: string[]; stageIndex: number; maxHearts: number };
-type GameLike = { scene: { isActive(key: string): boolean }; registry: { get(key: string): { state: RunState } | undefined } };
+type RunState = { member: string; gauge: number; score: number; hearts: number; lives: number; cards: string[]; stageIndex: number; maxHearts: number };
+type SceneObject = { visible: boolean; texture?: { key: string }; frame?: { name: string | number }; list?: SceneObject[] };
+type GameLike = {
+  scene: { isActive(key: string): boolean; getScene(key: string): { children: { list: SceneObject[] } } | null };
+  registry: { get(key: string): { state: RunState } | undefined };
+};
 type Hooks = {
   killAllEnemies(): void; enemyCount(): number; sectionIndex(): number; sectionPhase(): string;
   warp(x: number): void; hurt(n: number): void; openChests(): void; pickupAll(): void; dropCount(): number;
@@ -42,6 +46,7 @@ async function enterStage(page: Page): Promise<void> {
   await expect.poll(() => isActive(page, 'CharacterSelect'), { timeout: 5_000 }).toBe(true);
   await page.waitForTimeout(300);
   await page.keyboard.press('ArrowRight');                               // 리브(원거리) 경로도 태운다
+  await page.waitForTimeout(150);                                        // Phaser 키 큐는 프레임 끝에만 비워져 같은 프레임의 Enter 가 RIGHT 를 재발화시킨다
   await page.keyboard.press('Enter');
   await expect.poll(() => isActive(page, 'Cutscene'), { timeout: 5_000 }).toBe(true);
   for (let i = 0; i < 6 && !(await isActive(page, 'World')); i++) {
@@ -110,6 +115,19 @@ test('stage 1: full walkthrough to the boss, a death restart, and the clear tran
   expect(after.score).toBeGreaterThan(before.score + 3000);
   await expect.poll(() => isActive(page, 'World'), { timeout: 5_000 }).toBe(false);
   await expect.poll(() => isActive(page, 'Hud'), { timeout: 5_000 }).toBe(false);
+
+  // 결과 화면(캐릭터 v2): 플레이어 스프라이트가 win 프레임(14)으로 서 있고 시그니처 초상화가 함께 있다.
+  await expect.poll(() => isActive(page, 'Result'), { timeout: 3_000 }).toBe(true);
+  const resultPose = await page.evaluate(() => {
+    const g = (window as unknown as Win).__game;
+    const member = g?.registry.get('run')?.state.member ?? '?';
+    // 초상화는 컨테이너(백판 + 이미지) 안에 있으므로 한 단계 펼친다.
+    const list = (g?.scene.getScene('Result')?.children.list ?? []).flatMap((o) => [o, ...(o.list ?? [])]);
+    const sprite = list.find((o) => o.texture?.key === `player_${member}`);
+    return { member, frame: sprite ? String(sprite.frame?.name) : null, portrait: list.some((o) => o.texture?.key === `portrait_${member}`) };
+  });
+  expect(resultPose).toEqual({ member: 'liv', frame: '14', portrait: true });
+  await page.waitForTimeout(1_500);                                     // 결과 행이 뜬 뒤 스크린샷
 
   await page.screenshot({ path: 'test-results/stage1-full.png' });
   expect(errors).toEqual([]);
