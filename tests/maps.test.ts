@@ -39,4 +39,12 @@ describe('map sources', () => {
       expect(json).toEqual(toTiled(byId.get(m.id)!));
     }
   });
+  it('stage maps expose the lock and spawn objects their stage data references', () => {
+    const p = byId.get('s1_trainee')!;
+    const names = (type: string) => p.objects.filter((o) => o.type === type).map((o) => o.name);
+    expect(names('lock')).toEqual(['lock_a', 'lock_b', 'lock_c', 'lock_d', 'lock_boss']);
+    for (const s of ['start', 're_a', 're_b', 're_c', 're_d', 're_boss', 'sp_a1', 'sp_a2', 'sp_b1', 'sp_b2', 'sp_c1', 'sp_c2', 'sp_d1', 'sp_d2', 'sp_boss', 'sp_cheer_a', 'sp_cheer_c']) expect(names('spawn')).toContain(s);
+    expect(p.rows.length).toBe(17);
+    expect(p.rows[0]!.length).toBe(120);
+  });
 });

@@ -15,6 +15,7 @@ export const MAPS: MapDef[] = [
   { id: 'ch0_chiba', name: '치바 야치요 골목', chapter: 0, file: 'ch0_chiba.json' },
   { id: 'ch0_goyang', name: '픽플래닛 아카데미', chapter: 0, file: 'ch0_goyang.json' },
   { id: 'ch0_gyeongju', name: '청춘스타 대기실', chapter: 0, file: 'ch0_gyeongju.json' },
+  { id: 's1_trainee', name: '스테이지 1 — 연습생', chapter: 1, file: 's1_trainee.json' },
 ];
 
 const byId = new Map(MAPS.map((m) => [m.id, m]));
