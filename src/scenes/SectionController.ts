@@ -12,8 +12,8 @@ export interface SectionHooks {
   onSectionStart(index: number, def: SectionDef | 'boss'): void;
   /** GO 화살표·상자 드랍. 웨이브가 전멸한 순간 1회. */
   onSectionCleared(index: number, chest: boolean): void;
-  /** 카메라·물리 월드 바운드를 [minX, maxX] 로 맞춘다. */
-  setCameraBounds(minX: number, maxX: number): void;
+  /** 카메라·물리 월드 바운드를 [minX, maxX] 로 맞춘다. locked 면 maxX 가 잠금선(막대 표시). */
+  setCameraBounds(minX: number, maxX: number, locked: boolean): void;
 }
 
 /** 보스 구간의 플레이어 재시작 스폰 이름(맵 관례). 없으면 boss.spawn 에서 왼쪽으로 물러난 자리. */
@@ -108,7 +108,7 @@ export class SectionController {
     const def = this.stage.sections[this.current]!;
     this.state = openSection(this.state);
     this.hooks.onSectionCleared(this.current, !!def.chest);
-    this.hooks.setCameraBounds(this.minX, this.lockOf(this.current + 1));
+    this.hooks.setCameraBounds(this.minX, Math.min(this.mapWidth, this.lockOf(this.current + 1)), false);
   }
 
   private begin(now: number): void {
@@ -129,7 +129,7 @@ export class SectionController {
   private lock(lockLine: number): void {
     const maxX = Math.min(this.mapWidth, lockLine);
     this.minX = Math.max(0, maxX - GAME_WIDTH);
-    this.hooks.setCameraBounds(this.minX, maxX);
+    this.hooks.setCameraBounds(this.minX, maxX, true);
   }
 
   /** 구간 index 의 잠금선 x. 범위 밖(보스 다음)은 맵 끝. */
