@@ -42,7 +42,8 @@ export class EndingScene extends Phaser.Scene {
     const curtainY = startY + ENDING_LINES.length * LINE_GAP + CURTAIN_OFFSET;
     const curtain = MEMBERS.map((m, i) => addPortrait(this, GAME_WIDTH / 2 + (i - (MEMBERS.length - 1) / 2) * CURTAIN_GAP, curtainY, m.id, 1, 2, m.color));
 
-    const travel = ENDING_LINES.length * LINE_GAP + CURTAIN_OFFSET + CURTAIN_HEIGHT + GAME_HEIGHT + 80;
+    // 커튼콜 초상화가 화면 위로 다 빠져나가는 순간 트윈이 끝나도록(빈 화면 꼬리 없이).
+    const travel = curtainY + CURTAIN_HEIGHT / 2 + 20;
     const duration = (ENDING_LINES.length + 1) * LINE_MS;
     this.tweens.add({
       targets: [...this.texts, ...curtain],
