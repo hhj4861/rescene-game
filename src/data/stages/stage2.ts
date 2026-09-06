@@ -1,7 +1,7 @@
 import type { StageDef } from '../schema';
 
 export const STAGE_2: StageDef = {
-  id: 's2_debut', index: 2, name: '데뷔', era: '2024.02 ~ 2024.03', map: 's2_debut', bgm: 'stage', timerSec: 200, palette: 'stage2',
+  id: 's2_debut', index: 2, name: '데뷔', era: '2024.02 ~ 2024.03', map: 's2_debut', bgm: 'stage', timerSec: 200, palette: 'stage2', outfit: 'debut',
   intro: [
     '2024년 2월 7일, COMING SOON. 티저가 하나씩 열렸다 — 미나미, 원이, 제나, 메이, 리브.',
     '2월 29일 YoYo 선공개. 3월 26일 데뷔 쇼케이스.',

@@ -1,7 +1,7 @@
 import type { StageDef } from '../schema';
 
 export const STAGE_4: StageDef = {
-  id: 's4_comeback', index: 4, name: '역주행', era: '2026.02 ~ 2026.06', map: 's4_comeback', bgm: 'stage', timerSec: 200, palette: 'stage4',
+  id: 's4_comeback', index: 4, name: '역주행', era: '2026.02 ~ 2026.06', map: 's4_comeback', bgm: 'stage', timerSec: 200, palette: 'stage4', outfit: 'comeback',
   intro: [
     '2026년 2월 4일, 원이의 유튜브가 열렸다.',
     '봄, 갸루 미나미의 "거제, 야호~!"가 퍼졌다. 4월 8일 Runaway.',

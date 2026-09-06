@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { ENEMIES, MAPS, MEMBERS, NPCS } from '../data/index';
 import { SCENE, enemyTex, mapKey, npcTex, playerTex, portraitTex } from '../core/AssetKeys';
 import { heartTex, lifeTex, TEX2, tilesetTex } from '../core/ArcadeAssetKeys';
-import { ENEMY_ANIMS, NPC_ANIMS, NPC_FRAME, PLAYER_ANIMS, PLAYER_FRAME, PORTRAIT_FRAME, enemyAnimKey, enemySheetUrl, npcAnimKey, npcSheetUrl, playerAnimKey, playerSheetUrl, portraitSheetUrl, type EnemyAnim, type NpcAnim, type PlayerAnim } from '../core/spriteFrames';
+import { ENEMY_ANIMS, NPC_ANIMS, NPC_FRAME, OUTFITS, PLAYER_ANIMS, PLAYER_FRAME, PORTRAIT_FRAME, enemyAnimKey, enemySheetUrl, npcAnimKey, npcSheetUrl, playerAnimKey, playerSheetUrl, portraitSheetUrl, type EnemyAnim, type NpcAnim, type PlayerAnim } from '../core/spriteFrames';
 import { voiceFileKey } from '../audio/VoiceFiles';
 import { makePlaceholderTextures } from '../ui/placeholders';
 import { UI_TEXT } from '../ui/textStyles';
@@ -25,7 +25,8 @@ export class PreloadScene extends Phaser.Scene {
     const label = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '불러오는 중...', UI_TEXT).setOrigin(0.5);
     this.load.on('progress', (v: number) => label.setText(`불러오는 중... ${Math.round(v * 100)}%`));
     for (const m of MAPS) this.load.tilemapTiledJSON(mapKey(m.id), `assets/maps/${m.file}`);
-    for (const m of MEMBERS) this.load.spritesheet(playerTex(m.id), playerSheetUrl(m.id), { frameWidth: PLAYER_FRAME.width, frameHeight: PLAYER_FRAME.height });
+    // 캐릭터 v2 C4: 멤버 5인 × 의상 5벌(training = player_<m>.png, 나머지 player_<m>_<outfit>.png). 스테이지가 의상을 고른다.
+    for (const m of MEMBERS) for (const o of OUTFITS) this.load.spritesheet(playerTex(m.id, o), playerSheetUrl(m.id, o), { frameWidth: PLAYER_FRAME.width, frameHeight: PLAYER_FRAME.height });
     // 캐릭터 v2 C1: 멤버 초상화 64×64 × 3프레임(0 기본 · 1 시그니처 · 2 피격). 컷인·선택·결과 화면(C4)이 쓴다.
     for (const m of MEMBERS) this.load.spritesheet(portraitTex(m.id), portraitSheetUrl(m.id), { frameWidth: PORTRAIT_FRAME.width, frameHeight: PORTRAIT_FRAME.height });
     for (const e of ENEMIES) this.load.spritesheet(enemyTex(e.id), enemySheetUrl(e.id), { frameWidth: e.width, frameHeight: e.height });
@@ -73,7 +74,8 @@ export class PreloadScene extends Phaser.Scene {
       if (this.anims.exists(key)) return;
       this.anims.create({ key, frames: this.anims.generateFrameNumbers(tex, { frames: [...def.frames] }), frameRate: def.frameRate, repeat: def.repeat });
     };
-    for (const m of MEMBERS) for (const [anim, def] of Object.entries(PLAYER_ANIMS) as [PlayerAnim, (typeof PLAYER_ANIMS)[PlayerAnim]][]) define(playerAnimKey(m.id, anim), playerTex(m.id), def);
+    // 애니는 텍스처(의상 시트)마다 따로 등록한다: playerAnimKey(m, anim, outfit) ↔ playerTex(m, outfit).
+    for (const m of MEMBERS) for (const o of OUTFITS) for (const [anim, def] of Object.entries(PLAYER_ANIMS) as [PlayerAnim, (typeof PLAYER_ANIMS)[PlayerAnim]][]) define(playerAnimKey(m.id, anim, o), playerTex(m.id, o), def);
     for (const e of ENEMIES) for (const [anim, def] of Object.entries(ENEMY_ANIMS) as [EnemyAnim, (typeof ENEMY_ANIMS)[EnemyAnim]][]) define(enemyAnimKey(e.id, anim), enemyTex(e.id), def);
     for (const n of NPCS) for (const [anim, def] of Object.entries(NPC_ANIMS) as [NpcAnim, (typeof NPC_ANIMS)[NpcAnim]][]) define(npcAnimKey(n.id, anim), npcTex(n.id), def);
   }

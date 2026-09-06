@@ -33,12 +33,15 @@ export interface ContinueData { stageId: string }
 export type HudBossInfo = { name: string; phases: BossPhase[]; mid: boolean } | null;
 export interface HudCheer { name: string; text: string }
 export interface HudClear { noHit: boolean }
+/** 카드 획득 뒤 내 멤버의 한 마디(lines.card). 카드 자막 아래 작은 글씨. */
+export interface HudQuip { text: string; color: string }
 
 const FALLBACK_PALETTE = 'stage1';         // 팔레트 텍스처가 아직 없으면(P2 머지 전) 스테이지 1 타일로
 const DEATH_FADE_MS = 900;
 const STAGE_CLEAR_HOLD_MS = 1800;
 const CHEST_CARD_CHANCE = 0.3;
 const CHEST_OPEN_DELAY_MS = 350;
+const CARD_LINE_DELAY_MS = 600;
 const WORLD_BG = '#1f2335';
 /** 트로피 수호자 페이즈별 무대 배경색(더쇼 → 음악중심 → 인기가요). */
 const TROPHY_STAGE_BG = ['#1a1b26', '#241a2e', '#2a1a1a'] as const;
@@ -98,7 +101,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.section = new SectionController(this.stage, this.map, this.sectionHooks(), this.sectionIndex ?? 0);
     const spawn = this.sectionIndex === undefined ? findSpawn(this.map, 'start') : this.section.entrySpawn(this.sectionIndex);
-    this.player = new Player(this, spawn.x, spawn.y, this.run.state.member);
+    this.player = new Player(this, spawn.x, spawn.y, this.run.state.member, this.stage.outfit ?? 'training');
     this.physics.add.collider(this.player, ground);
     this.physics.add.collider(this.player, platforms, undefined, () =>
       this.time.now > this.player.dropThroughUntil && this.player.body.velocity.y >= 0 && !this.player.moveState.climbing);
@@ -209,9 +212,11 @@ export class WorldScene extends Phaser.Scene {
     if (!def.cheer) return;
     const npc = this.cheerNpcs.get(index);
     if (!npc) return;
-    npc.cheer(def.cheer.text);
-    speakAs(this, def.cheer.text, this.voiceOf(npc.def));
-    this.events.emit('hud:cheer', { name: npc.def.name, text: def.cheer.text } satisfies HudCheer);
+    // 멤버 NPC 는 스테이지 고정 문장 대신 그 멤버의 말버릇(lines.cheer)에서 무작위, 음색도 그 멤버 것.
+    const text = npc.pickLine(def.cheer.text);
+    npc.cheer(text);
+    speakAs(this, text, this.voiceOf(npc.def));
+    this.events.emit('hud:cheer', { name: npc.def.name, text } satisfies HudCheer);
   }
 
   private voiceOf(def: NpcDef) {
@@ -270,6 +275,14 @@ export class WorldScene extends Phaser.Scene {
         const meme = getMeme(memeId);
         sfx(this, 'card');
         sayMeme(this, memeId, meme.text, getMember(meme.member).voice);
+        // 내 멤버의 한 마디(lines.card)는 카드 유행어와 겹치지 않게 조금 뒤에, HUD 카드 자막 아래 작은 글씨로.
+        const me = getMember(this.run.state.member);
+        const line = Phaser.Math.RND.pick(me.lines.card);
+        this.time.delayedCall(CARD_LINE_DELAY_MS, () => {
+          if (!this.scene.isActive()) return;
+          speakAs(this, line, me.voice);
+          this.events.emit('hud:quip', { text: line, color: me.color } satisfies HudQuip);
+        });
       },
     };
   }
@@ -307,6 +320,7 @@ export class WorldScene extends Phaser.Scene {
     getAudio(this)?.bgm(null);
     sfx(this, 'clear');
     this.player.setVelocity(0, 0);
+    this.player.playWin();
     this.events.emit('hud:clear', { noHit: result.noHitBoss } satisfies HudClear);
     this.time.delayedCall(STAGE_CLEAR_HOLD_MS, () => {
       this.cameras.main.fadeOut(300, 0, 0, 0);

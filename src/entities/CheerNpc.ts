@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { npcTex } from '../core/AssetKeys';
 import { npcAnimKey } from '../core/spriteFrames';
+import { getMember } from '../data/index';
 import type { NpcDef } from '../data/schema';
 import { style } from '../ui/textStyles';
 
@@ -19,6 +20,11 @@ export class CheerNpc extends Phaser.GameObjects.Sprite {
     this.setOrigin(0.5, 1).setDepth(6);
     this.anims.play(npcAnimKey(def.id, 'idle'), true);
     this.label = scene.add.text(x, y - 54, def.name, style(11, '#ffffff', { stroke: '#000000', strokeThickness: 3 })).setOrigin(0.5).setDepth(6);
+  }
+
+  /** 멤버 NPC 면 그 멤버 말버릇(lines.cheer)에서 무작위, 아니면 스테이지 데이터의 고정 문장. */
+  pickLine(fallback: string): string {
+    return this.def.member ? Phaser.Math.RND.pick(getMember(this.def.member).lines.cheer) : fallback;
   }
 
   /** 말풍선을 띄우고 살짝 뛴다. 소리는 씬(speakAs)이 낸다. */

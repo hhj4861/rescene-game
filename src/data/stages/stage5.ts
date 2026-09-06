@@ -1,7 +1,7 @@
 import type { StageDef } from '../schema';
 
 export const STAGE_5: StageDef = {
-  id: 's5_first_win', index: 5, name: '첫 1위', era: '2026.07 ~ 2026.09', map: 's5_first_win', bgm: 'stage', timerSec: 200, palette: 'stage5',
+  id: 's5_first_win', index: 5, name: '첫 1위', era: '2026.07 ~ 2026.09', map: 's5_first_win', bgm: 'stage', timerSec: 200, palette: 'stage5', outfit: 'pretty',
   intro: [
     '2026년 7월 8일 Pretty Girl.',
     '7월 14일 더쇼 — 데뷔 841일 만의 첫 1위.',

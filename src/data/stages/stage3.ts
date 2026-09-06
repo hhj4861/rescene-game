@@ -1,7 +1,7 @@
 import type { StageDef } from '../schema';
 
 export const STAGE_3: StageDef = {
-  id: 's3_road', index: 3, name: '신인의 길과 무명의 터널', era: '2024.06 ~ 2025.12', map: 's3_road', bgm: 'stage', timerSec: 240, palette: 'stage3',
+  id: 's3_road', index: 3, name: '신인의 길과 무명의 터널', era: '2024.06 ~ 2025.12', map: 's3_road', bgm: 'stage', timerSec: 240, palette: 'stage3', outfit: 'road',
   intro: [
     '2024년 6월 9일 위문열차. 데뷔 100일, 팬덤 이름은 리마인.',
     '8월 27일 LOVE ATTACK. 메이의 공약 — 멜론 TOP100에 들면 거제까지 뛴다.',
