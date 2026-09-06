@@ -8,7 +8,7 @@ export class BootScene extends Phaser.Scene {
   }
   create(): void {
     validateAllData();
-    this.input.keyboard?.addCapture(['UP', 'DOWN', 'LEFT', 'RIGHT', 'SPACE']);
+    this.input.keyboard?.addCapture(['UP', 'DOWN', 'LEFT', 'RIGHT', 'SPACE', 'ENTER']);
     this.scene.start(SCENE.preload);
   }
 }
