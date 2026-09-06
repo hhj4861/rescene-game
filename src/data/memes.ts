@@ -2,6 +2,7 @@ import type { MemeDef } from './schema';
 
 export const MEMES: MemeDef[] = [
   { id: 'woni_ui', member: 'woni', text: '우이!', origin: '원이의 시그니처 감탄사', note: '감정이 북받칠 때 나오는 소리. 팬들이 인사처럼 따라 한다.', passive: { key: 'atk', value: 2 } },
+  { id: 'woni_oishie', member: 'woni', text: '오이쉬에~', origin: '원이가 맛있는 걸 먹을 때', note: '야식 한 입에 나오는 소리. 미나미 앞에서 배운 일본어가 사투리 억양으로 굳었다.', passive: { key: 'foodHeal', value: 0.2 } },
   { id: 'woni_doyouknow', member: 'woni', text: '리센느 아세요?', origin: '무명기 홍보 멘트', note: '알려지지 않았던 시절 어디서든 물어보던 말. 지금은 반전의 상징.', passive: { key: 'fameGain', value: 0.1 } },
   { id: 'liv_youtoo', member: 'liv', text: '너도? 나도!', origin: '안녕하세요원이입니다잘부탁드립니다 첫 출연', note: '리브의 대표 유행어.', passive: { key: 'spd', value: 1 } },
   { id: 'liv_motto', member: 'liv', text: '천천히 가도 멈추지 말자', origin: '리브의 좌우명', note: '연습생 시절부터 지켜온 말.', passive: { key: 'hp', value: 10 } },

@@ -9,7 +9,7 @@ export const CH1_QUESTS: QuestDef[] = [
   { id: 'q1_02', chapter: 1, type: 'main', title: '편의점 심부름', description: '골목의 근육통 버섯이 떨어뜨리는 야식 재료 3개를 모으자.',
     giver: 'npc_manager', map: 'ch1_practice', requires: { questsDone: ['q1_01'] },
     objectives: [{ kind: 'collect', target: 'etc_snack_ingredient', count: 3 }],
-    rewards: { xp: 80, hearts: 30, items: [{ id: 'food_yeopddeok', count: 2 }] },
+    rewards: { xp: 80, hearts: 30, items: [{ id: 'food_yeopddeok', count: 2 }], meme: 'woni_oishie' },
     dialogues: { offer: 'd1_q02_offer', inProgress: 'd1_q02_progress', complete: 'd1_q02_complete' } },
   { id: 'q1_03', chapter: 1, type: 'main', title: '막내의 한 마디', description: '숙소 대신 연습실에 남은 멤버들과 이야기하자. 제나는 한 시간에 한 마디만 한다.',
     giver: 'npc_manager', map: 'ch1_practice', requires: { questsDone: ['q1_02'] },

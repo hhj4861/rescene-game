@@ -22,7 +22,10 @@ export const CH1_DIALOGUES: DialogueScript[] = [
     line('n1', 'npc_manager', '골목에 근육통 버섯이 있는데, 걔들이 재료를 떨어뜨려. 세 개면 돼.'),
   ] },
   one('d1_q02_progress', 'npc_manager', '재료 세 개. 골목이야, 골목.'),
-  one('d1_q02_complete', 'npc_manager', '엽떡 두 개 챙겨 줄게. 리브가 좋아하는 거.'),
+  { id: 'd1_q02_complete', nodes: [
+    line('n0', 'npc_manager', '엽떡 두 개 챙겨 줄게. 리브가 좋아하는 거.', 'n1'),
+    line('n1', 'npc_woni', '(한 입) 오이쉬에~'),
+  ] },
 
   { id: 'd1_q03_offer', nodes: [
     line('n0', 'npc_manager', '막내 제나가 들어온 지 한 달인데 한 시간에 한 마디밖에 안 해.', 'n1'),
