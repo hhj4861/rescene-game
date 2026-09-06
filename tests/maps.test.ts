@@ -67,4 +67,14 @@ describe('map sources', () => {
       expect(p.objects.some((o) => o.type === 'spawn' && o.name === 're_boss'), st.id).toBe(true);
     }
   });
+  it('plan-2 stage maps follow the object naming convention', () => {
+    for (const [id, rows] of [['s2_debut', 17], ['s3_road', 34], ['s4_comeback', 17], ['s5_first_win', 17]] as const) {
+      const p = byId.get(id)!; expect(p, id).toBeDefined(); expect(p.rows.length).toBe(rows); expect(p.rows[0]!.length).toBe(120);
+      const names = (t: string) => p.objects.filter((o) => o.type === t).map((o) => o.name);
+      expect(names('lock')).toEqual(['lock_a', 'lock_b', 'lock_c', 'lock_d', 'lock_boss']);
+      for (const s of ['start', 're_a', 're_b', 're_c', 're_d', 're_boss', 'sp_boss']) expect(names('spawn'), `${id}/${s}`).toContain(s);
+    }
+    expect(byId.get('s4_comeback')!.objects.filter((o) => o.type === 'jumppad').length).toBeGreaterThanOrEqual(3);
+    expect(byId.get('s3_road')!.objects.some((o) => o.type === 'spawn' && o.name === 'sp_c3' && o.ty <= 6)).toBe(true);
+  });
 });
