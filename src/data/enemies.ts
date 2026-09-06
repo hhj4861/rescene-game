@@ -1,6 +1,9 @@
 import type { EnemyDef } from './schema';
 
 export const ENEMIES: EnemyDef[] = [
+  // 스테이지 2(데뷔)용 잡몹 — 스펙 §3. 스테이지 1 웨이브에는 쓰이지 않는다.
+  { id: 'enemy_nerves', name: '긴장 떨림', hp: 15, atk: 2, spd: 30,
+    ai: 'patrol', width: 28, height: 28, color: '#a9b1d6', score: 100, heartChance: 0.15 },
   { id: 'enemy_sleep_slime', name: '졸음 슬라임', hp: 30, atk: 4, spd: 40,
     ai: 'patrol', width: 36, height: 28, color: '#7aa2f7', score: 100, heartChance: 0.15 },
   { id: 'enemy_sore_mushroom', name: '근육통 버섯', hp: 45, atk: 6, spd: 30,
