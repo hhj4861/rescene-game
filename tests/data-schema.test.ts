@@ -94,3 +94,18 @@ describe('stages', () => {
     expect(() => EnemyDefSchema.parse({ id: 'x', name: 'x', hp: 1, atk: 0, spd: 0, ai: 'static', width: 8, height: 8, color: '#000000', score: 0, heartChance: 0, minion: 'enemy_sleep_slime' })).not.toThrow();
   });
 });
+
+describe('plan-2 enemies and bosses', () => {
+  it('has every plan-2 enemy and boss with the shared sizes', () => {
+    const dims: Record<string, [number, number]> = {
+      enemy_inear_noise: [24, 24], enemy_apathetic_audience: [32, 40], enemy_chart_ghost: [28, 36], enemy_schedule_bomb: [24, 28],
+      enemy_apathy_fog: [40, 32], enemy_hate_crow: [32, 24], enemy_copycat: [28, 44], enemy_algorithm_golem: [44, 52],
+      enemy_spotlight_drone: [28, 20], enemy_stage_trap: [32, 16],
+      boss_first_camera: [80, 80], boss_top100_gate: [72, 96], boss_silence: [96, 96], boss_copycat_captain: [48, 72], boss_trophy_guardian: [96, 112],
+    };
+    for (const [id, [w, h]] of Object.entries(dims)) { const e = getEnemy(id); expect([e.width, e.height], id).toEqual([w, h]); }
+    expect(getEnemy('boss_silence').minion).toBe('enemy_apathy_fog');
+    expect(getEnemy('boss_first_camera').gimmick).toBe('lens');
+    expect(getEnemy('enemy_apathetic_audience').ai).toBe('static');
+  });
+});
