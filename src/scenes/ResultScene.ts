@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
-import { SCENE } from '../core/AssetKeys';
+import { SCENE, playerTex } from '../core/AssetKeys';
+import { PLAYER_ANIMS } from '../core/spriteFrames';
 import { getRun } from '../core/runSession';
 import { getStage, getStageByIndex, getMember } from '../data/index';
 import { loadArcadeSave, persistArcadeSave } from '../core/arcadeSave';
 import { addCodex, unlockStage } from '../systems/highscore';
-import { sfx } from '../audio/audioSession';
+import { sfx, speakAs } from '../audio/audioSession';
 import { SMALL_TEXT, TITLE_TEXT, UI_TEXT, style } from '../ui/textStyles';
 import { GAME_WIDTH } from '../config';
 import { addPortrait } from '../ui/portrait';
@@ -19,6 +20,11 @@ export interface ResultData {
 }
 
 const ROW_DELAY_MS = 500;
+const PORTRAIT_X = 150;
+const PORTRAIT_Y = 250;
+const WIN_SPRITE_X = 300;
+const WIN_SPRITE_Y = 360;   // origin (0.5, 1): 발 위치
+const WIN_LINE_Y = 420;
 
 export class ResultScene extends Phaser.Scene {
   private args!: ResultData;
@@ -46,7 +52,13 @@ export class ResultScene extends Phaser.Scene {
 
     this.add.text(GAME_WIDTH / 2, 60, `${stage.name} 클리어!`, TITLE_TEXT).setOrigin(0.5);
     const member = getMember(run.state.member);
-    addPortrait(this, 150, 270, member.id, 1, 3, member.color);   // 시그니처 표정 = 승리
+    addPortrait(this, PORTRAIT_X, PORTRAIT_Y, member.id, 1, 3, member.color);   // 시그니처 표정 = 승리
+    // 승리 포즈 스프라이트(그 스테이지 의상, win 프레임 고정, 3배) — 초상화 오른쪽.
+    this.add.sprite(WIN_SPRITE_X, WIN_SPRITE_Y, playerTex(member.id, stage.outfit ?? 'training'), PLAYER_ANIMS.win.frames[0]).setOrigin(0.5, 1).setScale(3);
+    // 승리 대사(lines.win) 자막 + 그 멤버 음색 블립.
+    const winLine = Phaser.Math.RND.pick(member.lines.win);
+    this.add.text((PORTRAIT_X + WIN_SPRITE_X) / 2, WIN_LINE_Y, `“${winLine}”`, style(15, member.color, { align: 'center', wordWrap: { width: 300 } })).setOrigin(0.5);
+    speakAs(this, winLine, member.voice);
 
     const rows = [
       `처치 ${this.args.kills}마리`,

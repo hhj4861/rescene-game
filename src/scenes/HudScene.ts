@@ -7,13 +7,17 @@ import { sfx } from '../audio/audioSession';
 import { getMeme, getMember } from '../data/index';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { Bar } from '../ui/Bar';
+import { addPortrait } from '../ui/portrait';
 import { style } from '../ui/textStyles';
-import type { HudBossInfo, HudCheer, HudClear, WorldScene } from './WorldScene';
+import type { HudBossInfo, HudCheer, HudClear, HudQuip, WorldScene } from './WorldScene';
 
 const MAX_LIFE_ICONS = 5;
 const GO_MS = 1500;
 const CARD_MS = 1500;
+const QUIP_MS = 1400;
 const CHEER_MS = 2500;
+const CARD_Y = 260;
+const CARD_PORTRAIT_GAP = 48;
 const RAINBOW = [0xf7768e, 0xff9e64, 0xe0af68, 0x9ece6a, 0x7dcfff, 0x7aa2f7, 0xbb9af7];
 const GAUGE_COLOR = 0xbb9af7;
 const BOSS_BAR_COLOR = 0xbb9af7;
@@ -41,12 +45,16 @@ export class HudScene extends Phaser.Scene {
   private bossMid = false;
   private bossBlinkAt = 0;
   private cardText!: Phaser.GameObjects.Text;
+  /** 카드 자막 왼쪽의 그 카드 멤버 초상화(1배, 기본 표정). 카드마다 새로 만든다. */
+  private cardPortrait: Phaser.GameObjects.Container | null = null;
+  private quipText!: Phaser.GameObjects.Text;
   private cheerText!: Phaser.GameObjects.Text;
   private clearText!: Phaser.GameObjects.Text;
   private unsubs: (() => void)[] = [];
   private worldListeners: [string, (...args: never[]) => void][] = [];
   private goUntil = 0;
   private cardUntil = 0;
+  private quipUntil = 0;
   private cheerUntil = 0;
   private rainbowAt = 0;
   private rainbowIdx = 0;
@@ -82,7 +90,8 @@ export class HudScene extends Phaser.Scene {
     this.go = this.add.sprite(CX, 130, TEX2.go).setScale(3).setVisible(false);
     this.go.play(`${TEX2.go}_anim`);
     this.clearText = this.add.text(CX, 200, '', stroked(34, '#ffffff', { fontStyle: 'bold', strokeThickness: 5, align: 'center' })).setOrigin(0.5).setVisible(false);
-    this.cardText = this.add.text(CX, 260, '', stroked(26, '#ffffff', { fontStyle: 'bold', strokeThickness: 5, align: 'center', wordWrap: { width: 700 } })).setOrigin(0.5).setVisible(false);
+    this.cardText = this.add.text(CX, CARD_Y, '', stroked(26, '#ffffff', { fontStyle: 'bold', strokeThickness: 5, align: 'center', wordWrap: { width: 700 } })).setOrigin(0.5).setVisible(false);
+    this.quipText = this.add.text(CX, CARD_Y + 36, '', stroked(14, '#c0caf5', { align: 'center' })).setOrigin(0.5).setVisible(false);
     this.cheerText = this.add.text(CX, GAME_HEIGHT - 72, '', stroked(14, '#c0caf5')).setOrigin(0.5).setVisible(false);
 
     // 하단: 보스 체력 바(페이즈 구분선은 hud:boss 에서)
@@ -104,6 +113,7 @@ export class HudScene extends Phaser.Scene {
     this.listenWorld('hud:boss', (info: HudBossInfo) => this.setBoss(info));
     this.listenWorld('hud:cheer', (c: HudCheer) => this.showCheer(c));
     this.listenWorld('hud:clear', (c: HudClear) => this.showClear(c));
+    this.listenWorld('hud:quip', (q: HudQuip) => this.showQuip(q));
     this.listenWorld('hud:reset', () => this.reset());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const u of this.unsubs) u();
@@ -185,9 +195,24 @@ export class HudScene extends Phaser.Scene {
 
   private showCard(memeId: string): void {
     const meme = getMeme(memeId);
+    const owner = getMember(meme.member);
     this.cardUntil = this.time.now + CARD_MS;
-    this.cardText.setText(`“${meme.text}”`).setColor(getMember(meme.member).color).setVisible(true).setScale(0.6);
+    this.cardText.setText(`“${meme.text}”`).setColor(owner.color).setVisible(true).setScale(0.6);
     this.tweens.add({ targets: this.cardText, scale: 1, duration: 200, ease: 'Back.easeOut' });
+    // 자막 왼쪽에 그 카드 멤버의 초상화(1배, 기본 표정)를 같은 시간 동안.
+    this.cardPortrait?.destroy();
+    this.cardPortrait = addPortrait(this, CX - this.cardText.width / 2 - CARD_PORTRAIT_GAP, CARD_Y, owner.id, 0, 1, owner.color);
+  }
+
+  private showQuip(q: HudQuip): void {
+    this.quipUntil = this.time.now + QUIP_MS;
+    this.quipText.setText(q.text).setColor(q.color).setVisible(true);
+  }
+
+  private hideCard(): void {
+    this.cardText.setVisible(false);
+    this.cardPortrait?.destroy();
+    this.cardPortrait = null;
   }
 
   private showClear(c: HudClear): void {
@@ -201,17 +226,19 @@ export class HudScene extends Phaser.Scene {
     this.setBoss(null);
     this.go.setVisible(false);
     this.combo.setVisible(false);
-    this.cardText.setVisible(false);
+    this.hideCard();
+    this.quipText.setVisible(false);
     this.cheerText.setVisible(false);
     this.clearText.setVisible(false);
-    this.goUntil = this.cardUntil = this.cheerUntil = 0;
+    this.goUntil = this.cardUntil = this.quipUntil = this.cheerUntil = 0;
     this.refresh();
   }
 
   update(): void {
     const now = this.time.now;
     if (this.go.visible && now >= this.goUntil) this.go.setVisible(false);
-    if (this.cardText.visible && now >= this.cardUntil) this.cardText.setVisible(false);
+    if (this.cardText.visible && now >= this.cardUntil) this.hideCard();
+    if (this.quipText.visible && now >= this.quipUntil) this.quipText.setVisible(false);
     if (this.cheerText.visible && now >= this.cheerUntil) this.cheerText.setVisible(false);
 
     if (getRun(this).state.gauge >= 100 && now >= this.rainbowAt) {

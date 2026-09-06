@@ -7,12 +7,18 @@ import { getRun, hasRun } from '../core/runSession';
 import { loadArcadeSave } from '../core/arcadeSave';
 import { qualifies } from '../systems/highscore';
 import { getAudio, speakAs } from '../audio/audioSession';
+import { MEMBERS } from '../data/index';
+import { addPortrait } from '../ui/portrait';
 import { style } from '../ui/textStyles';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import type { NameEntryData } from './NameEntryScene';
 
 const LINE_MS = 2000;
 const LINE_GAP = 60;
+/** 마지막 줄 뒤 커튼콜: 5인 초상화(시그니처 표정, 2배) 한 줄. 자막과 같이 흘러 올라간다. */
+const CURTAIN_GAP = 170;
+const CURTAIN_OFFSET = 120;
+const CURTAIN_HEIGHT = 200;
 
 export class EndingScene extends Phaser.Scene {
   private texts: Phaser.GameObjects.Text[] = [];
@@ -33,10 +39,13 @@ export class EndingScene extends Phaser.Scene {
         .setOrigin(0.5, 0),
     );
 
-    const travel = ENDING_LINES.length * LINE_GAP + GAME_HEIGHT + 80;
-    const duration = ENDING_LINES.length * LINE_MS;
+    const curtainY = startY + ENDING_LINES.length * LINE_GAP + CURTAIN_OFFSET;
+    const curtain = MEMBERS.map((m, i) => addPortrait(this, GAME_WIDTH / 2 + (i - (MEMBERS.length - 1) / 2) * CURTAIN_GAP, curtainY, m.id, 1, 2, m.color));
+
+    const travel = ENDING_LINES.length * LINE_GAP + CURTAIN_OFFSET + CURTAIN_HEIGHT + GAME_HEIGHT + 80;
+    const duration = (ENDING_LINES.length + 1) * LINE_MS;
     this.tweens.add({
-      targets: this.texts,
+      targets: [...this.texts, ...curtain],
       y: `-=${travel}`,
       duration,
       ease: 'Linear',
