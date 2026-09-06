@@ -73,12 +73,15 @@ function sheetOf(grids: Grid[], palette: Record<string, string>, gw: number, gh:
   return { ...sheet, png: encodePng(sheet.width, sheet.height, sheet.rgba) };
 }
 
+/**
+ * 시트는 템플릿 목록(ENEMY_SPRITES) 기준으로 만든다 — 데이터(ENEMIES)에 없는 적도 빌드된다.
+ * 데이터에 같은 id가 있으면 크기 일치만 검증하고, 없으면 검증을 건너뛴다.
+ */
 export function buildEnemySheet(enemyId: string): Sheet {
-  const def = ENEMIES.find((e) => e.id === enemyId);
   const art = ENEMY_SPRITES[enemyId];
-  if (!def) throw new Error(`unknown enemy ${enemyId}`);
   if (!art) throw new Error(`no sprite template for enemy ${enemyId}`);
-  if (art.width !== def.width || art.height !== def.height) throw new Error(`${enemyId}: template ${art.width}x${art.height} != data ${def.width}x${def.height}`);
+  const def = ENEMIES.find((e) => e.id === enemyId);
+  if (def && (art.width !== def.width || art.height !== def.height)) throw new Error(`${enemyId}: template ${art.width}x${art.height} != data ${def.width}x${def.height}`);
   if (art.frames.length !== ENEMY_FRAME_COUNT) throw new Error(`${enemyId}: ${art.frames.length} frames, expected ${ENEMY_FRAME_COUNT}`);
   art.frames.forEach((g, i) => { if (g.length !== art.height) throw new Error(`${enemyId} frame ${i}: ${g.length} rows != ${art.height}`); });
   return sheetOf(art.frames, art.palette, art.width, art.height, art.width, art.height);

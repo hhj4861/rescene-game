@@ -5,6 +5,7 @@ import { buildEnemySheet, buildNpcSheet, enemySheetFile, npcSheetFile } from '..
 import { buildPlayerSheet } from '../tools/build-sprites-lib';
 import { ENEMIES } from '../src/data/enemies';
 import { NPCS } from '../src/data/npcs';
+import { ENEMY_SPRITES } from '../tools/sprites/enemies';
 import { ENEMY_ANIMS, ENEMY_FRAME_COUNT, NPC_ANIMS, NPC_FRAME, NPC_FRAME_COUNT, PLAYER_FRAME } from '../src/core/spriteFrames';
 
 const frameOf = (sheet: { width: number; height: number; rgba: Uint8Array }, fw: number, i: number): string => {
@@ -37,21 +38,27 @@ describe('enemy sprite sheets', () => {
     const all = Object.values(ENEMY_ANIMS).flatMap((a) => [...a.frames]).sort((x, y) => x - y);
     expect(all).toEqual([...Array(ENEMY_FRAME_COUNT).keys()]);
   });
-  it('every enemy builds a sheet sized by its own width/height', () => {
-    for (const e of ENEMIES) {
-      const sheet = buildEnemySheet(e.id);
-      expect(sheet.width, e.id).toBe(e.width * ENEMY_FRAME_COUNT);
-      expect(sheet.height, e.id).toBe(e.height);
-      expect(bottomOpaque(sheet, e.width, 0), `${e.id} feet`).toBeGreaterThan(0);
-      expect(frameOf(sheet, e.width, ENEMY_ANIMS.idle.frames[0])).not.toBe(frameOf(sheet, e.width, ENEMY_ANIMS.idle.frames[1]));
-      expect(frameOf(sheet, e.width, ENEMY_ANIMS.move.frames[0])).not.toBe(frameOf(sheet, e.width, ENEMY_ANIMS.move.frames[1]));
+  // (a) 시트 생성은 데이터가 아니라 템플릿 목록(ENEMY_SPRITES) 기준이다 — ENEMIES에 없는 적도 PNG가 나와야 한다.
+  it('every template builds a sheet sized by its own width/height and matches its generated file', () => {
+    for (const id of Object.keys(ENEMY_SPRITES)) {
+      const art = ENEMY_SPRITES[id]!;
+      const sheet = buildEnemySheet(id);
+      expect(sheet.width, id).toBe(art.width * ENEMY_FRAME_COUNT);
+      expect(sheet.height, id).toBe(art.height);
+      expect(bottomOpaque(sheet, art.width, 0), `${id} feet`).toBeGreaterThan(0);
+      expect(frameOf(sheet, art.width, ENEMY_ANIMS.idle.frames[0]), `${id} idle`).not.toBe(frameOf(sheet, art.width, ENEMY_ANIMS.idle.frames[1]));
+      expect(frameOf(sheet, art.width, ENEMY_ANIMS.move.frames[0]), `${id} move`).not.toBe(frameOf(sheet, art.width, ENEMY_ANIMS.move.frames[1]));
+      const file = enemySheetFile(id);
+      expect(existsSync(file), file).toBe(true);
+      expect(Buffer.compare(readFileSync(file), Buffer.from(sheet.png)), id).toBe(0);
     }
   });
-  it('generated enemy png files match the sources (run npm run sprites)', () => {
+  // (b) 데이터(ENEMIES)의 모든 적에는 같은 크기의 템플릿이 있어야 한다(이 worktree엔 P1의 신규 적 데이터가 없을 수 있다).
+  it('every ENEMIES entry has a template with a matching size', () => {
     for (const e of ENEMIES) {
-      const file = enemySheetFile(e.id);
-      expect(existsSync(file), file).toBe(true);
-      expect(Buffer.compare(readFileSync(file), Buffer.from(buildEnemySheet(e.id).png)), e.id).toBe(0);
+      const art = ENEMY_SPRITES[e.id];
+      expect(art, e.id).toBeDefined();
+      expect([art!.width, art!.height], e.id).toEqual([e.width, e.height]);
     }
   });
 });
