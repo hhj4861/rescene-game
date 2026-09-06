@@ -9,12 +9,19 @@ type GameLike = {
   registry: { get(key: string): { state: { gauge: number; score: number; hearts: number } } | undefined };
 };
 type Hooks = { killAllEnemies(): void; fillGauge(): void; enemyCount(): number; sectionIndex(): number; sectionPhase(): string };
-type Win = Window & { __game: GameLike; __rescene?: Hooks };
+type Win = Window & { __game?: GameLike; __rescene?: Hooks };
 
+// 헬퍼는 __game/__rescene 이 아직 없을 때 예외 대신 안전값을 돌려준다 — expect.poll 은 콜백 예외를
+// 재시도하지 않고 바로 실패시키므로(page.goto 직후 __game 할당 전 평가되는 플레이키).
 const isActive = (page: Page, key: string): Promise<boolean> =>
-  page.evaluate((k) => (window as unknown as Win).__game.scene.isActive(k), key);
-const hook = <T>(page: Page, fn: (h: Hooks) => T): Promise<T> =>
-  page.evaluate((src) => (new Function('h', `return (${src})(h)`) as (h: Hooks) => T)((window as unknown as Win).__rescene!), fn.toString());
+  page.evaluate((k) => (window as unknown as Win).__game?.scene.isActive(k) ?? false, key);
+const hook = <T>(page: Page, fn: (h: Hooks) => T): Promise<T | null> =>
+  page.evaluate((src) => {
+    const h = (window as unknown as Win).__rescene;
+    return h ? (new Function('h', `return (${src})(h)`) as (h: Hooks) => T)(h) : null;
+  }, fn.toString());
+const gauge = (page: Page): Promise<number | null> =>
+  page.evaluate(() => (window as unknown as Win).__game?.registry.get('run')?.state.gauge ?? null);
 const tap = async (page: Page, key: string, hold = 80): Promise<void> => {
   await page.keyboard.down(key);
   await page.waitForTimeout(hold);
@@ -47,10 +54,10 @@ test('stage 1: clears the first section, shows GO and fires a super without cons
 
   // 새 에셋이 실제로 로드됐는지(플레이스홀더 대체가 아닌지)
   const frameCount = (key: string): Promise<number> =>
-    page.evaluate((k) => (window as unknown as Win).__game.textures.get(k).getFrameNames().length, key);
+    page.evaluate((k) => (window as unknown as Win).__game?.textures.get(k).getFrameNames().length ?? 0, key);
   expect(await frameCount('player_woni')).toBe(10);
   expect(await frameCount('heart_woni')).toBe(2);
-  expect(await page.evaluate(() => (window as unknown as Win).__game.textures.exists('tiles_stage1'))).toBe(true);
+  expect(await page.evaluate(() => (window as unknown as Win).__game?.textures.exists('tiles_stage1') ?? false)).toBe(true);
 
   // 구간 A: 시작 즉시 잠기고 웨이브가 돈다. 오른쪽으로 조금 이동 + 점프 + 공격도 한 번씩 태운다.
   await page.keyboard.down('ArrowRight');
@@ -69,19 +76,19 @@ test('stage 1: clears the first section, shows GO and fires a super without cons
   }
   expect(await hook(page, (h) => h.sectionPhase())).toBe('open');
   const goVisible = (): Promise<boolean> => page.evaluate(() => {
-    const hud = (window as unknown as Win).__game.scene.getScene('Hud');
+    const hud = (window as unknown as Win).__game?.scene.getScene('Hud');
     return !!hud && hud.children.list.some((o) => o.visible && o.texture?.key === 'hud_go');
   });
   await expect.poll(goVisible, { timeout: 2_000 }).toBe(true);
-  const scoreAfterKills = await page.evaluate(() => (window as unknown as Win).__game.registry.get('run')!.state.score);
+  const scoreAfterKills = await page.evaluate(() => (window as unknown as Win).__game?.registry.get('run')?.state.score ?? 0);
   expect(scoreAfterKills).toBeGreaterThan(0);
 
   // 필살기: 게이지를 채우고 S. 연출(1.2초) 뒤 게이지 0, 씬은 그대로 살아 있다.
   await hook(page, (h) => h.fillGauge());
-  expect(await page.evaluate(() => (window as unknown as Win).__game.registry.get('run')!.state.gauge)).toBe(100);
+  expect(await gauge(page)).toBe(100);
   await tap(page, 'KeyS');
-  await page.waitForTimeout(1500);
-  expect(await page.evaluate(() => (window as unknown as Win).__game.registry.get('run')!.state.gauge)).toBe(0);
+  await expect.poll(() => gauge(page), { timeout: 3_000 }).toBe(0);
+  await page.waitForTimeout(1500);                                      // 연출 종료(physics.resume)까지
   expect(await isActive(page, 'World')).toBe(true);
 
   await page.screenshot({ path: 'test-results/stage1.png' });
