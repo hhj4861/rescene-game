@@ -24,11 +24,13 @@ export const PLAYER_ANIMS = {
 export type PlayerAnim = keyof typeof PLAYER_ANIMS;
 export const PLAYER_FRAME_COUNT = 15;
 
-export const playerAnimKey = (member: MemberId, anim: PlayerAnim): string => `player_${member}_${anim}`;
-
 /** 스테이지별 의상. training 시트는 파일 이름을 유지한다(player_<member>.png). */
 export const OUTFITS = ['training', 'debut', 'road', 'comeback', 'pretty'] as const;
 export type Outfit = (typeof OUTFITS)[number];
+
+/** 애니는 텍스처(의상 시트)마다 따로 등록한다. training 은 옛 키(`player_<m>_<anim>`)를 유지해 기존 호출과 호환. */
+export const playerAnimKey = (member: MemberId, anim: PlayerAnim, outfit: Outfit = 'training'): string =>
+  outfit === 'training' ? `player_${member}_${anim}` : `player_${member}_${outfit}_${anim}`;
 export const playerSheetUrl = (member: MemberId, outfit: Outfit = 'training'): string =>
   outfit === 'training' ? `assets/sprites/player_${member}.png` : `assets/sprites/player_${member}_${outfit}.png`;
 

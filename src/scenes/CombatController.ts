@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import { TEX } from '../core/AssetKeys';
 import type { RunStore } from '../core/RunStore';
-import { sfx } from '../audio/audioSession';
+import { sfx, speakAs } from '../audio/audioSession';
 import { ENEMIES, getEnemy, getMember, getSkill } from '../data/index';
 import type { EnemyDef, MemberDef } from '../data/schema';
 import { damage } from '../systems/combat';
+import { HITSTOP_MS, HURT_LINE_CHANCE, canStartHitstop, shouldResumeHitstop, type ChainStep } from '../systems/playerAnim';
 import { Boss, DEFLECT_TINT } from '../entities/Boss';
 import { createBoss } from '../entities/bosses/index';
 import { DropItem, type Drop } from '../entities/DropItem';
@@ -60,6 +61,9 @@ export class CombatController {
   private chainStep = 0;
   private lastAttackAt = -Infinity;
   private atkBuffUntil = 0;
+  private superActive = false;
+  /** 물리 월드 pause 횟수. 히트스톱이 자기가 건 정지만 풀도록 하는 표식(필살기·사망 정지와 구분). */
+  private pauseSerial = 0;
   private readonly member: MemberDef;
 
   constructor(
@@ -87,6 +91,7 @@ export class CombatController {
     scene.physics.add.overlap(player, this.enemyProjectiles, (_p, ep) => this.onEnemyProjectile(ep as EnemyProjectile));
     scene.physics.add.overlap(this.projectiles, this.enemies, (p, e) => this.onProjectileHit(p as Projectile, e as Enemy));
     scene.physics.add.overlap(player, this.drops, (_p, d) => this.collect(d as DropItem));
+    scene.physics.world.on(Phaser.Physics.Arcade.Events.PAUSE, () => { this.pauseSerial += 1; });
   }
 
   // ---------- 데미지 ----------
@@ -150,14 +155,15 @@ export class CombatController {
 
   // ---------- 공격 ----------
 
-  /** A. 0.6초 안에 연타하면 1→2→3타 체인. 3타는 배율 1.6·넉백 2배. */
+  /** A. 0.6초 안에 연타하면 1→2→3타 체인. 3타는 배율 1.6·넉백 2배·히트스톱 60ms. */
   attack(now: number): boolean {
     if (now - this.lastAttackAt < ATTACK_MIN_INTERVAL_MS) return false;
-    this.chainStep = now - this.lastAttackAt <= CHAIN_WINDOW_MS ? (this.chainStep % 3) + 1 : 1;
+    const step = (now - this.lastAttackAt <= CHAIN_WINDOW_MS ? (this.chainStep % 3) + 1 : 1) as ChainStep;
+    this.chainStep = step;
     this.lastAttackAt = now;
-    this.player.playAttack();
+    this.player.playAttack(step);
     const skill = getSkill(this.member.basicSkill);
-    const third = this.chainStep === 3;
+    const third = step === 3;
     const dmg = this.dmg(skill.multiplier * (third ? CHAIN3_MULT : 1));
     const kb = third ? CHAIN3_KNOCKBACK : 1;
     for (const effect of skill.effects) {
@@ -166,8 +172,25 @@ export class CombatController {
       else continue;
       this.boss?.notifyPlayerAttack(effect.kind);
     }
-    if (third) this.boss?.notifyChainFinished();
+    if (third) {
+      this.boss?.notifyChainFinished();
+      this.hitstop(step);
+    }
     return true;
+  }
+
+  /**
+   * 3타 히트스톱: 물리 월드를 60ms 멈춘다(씬 시계·애니·트윈은 계속). SuperFx 도 같은 월드를 멈추므로
+   * 이미 멈춰 있으면 걸지 않고, 우리가 건 뒤에 다른 pause(필살기·사망)가 끼어들었으면 resume 하지 않는다.
+   */
+  private hitstop(step: ChainStep): void {
+    const world = this.scene.physics.world;
+    if (this.superActive || !canStartHitstop(step, world.isPaused)) return;
+    world.pause();
+    const serial = this.pauseSerial;
+    this.scene.time.delayedCall(HITSTOP_MS, () => {
+      if (!this.superActive && shouldResumeHitstop(serial, this.pauseSerial, world.isPaused)) world.resume();
+    });
   }
 
   private shoot(spec: Projectile['spec']): void {
@@ -315,6 +338,12 @@ export class CombatController {
     this.player.setVelocity(dir * 220, -200);
     this.scene.tweens.add({ targets: this.player, alpha: 0.3, yoyo: true, repeat: 6, duration: 70, onComplete: () => this.player.setAlpha(1) });
     sfx(this.scene, 'hurt');
+    if (Math.random() < HURT_LINE_CHANCE) {
+      // 20%: 말버릇 한 마디(lines.hurt) 말풍선 + 그 멤버 음색 블립
+      const line = Phaser.Math.RND.pick(this.member.lines.hurt);
+      this.player.say(line);
+      speakAs(this.scene, line, this.member.voice);
+    }
     this.run.takeHit(hearts);
   }
 
@@ -323,9 +352,15 @@ export class CombatController {
   /** S. 게이지 100% 면 연출 후 효과. 연출 중 플레이어는 무적. */
   castSuper(now: number, onDone: () => void): boolean {
     if (!this.run.useSuper()) return false;
+    this.superActive = true;
     this.player.invulnerableUntil = Math.max(this.player.invulnerableUntil, now + SUPER_TOTAL_MS + 200);
     this.player.setVelocity(0, 0);
-    SuperFx.play(this.scene, this.member, () => this.applySuper(), onDone);
+    this.player.playSuper();
+    SuperFx.play(this.scene, this.member, () => this.applySuper(), () => {
+      this.superActive = false;
+      this.player.stopSuper();
+      onDone();
+    });
     return true;
   }
 
