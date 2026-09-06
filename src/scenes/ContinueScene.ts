@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import { SCENE } from '../core/AssetKeys';
 import { getRun } from '../core/runSession';
+import { getMember } from '../data/index';
 import { sfx } from '../audio/audioSession';
 import { SMALL_TEXT, TITLE_TEXT, style } from '../ui/textStyles';
 import { GAME_WIDTH } from '../config';
+import { addPortrait } from '../ui/portrait';
 import type { GameOverData } from './GameOverScene';
 
 export interface ContinueData {
@@ -38,6 +40,8 @@ export class ContinueScene extends Phaser.Scene {
 
   create(): void {
     this.add.text(GAME_WIDTH / 2, 160, 'CONTINUE?', TITLE_TEXT).setOrigin(0.5);
+    const member = getMember(getRun(this).state.member);
+    addPortrait(this, GAME_WIDTH / 2 + 220, 260, member.id, 2, 2, member.color);   // 피격 표정
     this.countText = this.add.text(GAME_WIDTH / 2, 260, String(this.remaining), style(64, '#ffd166', { fontStyle: 'bold' })).setOrigin(0.5);
     this.add.text(GAME_WIDTH / 2, 380, 'Enter 컨티뉴(점수 0)   Esc 포기', SMALL_TEXT).setOrigin(0.5);
 

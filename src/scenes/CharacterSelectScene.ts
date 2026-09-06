@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SCENE, playerTex } from '../core/AssetKeys';
 import { playerAnimKey } from '../core/spriteFrames';
+import { addPortrait } from '../ui/portrait';
 import { RunStore } from '../core/RunStore';
 import { setRun } from '../core/runSession';
 import { MEMBERS, getMeme, getStageByIndex } from '../data/index';
@@ -13,6 +14,7 @@ export class CharacterSelectScene extends Phaser.Scene {
   private index = 0;
   private stageIndex = 1;
   private cards: Phaser.GameObjects.Container[] = [];
+  private portraits: Phaser.GameObjects.Image[] = [];
   private detail!: Phaser.GameObjects.Text;
   private navigating = false;
 
@@ -30,15 +32,19 @@ export class CharacterSelectScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH / 2, 60, '누구로 무대에 설까?', TITLE_TEXT).setOrigin(0.5);
     const gap = 170;
     const startX = GAME_WIDTH / 2 - gap * 2;
+    this.portraits = [];
     this.cards = MEMBERS.map((m, i) => {
-      const c = this.add.container(startX + i * gap, 230);
-      c.add(this.add.sprite(0, 0, playerTex(m.id)).setScale(2).play(playerAnimKey(m.id, 'idle')));
-      c.add(this.add.text(0, 70, m.name, UI_TEXT).setOrigin(0.5));
-      c.add(this.add.text(0, 92, m.role, SMALL_TEXT).setOrigin(0.5));
+      const c = this.add.container(startX + i * gap, 200);
+      const face = addPortrait(this, 0, -40, m.id, 0, 2, m.color);   // 선택된 멤버는 render()에서 시그니처 표정
+      this.portraits.push(face.portrait);
+      c.add(face);
+      c.add(this.add.sprite(0, 84, playerTex(m.id)).setScale(2).play(playerAnimKey(m.id, 'idle')));
+      c.add(this.add.text(0, 146, m.name, UI_TEXT).setOrigin(0.5));
+      c.add(this.add.text(0, 168, m.role, SMALL_TEXT).setOrigin(0.5));
       return c;
     });
-    this.detail = this.add.text(GAME_WIDTH / 2, 380, '', style(14, '#c0caf5', { align: 'center' })).setOrigin(0.5);
-    this.add.text(GAME_WIDTH / 2, 470, '←→ 선택   Enter 결정   Esc 뒤로', SMALL_TEXT).setOrigin(0.5);
+    this.detail = this.add.text(GAME_WIDTH / 2, 420, '', style(14, '#c0caf5', { align: 'center' })).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 500, '←→ 선택   Enter 결정   Esc 뒤로', SMALL_TEXT).setOrigin(0.5);
     this.render();
 
     const kb = this.input.keyboard!;
@@ -62,7 +68,8 @@ export class CharacterSelectScene extends Phaser.Scene {
   }
 
   private render(): void {
-    this.cards.forEach((c, i) => c.setScale(i === this.index ? 1.15 : 1).setAlpha(i === this.index ? 1 : 0.6));
+    this.cards.forEach((c, i) => c.setScale(i === this.index ? 1.1 : 0.95).setAlpha(i === this.index ? 1 : 0.6));
+    this.portraits.forEach((p, i) => p.setFrame(i === this.index ? 1 : 0));
     const m = MEMBERS[this.index]!;
     this.detail.setText([`${m.name} · ${m.hometown} · 공격 ${m.atk} 속도 ${m.spd} 점프 ${m.jump}`, `필살기 "${m.superText}"`]);
   }

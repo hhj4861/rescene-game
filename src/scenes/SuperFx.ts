@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
-import { playerTex } from '../core/AssetKeys';
 import { sayMeme, sfx } from '../audio/audioSession';
 import { MEMES } from '../data/index';
 import type { MemberDef } from '../data/schema';
 import { style } from '../ui/textStyles';
+import { addPortrait } from '../ui/portrait';
 
 /** 연출 전체 길이(스펙 §5: 1.2초, 전부 무적·적 정지). */
 export const SUPER_TOTAL_MS = 1200;
@@ -30,7 +30,7 @@ export const SuperFx = {
 
     const overlay = scene.add.rectangle(0, 0, W, H, 0x000000, 0.55).setOrigin(0).setScrollFactor(0).setDepth(100);
     const stripe = scene.add.rectangle(W / 2, H / 2, W, 150, tint, 0.35).setScrollFactor(0).setDepth(100);
-    const cutin = scene.add.sprite(W + 140, H / 2 + 30, playerTex(member.id), 0).setScale(4).setScrollFactor(0).setDepth(101);
+    const cutin = addPortrait(scene, W + 140, H / 2 + 20, member.id, 1, 3, member.color).setScrollFactor(0).setDepth(101);   // 시그니처 표정 초상화
     scene.tweens.add({ targets: cutin, x: W * 0.74, duration: CUTIN_MS, ease: 'Cubic.easeOut' });
     const parts: Phaser.GameObjects.GameObject[] = [overlay, stripe, cutin];
 

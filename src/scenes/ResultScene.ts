@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import { SCENE } from '../core/AssetKeys';
 import { getRun } from '../core/runSession';
-import { getStage, getStageByIndex } from '../data/index';
+import { getStage, getStageByIndex, getMember } from '../data/index';
 import { loadArcadeSave, persistArcadeSave } from '../core/arcadeSave';
 import { addCodex, unlockStage } from '../systems/highscore';
 import { sfx } from '../audio/audioSession';
 import { SMALL_TEXT, TITLE_TEXT, UI_TEXT, style } from '../ui/textStyles';
 import { GAME_WIDTH } from '../config';
+import { addPortrait } from '../ui/portrait';
 import type { CutsceneData } from './CutsceneScene';
 
 export interface ResultData {
@@ -44,6 +45,8 @@ export class ResultScene extends Phaser.Scene {
     persistArcadeSave(save);
 
     this.add.text(GAME_WIDTH / 2, 60, `${stage.name} 클리어!`, TITLE_TEXT).setOrigin(0.5);
+    const member = getMember(run.state.member);
+    addPortrait(this, 150, 270, member.id, 1, 3, member.color);   // 시그니처 표정 = 승리
 
     const rows = [
       `처치 ${this.args.kills}마리`,
