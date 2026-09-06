@@ -1,117 +1,212 @@
 import Phaser from 'phaser';
 import { SCENE } from '../core/AssetKeys';
-import { getSession } from '../core/session';
-import { getMap, getMember, getMeme, getQuest, getSkill } from '../data/index';
-import { describeObjective } from '../systems/questText';
+import { TEX2, lifeTex } from '../core/ArcadeAssetKeys';
+import { loadArcadeSave } from '../core/arcadeSave';
+import { getRun } from '../core/runSession';
+import { sfx } from '../audio/audioSession';
+import { getMeme, getMember } from '../data/index';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { Bar } from '../ui/Bar';
-import { ToastQueue } from '../ui/Toast';
-import { SMALL_TEXT, style } from '../ui/textStyles';
-import type { WorldScene } from './WorldScene';
+import { style } from '../ui/textStyles';
+import type { HudBossInfo, HudCheer, HudClear, WorldScene } from './WorldScene';
 
-const SLOT_KEYS = ['A', 'S', 'D'] as const;
+const MAX_LIFE_ICONS = 5;
+const GO_MS = 1500;
+const CARD_MS = 1500;
+const CHEER_MS = 2500;
+const RAINBOW = [0xf7768e, 0xff9e64, 0xe0af68, 0x9ece6a, 0x7dcfff, 0x7aa2f7, 0xbb9af7];
+const GAUGE_COLOR = 0xbb9af7;
+const CX = GAME_WIDTH / 2;
 
+const pad7 = (n: number): string => String(Math.max(0, Math.min(9_999_999, Math.floor(n)))).padStart(7, '0');
+const stroked = (size: number, color: string, extra: Partial<Phaser.Types.GameObjects.Text.TextStyle> = {}) =>
+  style(size, color, { stroke: '#000000', strokeThickness: 3, ...extra });
+
+/** 아케이드 HUD: 얼굴·하트·목숨 / 점수·HI / 게이지 / 콤보·GO·보스 이름·카드 자막 / 보스 바. 숫자는 점수뿐. */
 export class HudScene extends Phaser.Scene {
-  private hp!: Bar;
-  private mp!: Bar;
-  private xp!: Bar;
-  private level!: Phaser.GameObjects.Text;
-  private hearts!: Phaser.GameObjects.Text;
-  private fame!: Phaser.GameObjects.Text;
-  private mapName!: Phaser.GameObjects.Text;
-  private tracker!: Phaser.GameObjects.Text;
-  private slots: { box: Phaser.GameObjects.Rectangle; name: Phaser.GameObjects.Text; cd: Phaser.GameObjects.Text }[] = [];
-  private toasts!: ToastQueue;
-  private unsubs: (() => void)[] = [];
-  private bossBar!: Bar;
+  private lives: Phaser.GameObjects.Image[] = [];
+  private hearts: Phaser.GameObjects.Image[] = [];
+  private score!: Phaser.GameObjects.Text;
+  private gauge!: Bar;
+  private superMark!: Phaser.GameObjects.Text;
+  private combo!: Phaser.GameObjects.Text;
+  private go!: Phaser.GameObjects.Sprite;
   private bossName!: Phaser.GameObjects.Text;
+  private bossBar!: Bar;
+  private cardText!: Phaser.GameObjects.Text;
+  private cheerText!: Phaser.GameObjects.Text;
+  private clearText!: Phaser.GameObjects.Text;
+  private unsubs: (() => void)[] = [];
+  private worldListeners: [string, (...args: never[]) => void][] = [];
+  private goUntil = 0;
+  private cardUntil = 0;
+  private cheerUntil = 0;
+  private rainbowAt = 0;
+  private rainbowIdx = 0;
 
   constructor() {
     super(SCENE.hud);
   }
 
   create(): void {
-    const gs = getSession(this).gs;
-    const barY = GAME_HEIGHT - 64;
-    this.add.rectangle(0, barY, GAME_WIDTH, 64, 0x16161e, 0.85).setOrigin(0, 0);
+    const run = getRun(this);
+    const member = getMember(run.state.member);
+    const memberId = member.id;
 
-    this.level = this.add.text(12, barY + 8, '', style(14, '#ffffff', { fontStyle: 'bold' }));
-    this.hp = new Bar(this, 12, barY + 36, 180, 14, '#f7768e');
-    this.mp = new Bar(this, 12, barY + 52, 180, 10, '#7aa2f7');
-    this.xp = new Bar(this, 0, GAME_HEIGHT - 3, GAME_WIDTH, 4, '#ffd166', false);
-    this.hearts = this.add.text(210, barY + 8, '', style(14, '#f7768e'));
-    this.fame = this.add.text(210, barY + 28, '', SMALL_TEXT);
+    // 좌상: 얼굴(머리 3배) + 하트 + 목숨
+    this.add.image(14, 12, lifeTex(memberId)).setOrigin(0).setScale(3);
+    this.add.text(70, 12, member.name, stroked(13, '#ffffff', { fontStyle: 'bold' }));
+    this.hearts = [];
+    this.lives = Array.from({ length: MAX_LIFE_ICONS }, (_, i) => this.add.image(70 + i * 20, 52, lifeTex(memberId)).setOrigin(0, 0.5).setScale(1.25));
 
-    this.slots = SLOT_KEYS.map((k, i) => {
-      const x = 340 + i * 96;
-      const box = this.add.rectangle(x, barY + 32, 84, 44, 0x24283b).setStrokeStyle(1, 0x565f89);
-      this.add.text(x - 38, barY + 12, k, style(11, '#ffd166', { fontStyle: 'bold' }));
-      const name = this.add.text(x, barY + 30, '', style(11, '#c0caf5', { align: 'center', wordWrap: { width: 80 } })).setOrigin(0.5);
-      const cd = this.add.text(x, barY + 46, '', style(10, '#a9b1d6')).setOrigin(0.5);
-      return { box, name, cd };
-    });
+    // 우상: 점수 + HI
+    this.score = this.add.text(GAME_WIDTH - 16, 10, pad7(0), stroked(26, '#ffffff', { fontStyle: 'bold', strokeThickness: 4 })).setOrigin(1, 0);
+    const hi = loadArcadeSave().highscores[0]?.score ?? 0;
+    this.add.text(GAME_WIDTH - 16, 44, `HI ${pad7(hi)}`, stroked(13, '#ffd166')).setOrigin(1, 0);
 
-    this.add.text(GAME_WIDTH - 12, barY - 8, '←→ 이동  Space 점프  ↑ 상호작용/사다리  ↓+Space 내려가기  A 공격  S/D 스킬  F 회복', SMALL_TEXT).setOrigin(1, 1);
-    this.mapName = this.add.text(8, 8, '', style(14, '#ffffff', { stroke: '#000000', strokeThickness: 3 }));
-    this.tracker = this.add.text(GAME_WIDTH - 8, 8, '', style(12, '#c0caf5', { align: 'right', stroke: '#000000', strokeThickness: 3 })).setOrigin(1, 0);
+    // 하단 중앙: 리센느 게이지
+    this.add.text(CX - 106, GAME_HEIGHT - 22, 'S', stroked(13, '#bb9af7', { fontStyle: 'bold' })).setOrigin(1, 0.5);
+    this.gauge = new Bar(this, CX - 100, GAME_HEIGHT - 22, 200, 12, '#bb9af7', false);
+    this.superMark = this.add.text(CX + 108, GAME_HEIGHT - 22, 'S!', stroked(18, '#ffd166', { fontStyle: 'bold' })).setOrigin(0, 0.5).setVisible(false);
 
-    this.bossName = this.add.text(GAME_WIDTH / 2, 70, '', style(14, '#bb9af7', { fontStyle: 'bold', stroke: '#000000', strokeThickness: 3 })).setOrigin(0.5).setVisible(false);
-    this.bossBar = new Bar(this, GAME_WIDTH / 2 - 200, 92, 400, 12, '#bb9af7');
+    // 중앙 상단: 보스 이름 · 콤보 · GO · 클리어 · 카드 자막
+    this.bossName = this.add.text(CX, 24, '', stroked(16, '#bb9af7', { fontStyle: 'bold' })).setOrigin(0.5).setVisible(false);
+    this.combo = this.add.text(CX, 72, '', stroked(30, '#ffd166', { fontStyle: 'bold', strokeThickness: 4 })).setOrigin(0.5).setVisible(false);
+    this.go = this.add.sprite(CX, 130, TEX2.go).setScale(3).setVisible(false);
+    this.go.play(`${TEX2.go}_anim`);
+    this.clearText = this.add.text(CX, 200, '', stroked(34, '#ffffff', { fontStyle: 'bold', strokeThickness: 5, align: 'center' })).setOrigin(0.5).setVisible(false);
+    this.cardText = this.add.text(CX, 260, '', stroked(26, '#ffffff', { fontStyle: 'bold', strokeThickness: 5, align: 'center', wordWrap: { width: 700 } })).setOrigin(0.5).setVisible(false);
+    this.cheerText = this.add.text(CX, GAME_HEIGHT - 72, '', stroked(14, '#c0caf5')).setOrigin(0.5).setVisible(false);
+
+    // 하단: 보스 체력 바(페이즈 구분선은 hud:boss 에서)
+    this.bossBar = new Bar(this, CX - 200, GAME_HEIGHT - 46, 400, 12, '#bb9af7', false);
     this.bossBar.setVisible(false);
 
-    this.toasts = new ToastQueue(this, GAME_WIDTH / 2, 40);
+    this.add.text(GAME_WIDTH - 12, GAME_HEIGHT - 8, '←→ 이동  Space 점프(2단)  ↑↓ 사다리  ↓+Space 내려가기  A 공격  S 필살기  M 음소거', stroked(11, '#a9b1d6')).setOrigin(1, 1);
+
     this.unsubs = [
-      gs.bus.on('changed', () => this.refresh()),
-      gs.bus.on('questStarted', ({ questId }) => this.toasts.push(`퀘스트 수락: ${getQuest(questId).title}`, '#7dcfff')),
-      gs.bus.on('questCompleted', ({ questId, reward }) => this.toasts.push(`퀘스트 완료: ${getQuest(questId).title}  +${reward.xp ?? 0} EXP  +${reward.hearts ?? 0} ♥`, '#ffd166')),
-      gs.bus.on('memeUnlocked', ({ memeId }) => this.toasts.push(`유행어 획득: "${getMeme(memeId).text}"`, '#bb9af7')),
-      gs.bus.on('levelup', ({ level }) => this.toasts.push(`LEVEL UP! Lv.${level}`, '#9ece6a')),
+      run.bus.on('changed', () => this.refresh()),
+      run.bus.on('lifeLost', () => this.refresh()),
+      run.bus.on('gaugeFull', () => this.onGaugeFull()),
+      run.bus.on('combo', ({ count }) => this.showCombo(count)),
+      run.bus.on('card', ({ memeId }) => this.showCard(memeId)),
     ];
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubs.forEach((u) => u()));
+    this.listenWorld('hud:go', () => this.showGo());
+    this.listenWorld('hud:boss', (info: HudBossInfo) => this.setBoss(info));
+    this.listenWorld('hud:cheer', (c: HudCheer) => this.showCheer(c));
+    this.listenWorld('hud:clear', (c: HudClear) => this.showClear(c));
+    this.listenWorld('hud:reset', () => this.reset());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      for (const u of this.unsubs) u();
+      this.unsubs = [];
+      const world = this.scene.get(SCENE.world);
+      for (const [key, fn] of this.worldListeners) world?.events.off(key, fn);
+      this.worldListeners = [];
+    });
     this.refresh();
   }
 
+  private listenWorld<T>(key: string, fn: (payload: T) => void): void {
+    const world = this.scene.get(SCENE.world);
+    if (!world) return;
+    world.events.on(key, fn);
+    this.worldListeners.push([key, fn as (...args: never[]) => void]);
+  }
+
+  // ---------- 표시 ----------
+
   private refresh(): void {
-    const gs = getSession(this).gs;
-    const max = gs.maxStats();
-    const p = gs.player;
-    const member = getMember(p.member);
-    this.mapName.setText(getMap(gs.location.mapId).name);
-    this.level.setText(`${member.name}  Lv.${p.level}  SP ${p.sp}`);
-    this.hp.set(p.hp / max.hp, `체력 ${p.hp}/${max.hp}`);
-    this.mp.set(p.mp / max.mp, `기력 ${p.mp}/${max.mp}`);
-    const need = Number.isFinite(gs.xpNeeded()) ? gs.xpNeeded() : 1;
-    this.xp.set(p.xp / need);
-    this.hearts.setText(`♥ ${gs.hearts}`);
-    this.fame.setText(`인지도 ${gs.fame}`);
-    member.skills.slice(0, 3).forEach((sid, i) => {
-      const s = getSkill(sid);
-      const slot = this.slots[i]!;
-      slot.name.setText(p.level >= s.level ? s.name : `${s.name}\n(Lv.${s.level})`).setAlpha(p.level >= s.level ? 1 : 0.4);
-    });
-    const lines = gs.quests.activeQuests().map((q) => {
-      const prog = gs.quests.progress(q.id);
-      const done = gs.quests.status(q.id) === 'completable';
-      return [`${done ? '✔ ' : ''}${q.title}`, ...q.objectives.map((o, i) => `  ${describeObjective(o, prog[i] ?? 0)}`)].join('\n');
-    });
-    this.tracker.setText(lines.join('\n\n'));
+    const s = getRun(this).state;
+    this.lives.forEach((img, i) => img.setVisible(i < s.lives));
+    while (this.hearts.length < s.maxHearts) {
+      const i = this.hearts.length;
+      this.hearts.push(this.add.image(70 + i * 26, 34, TEX2.hudHeartFull).setOrigin(0, 0.5).setScale(2));
+    }
+    this.hearts.forEach((img, i) => img.setVisible(i < s.maxHearts).setTexture(i < s.hearts ? TEX2.hudHeartFull : TEX2.hudHeartEmpty));
+    this.score.setText(pad7(s.score));
+    this.gauge.set(s.gauge / 100);
+    const full = s.gauge >= 100;
+    this.superMark.setVisible(full);
+    if (!full) this.gauge.setFillColor(GAUGE_COLOR);
+  }
+
+  private onGaugeFull(): void {
+    sfx(this, 'gauge');
+    this.tweens.add({ targets: this.superMark, scale: 1.6, duration: 120, yoyo: true, repeat: 2 });
+  }
+
+  private showCombo(count: number): void {
+    if (count <= 0) {
+      this.combo.setVisible(false);
+      return;
+    }
+    this.combo.setText(`x${count}`).setVisible(true).setScale(1.5);
+    this.tweens.add({ targets: this.combo, scale: 1, duration: 160, ease: 'Back.easeOut' });
+  }
+
+  private showGo(): void {
+    this.goUntil = this.time.now + GO_MS;
+    this.go.setVisible(true).setAlpha(1);
+    this.tweens.add({ targets: this.go, alpha: 0.2, duration: 180, yoyo: true, repeat: 4 });
+  }
+
+  private setBoss(info: HudBossInfo): void {
+    const on = !!info;
+    this.bossName.setVisible(on);
+    this.bossBar.setVisible(on);
+    if (!info) return;
+    this.bossName.setText(info.name);
+    this.bossBar.setTicks(info.phases.map((p) => p.hpRatio));
+    this.bossBar.set(1);
+    this.bossBar.setVisible(true);
+  }
+
+  private showCheer(c: HudCheer): void {
+    this.cheerUntil = this.time.now + CHEER_MS;
+    this.cheerText.setText(`${c.name}: “${c.text}”`).setVisible(true);
+  }
+
+  private showCard(memeId: string): void {
+    const meme = getMeme(memeId);
+    this.cardUntil = this.time.now + CARD_MS;
+    this.cardText.setText(`“${meme.text}”`).setColor(getMember(meme.member).color).setVisible(true).setScale(0.6);
+    this.tweens.add({ targets: this.cardText, scale: 1, duration: 200, ease: 'Back.easeOut' });
+  }
+
+  private showClear(c: HudClear): void {
+    this.clearText.setText(c.noHit ? 'STAGE CLEAR!\nNO HIT!' : 'STAGE CLEAR!').setVisible(true).setScale(0.5);
+    this.tweens.add({ targets: this.clearText, scale: 1, duration: 300, ease: 'Back.easeOut' });
+    this.setBoss(null);
+  }
+
+  /** WorldScene 재시작 때(구간 재도전) 남아 있던 표시를 지운다. */
+  private reset(): void {
+    this.setBoss(null);
+    this.go.setVisible(false);
+    this.combo.setVisible(false);
+    this.cardText.setVisible(false);
+    this.cheerText.setVisible(false);
+    this.clearText.setVisible(false);
+    this.goUntil = this.cardUntil = this.cheerUntil = 0;
+    this.refresh();
   }
 
   update(): void {
-    const gs = getSession(this).gs;
     const now = this.time.now;
-    getMember(gs.player.member).skills.slice(0, 3).forEach((sid, i) => {
-      const until = gs.skillRuntime.cooldownUntil[sid] ?? 0;
-      const left = Math.max(0, until - now);
-      this.slots[i]!.cd.setText(left > 0 ? `${(left / 1000).toFixed(1)}s` : '');
-      this.slots[i]!.box.setFillStyle(left > 0 ? 0x1a1b26 : 0x24283b);
-    });
-    const boss = (this.scene.get(SCENE.world) as WorldScene).activeBoss();
-    this.bossName.setVisible(!!boss);
-    this.bossBar.setVisible(!!boss);
-    if (boss) {
-      this.bossName.setText(`${boss.def.name} — ${['', '보컬', '댄스', '랩'][boss.phase]}`);
-      this.bossBar.set(boss.hp / boss.def.hp, `${Math.max(0, boss.hp)}/${boss.def.hp}`);
+    if (this.go.visible && now >= this.goUntil) this.go.setVisible(false);
+    if (this.cardText.visible && now >= this.cardUntil) this.cardText.setVisible(false);
+    if (this.cheerText.visible && now >= this.cheerUntil) this.cheerText.setVisible(false);
+
+    if (getRun(this).state.gauge >= 100 && now >= this.rainbowAt) {
+      this.rainbowAt = now + 80;
+      this.rainbowIdx = (this.rainbowIdx + 1) % RAINBOW.length;
+      this.gauge.setFillColor(RAINBOW[this.rainbowIdx]!);
+    }
+
+    const boss = (this.scene.get(SCENE.world) as WorldScene | null)?.activeBoss() ?? null;
+    if (boss && this.bossBar) {
+      this.bossBar.set(Math.max(0, boss.hp) / boss.maxHp);
+      this.bossName.setText(`${boss.def.name} — ${boss.phaseName()}`);
     }
   }
 }
