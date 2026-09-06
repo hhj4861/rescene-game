@@ -1,20 +1,6 @@
-// T1(data-v2)이 아직 `../data/schema`에 SectionDef/WaveDef를 추가하지 않아 로컬로 선언한다.
-// T1 머지 후 리드가 `import type { SectionDef, WaveDef } from '../data/schema';`로 교체한다.
-export interface WaveDef {
-  spawn: string;
-  enemy: string;
-  count: number;
-  intervalMs: number;
-  elite?: boolean;
-}
+import type { SectionDef, WaveDef } from '../data/schema';
 
-export interface SectionDef {
-  lock: string;
-  spawn: string;
-  waves: WaveDef[];
-  chest?: boolean;
-  cheer?: { npc: string; spawn: string; text: string };
-}
+export type { SectionDef, WaveDef };
 
 export type SectionPhase = 'locked' | 'cleared' | 'open';
 

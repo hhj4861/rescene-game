@@ -1,6 +1,6 @@
-// T1(data-v2)이 아직 `../data/schema`에 BuffKey를 추가하지 않아 로컬로 선언한다.
-// T1 머지 후 리드가 import로 교체한다.
-export type BuffKey = 'atk' | 'spd' | 'jump' | 'gauge' | 'heart' | 'combo' | 'score';
+import type { BuffKey } from '../data/schema';
+
+export type { BuffKey };
 
 export interface BuffTotals {
   atk: number;
