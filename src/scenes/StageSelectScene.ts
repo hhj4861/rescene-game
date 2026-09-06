@@ -10,6 +10,7 @@ export class StageSelectScene extends Phaser.Scene {
   private index = 0;
   private unlocked = 1;
   private rows: Phaser.GameObjects.Text[] = [];
+  private navigating = false;
 
   constructor() {
     super(SCENE.stageSelect);
@@ -17,6 +18,7 @@ export class StageSelectScene extends Phaser.Scene {
 
   create(): void {
     this.index = 0;
+    this.navigating = false;
     this.unlocked = Math.min(loadArcadeSave().unlockedStages, STAGES.length);
 
     this.add.text(GAME_WIDTH / 2, 70, '스테이지 셀렉트', TITLE_TEXT).setOrigin(0.5);
@@ -28,7 +30,7 @@ export class StageSelectScene extends Phaser.Scene {
     kb.on('keydown-UP', () => this.move(-1));
     kb.on('keydown-DOWN', () => this.move(1));
     kb.on('keydown-ENTER', () => this.confirm());
-    kb.on('keydown-ESC', () => this.scene.start(SCENE.title));
+    kb.on('keydown-ESC', () => this.back());
   }
 
   private label(index: number, name: string, era: string): string {
@@ -36,9 +38,16 @@ export class StageSelectScene extends Phaser.Scene {
   }
 
   private move(delta: number): void {
+    if (this.navigating) return;
     this.index = Phaser.Math.Clamp(this.index + delta, 0, this.unlocked - 1);
     sfx(this, 'menu');
     this.render();
+  }
+
+  private back(): void {
+    if (this.navigating) return;
+    this.navigating = true;
+    this.scene.start(SCENE.title);
   }
 
   private render(): void {
@@ -50,8 +59,10 @@ export class StageSelectScene extends Phaser.Scene {
   }
 
   private confirm(): void {
+    if (this.navigating) return;
     const stage = STAGES[this.index]!;
     if (stage.index > this.unlocked) return;
+    this.navigating = true;
     sfx(this, 'menu');
     this.scene.start(SCENE.select, { stageIndex: stage.index });
   }

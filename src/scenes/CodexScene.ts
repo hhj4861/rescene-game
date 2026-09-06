@@ -13,6 +13,7 @@ export class CodexScene extends Phaser.Scene {
   private frontText!: Phaser.GameObjects.Text;
   private backText!: Phaser.GameObjects.Text;
   private progressText!: Phaser.GameObjects.Text;
+  private navigating = false;
 
   constructor() {
     super(SCENE.codex);
@@ -20,6 +21,7 @@ export class CodexScene extends Phaser.Scene {
 
   create(): void {
     this.index = 0;
+    this.navigating = false;
     this.codex = loadArcadeSave().codex;
 
     this.add.text(GAME_WIDTH / 2, 60, '리센느 사전', TITLE_TEXT).setOrigin(0.5);
@@ -37,10 +39,17 @@ export class CodexScene extends Phaser.Scene {
     kb.on('keydown-LEFT', () => this.move(-1));
     kb.on('keydown-RIGHT', () => this.move(1));
     kb.on('keydown-ENTER', () => this.speak());
-    kb.on('keydown-ESC', () => this.scene.start(SCENE.title));
+    kb.on('keydown-ESC', () => this.back());
+  }
+
+  private back(): void {
+    if (this.navigating) return;
+    this.navigating = true;
+    this.scene.start(SCENE.title);
   }
 
   private move(delta: number): void {
+    if (this.navigating) return;
     this.index = (this.index + delta + MEMES.length) % MEMES.length;
     sfx(this, 'menu');
     this.render();
@@ -56,6 +65,7 @@ export class CodexScene extends Phaser.Scene {
   }
 
   private speak(): void {
+    if (this.navigating) return;
     const meme = MEMES[this.index]!;
     if (!this.codex.includes(meme.id)) return;
     sayMeme(this, meme.id, meme.text, getMember(meme.member).voice);

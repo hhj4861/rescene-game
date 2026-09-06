@@ -14,6 +14,7 @@ export class CharacterSelectScene extends Phaser.Scene {
   private stageIndex = 1;
   private cards: Phaser.GameObjects.Container[] = [];
   private detail!: Phaser.GameObjects.Text;
+  private navigating = false;
 
   constructor() {
     super(SCENE.select);
@@ -22,6 +23,7 @@ export class CharacterSelectScene extends Phaser.Scene {
   init(data: { stageIndex?: number } | undefined): void {
     this.stageIndex = data?.stageIndex ?? 1;
     this.index = 0;
+    this.navigating = false;
   }
 
   create(): void {
@@ -43,10 +45,17 @@ export class CharacterSelectScene extends Phaser.Scene {
     kb.on('keydown-LEFT', () => this.move(-1));
     kb.on('keydown-RIGHT', () => this.move(1));
     kb.on('keydown-ENTER', () => this.confirm());
-    kb.on('keydown-ESC', () => this.scene.start(SCENE.title));
+    kb.on('keydown-ESC', () => this.back());
+  }
+
+  private back(): void {
+    if (this.navigating) return;
+    this.navigating = true;
+    this.scene.start(SCENE.title);
   }
 
   private move(delta: number): void {
+    if (this.navigating) return;
     this.index = (this.index + delta + MEMBERS.length) % MEMBERS.length;
     sfx(this, 'menu');
     this.render();
@@ -59,6 +68,8 @@ export class CharacterSelectScene extends Phaser.Scene {
   }
 
   private confirm(): void {
+    if (this.navigating) return;
+    this.navigating = true;
     sfx(this, 'menu');
     const m = MEMBERS[this.index]!;
     const stage = getStageByIndex(this.stageIndex) ?? getStageByIndex(1)!;

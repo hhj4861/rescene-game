@@ -21,6 +21,7 @@ export class CutsceneScene extends Phaser.Scene {
   private lines: string[] = [];
   private title = '';
   private index = 0;
+  private finished = false;
 
   constructor() {
     super(SCENE.cutscene);
@@ -29,6 +30,7 @@ export class CutsceneScene extends Phaser.Scene {
   init(data: CutsceneData): void {
     this.args = data;
     this.index = 0;
+    this.finished = false;
   }
 
   create(): void {
@@ -61,6 +63,7 @@ export class CutsceneScene extends Phaser.Scene {
   }
 
   private advance(): void {
+    if (this.finished) return;
     if (this.index >= this.lines.length) {
       this.finish();
       return;
@@ -73,6 +76,7 @@ export class CutsceneScene extends Phaser.Scene {
   }
 
   private finish(): void {
+    this.finished = true;
     const next = this.args.next;
     if ('resume' in next) {
       this.scene.stop();

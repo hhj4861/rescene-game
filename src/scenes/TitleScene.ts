@@ -14,6 +14,7 @@ export class TitleScene extends Phaser.Scene {
   private selected = 0;
   private rows: Phaser.GameObjects.Text[] = [];
   private muted = false;
+  private navigating = false;
 
   constructor() {
     super(SCENE.title);
@@ -21,6 +22,7 @@ export class TitleScene extends Phaser.Scene {
 
   create(): void {
     this.selected = 0;
+    this.navigating = false;
     const toast = new ToastQueue(this, GAME_WIDTH / 2, GAME_HEIGHT - 108);
     this.clearLegacySaves(toast);
 
@@ -73,6 +75,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private move(delta: number): void {
+    if (this.navigating) return;
     this.selected = (this.selected + delta + MENU_ITEMS.length) % MENU_ITEMS.length;
     sfx(this, 'menu');
     this.render();
@@ -83,12 +86,15 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private toggleMute(): void {
+    if (this.navigating) return;
     this.muted = !this.muted;
     getAudio(this)?.setMuted(this.muted);
     persistArcadeSave(setMuted(loadArcadeSave(), this.muted));
   }
 
   private confirm(): void {
+    if (this.navigating) return;
+    this.navigating = true;
     sfx(this, 'menu');
     if (this.selected === 0) this.scene.start(SCENE.select);
     else if (this.selected === 1) this.scene.start(SCENE.stageSelect);

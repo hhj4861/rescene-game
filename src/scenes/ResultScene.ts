@@ -22,6 +22,7 @@ const ROW_DELAY_MS = 500;
 export class ResultScene extends Phaser.Scene {
   private args!: ResultData;
   private done = false;
+  private navigating = false;
 
   constructor() {
     super(SCENE.result);
@@ -30,6 +31,7 @@ export class ResultScene extends Phaser.Scene {
   init(data: ResultData): void {
     this.args = data;
     this.done = false;
+    this.navigating = false;
   }
 
   create(): void {
@@ -69,7 +71,8 @@ export class ResultScene extends Phaser.Scene {
   }
 
   private proceed(): void {
-    if (!this.done) return;
+    if (!this.done || this.navigating) return;
+    this.navigating = true;
     const stage = getStage(this.args.stageId);
     const next = getStageByIndex(stage.index + 1);
     if (next) {

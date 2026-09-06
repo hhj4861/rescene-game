@@ -21,6 +21,7 @@ export class NameEntryScene extends Phaser.Scene {
   private letters: number[] = [0, 0, 0];
   private cursor = 0;
   private texts: Phaser.GameObjects.Text[] = [];
+  private navigating = false;
 
   constructor() {
     super(SCENE.nameEntry);
@@ -30,6 +31,7 @@ export class NameEntryScene extends Phaser.Scene {
     this.args = data;
     this.letters = [0, 0, 0];
     this.cursor = 0;
+    this.navigating = false;
   }
 
   create(): void {
@@ -51,12 +53,14 @@ export class NameEntryScene extends Phaser.Scene {
   }
 
   private moveCursor(delta: number): void {
+    if (this.navigating) return;
     this.cursor = (this.cursor + delta + SLOTS) % SLOTS;
     sfx(this, 'menu');
     this.render();
   }
 
   private cycle(delta: number): void {
+    if (this.navigating) return;
     const n = CHARSET.length;
     this.letters[this.cursor] = (this.letters[this.cursor]! + delta + n) % n;
     sfx(this, 'menu');
@@ -71,6 +75,8 @@ export class NameEntryScene extends Phaser.Scene {
   }
 
   private confirm(): void {
+    if (this.navigating) return;
+    this.navigating = true;
     const initials = sanitizeInitials(this.letters.map((i) => CHARSET[i]!).join(''));
     const entry: HighscoreEntry = {
       initials,
