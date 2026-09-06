@@ -39,6 +39,9 @@ const DEATH_FADE_MS = 900;
 const STAGE_CLEAR_HOLD_MS = 1800;
 const CHEST_CARD_CHANCE = 0.3;
 const CHEST_OPEN_DELAY_MS = 350;
+const WORLD_BG = '#1f2335';
+/** 트로피 수호자 페이즈별 무대 배경색(더쇼 → 음악중심 → 인기가요). */
+const TROPHY_STAGE_BG = ['#1a1b26', '#241a2e', '#2a1a1a'] as const;
 
 export class WorldScene extends Phaser.Scene {
   private stageId!: string;
@@ -103,7 +106,7 @@ export class WorldScene extends Phaser.Scene {
     this.lockBar = this.add.rectangle(0, 0, 6, this.map.heightInPixels, 0xf7768e, 0.35).setOrigin(1, 0).setDepth(5).setVisible(false);
     this.applyBounds(0, this.map.widthInPixels, false);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
-    this.cameras.main.setBackgroundColor('#1f2335');
+    this.cameras.main.setBackgroundColor(WORLD_BG);
 
     const member = this.run.state.member;
     this.stage.sections.forEach((sec, i) => {
@@ -273,11 +276,19 @@ export class WorldScene extends Phaser.Scene {
 
   /** 스테이지 보스·중간보스 공통: 페이즈 연출과 HUD 보스 바. */
   private onBossSpawned(boss: Boss, kind: BossKind): void {
-    boss.onPhaseChange = (_phase, name) => {
+    const trophy = boss.def.gimmick === 'trophy';
+    boss.onPhaseChange = (phase, name) => {
       sfx(this, 'boss_phase');
       floatText(this, boss.x, boss.y - boss.displayHeight - 20, name, '#bb9af7', 18);
+      if (trophy) this.setStageBg(phase);
     };
+    if (trophy) this.setStageBg(0);
     this.events.emit('hud:boss', { name: boss.def.name, phases: boss.phases, mid: kind === 'mid' } satisfies HudBossInfo);
+  }
+
+  /** 트로피 수호자: 페이즈마다 무대 배경색을 바꾼다(타일셋 교체가 아니라 카메라 배경, 결정 D3). */
+  private setStageBg(phase: number): void {
+    this.cameras.main.setBackgroundColor(TROPHY_STAGE_BG[Math.min(phase, TROPHY_STAGE_BG.length - 1)] ?? WORLD_BG);
   }
 
   private onBossKilled(): void {
