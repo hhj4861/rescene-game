@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import { ENEMIES, MAPS, MEMBERS, NPCS } from '../data/index';
-import { SCENE, enemyTex, mapKey, npcTex, playerTex } from '../core/AssetKeys';
+import { SCENE, enemyTex, mapKey, npcTex, playerTex, portraitTex } from '../core/AssetKeys';
 import { heartTex, lifeTex, TEX2, tilesetTex } from '../core/ArcadeAssetKeys';
-import { ENEMY_ANIMS, NPC_ANIMS, NPC_FRAME, PLAYER_ANIMS, PLAYER_FRAME, enemyAnimKey, enemySheetUrl, npcAnimKey, npcSheetUrl, playerAnimKey, playerSheetUrl, type EnemyAnim, type NpcAnim, type PlayerAnim } from '../core/spriteFrames';
+import { ENEMY_ANIMS, NPC_ANIMS, NPC_FRAME, PLAYER_ANIMS, PLAYER_FRAME, PORTRAIT_FRAME, enemyAnimKey, enemySheetUrl, npcAnimKey, npcSheetUrl, playerAnimKey, playerSheetUrl, portraitSheetUrl, type EnemyAnim, type NpcAnim, type PlayerAnim } from '../core/spriteFrames';
 import { voiceFileKey } from '../audio/VoiceFiles';
 import { makePlaceholderTextures } from '../ui/placeholders';
 import { UI_TEXT } from '../ui/textStyles';
@@ -26,6 +26,8 @@ export class PreloadScene extends Phaser.Scene {
     this.load.on('progress', (v: number) => label.setText(`불러오는 중... ${Math.round(v * 100)}%`));
     for (const m of MAPS) this.load.tilemapTiledJSON(mapKey(m.id), `assets/maps/${m.file}`);
     for (const m of MEMBERS) this.load.spritesheet(playerTex(m.id), playerSheetUrl(m.id), { frameWidth: PLAYER_FRAME.width, frameHeight: PLAYER_FRAME.height });
+    // 캐릭터 v2 C1: 멤버 초상화 64×64 × 3프레임(0 기본 · 1 시그니처 · 2 피격). 컷인·선택·결과 화면(C4)이 쓴다.
+    for (const m of MEMBERS) this.load.spritesheet(portraitTex(m.id), portraitSheetUrl(m.id), { frameWidth: PORTRAIT_FRAME.width, frameHeight: PORTRAIT_FRAME.height });
     for (const e of ENEMIES) this.load.spritesheet(enemyTex(e.id), enemySheetUrl(e.id), { frameWidth: e.width, frameHeight: e.height });
     for (const n of NPCS) this.load.spritesheet(npcTex(n.id), npcSheetUrl(n.id), { frameWidth: NPC_FRAME.width, frameHeight: NPC_FRAME.height });
     for (const p of TILE_PALETTES) this.load.image(tilesetTex(p), `assets/tiles/${p}.png`);
