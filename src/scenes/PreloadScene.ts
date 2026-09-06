@@ -25,7 +25,6 @@ export class PreloadScene extends Phaser.Scene {
     for (const m of MEMBERS) this.load.spritesheet(playerTex(m.id), playerSheetUrl(m.id), { frameWidth: PLAYER_FRAME.width, frameHeight: PLAYER_FRAME.height });
     for (const e of ENEMIES) this.load.spritesheet(enemyTex(e.id), enemySheetUrl(e.id), { frameWidth: e.width, frameHeight: e.height });
     for (const n of NPCS) this.load.spritesheet(npcTex(n.id), npcSheetUrl(n.id), { frameWidth: NPC_FRAME.width, frameHeight: NPC_FRAME.height });
-    // 기존 TEX.tiles 플레이스홀더는 create()에서 makePlaceholderTextures가 그대로 유지한다(구 맵이 아직 쓴다).
     this.load.image(tilesetTex('stage1'), 'assets/tiles/stage1.png');
     for (const m of MEMBERS) {
       this.load.spritesheet(heartTex(m.id), `assets/sprites/${heartTex(m.id)}.png`, { frameWidth: HEART_FRAME.width, frameHeight: HEART_FRAME.height });

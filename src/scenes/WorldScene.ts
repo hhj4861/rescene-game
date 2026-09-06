@@ -1,9 +1,8 @@
 import Phaser from 'phaser';
 import { SCENE, mapKey } from '../core/AssetKeys';
 import { tilesetTex } from '../core/ArcadeAssetKeys';
-import { RunStore } from '../core/RunStore';
-import { getRun, hasRun, setRun } from '../core/runSession';
-import { getSession, hasSession } from '../core/session'; // TODO(T7): 옛 세션 호환 — 제거
+import type { RunStore } from '../core/RunStore';
+import { getRun } from '../core/runSession';
 import { loadArcadeSave, persistArcadeSave } from '../core/arcadeSave';
 import { getAudio, sayMeme, sfx, speakAs } from '../audio/audioSession';
 import { getMember, getMeme, getNpc, getStage } from '../data/index';
@@ -12,7 +11,6 @@ import { NPC_VOICE } from '../data/voice';
 import { setMuted } from '../systems/highscore';
 import type { MoveConfig } from '../systems/movement';
 import { clearBonus } from '../systems/score';
-import type { MemberId } from '../systems/types';
 import type { Boss, BossPhase } from '../entities/Boss';
 import { CheerNpc } from '../entities/CheerNpc';
 import { Chest } from '../entities/Chest';
@@ -34,15 +32,13 @@ export interface HudCheer { name: string; text: string }
 export interface HudClear { noHit: boolean }
 
 const TILESET_PALETTE = 'stage1';          // 스테이지 팔레트는 지금 하나
-const FALLBACK_STAGE_ID = 's1_trainee';    // TODO(T7): 옛 Select/Cutscene 이 { mapId, spawnId } 로 들어올 때
-const FALLBACK_MEMBER: MemberId = 'woni';  // TODO(T7)
 const DEATH_FADE_MS = 900;
 const STAGE_CLEAR_HOLD_MS = 1800;
 const CHEST_CARD_CHANCE = 0.3;
 const CHEST_OPEN_DELAY_MS = 350;
 
 export class WorldScene extends Phaser.Scene {
-  private stageId = FALLBACK_STAGE_ID;
+  private stageId!: string;
   private sectionIndex: number | undefined;
   private stage!: StageDef;
   private run!: RunStore;
@@ -67,8 +63,8 @@ export class WorldScene extends Phaser.Scene {
     super(SCENE.world);
   }
 
-  init(data: Partial<WorldData>): void {
-    this.stageId = data.stageId ?? FALLBACK_STAGE_ID;
+  init(data: WorldData): void {
+    this.stageId = data.stageId;
     this.sectionIndex = data.sectionIndex;
   }
 
@@ -77,7 +73,6 @@ export class WorldScene extends Phaser.Scene {
     this.transitioning = false;
     this.superPlaying = false;
     this.cheerNpcs.clear();
-    this.ensureRun();
     this.run = getRun(this);
     this.run.restartSection();
     this.stage = getStage(this.stageId);
@@ -145,13 +140,6 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------- 런 ----------
-
-  /** TODO(T7): 옛 Title/Select 흐름(세션만 있고 런이 없음)에서도 스테이지를 돌리기 위한 임시 호환. */
-  private ensureRun(): void {
-    if (hasRun(this)) return;
-    const member: MemberId = hasSession(this) ? getSession(this).gs.player.member : FALLBACK_MEMBER;
-    setRun(this, new RunStore(member, (id) => getMeme(id).buff));
-  }
 
   private moveConfig(): MoveConfig {
     const m = getMember(this.run.state.member);

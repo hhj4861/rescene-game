@@ -2,14 +2,13 @@ import type { MemberId } from '../systems/types';
 
 export const SCENE = {
   boot: 'Boot', preload: 'Preload', title: 'Title', select: 'CharacterSelect',
-  world: 'World', hud: 'Hud', dialogue: 'Dialogue', cutscene: 'Cutscene',
+  world: 'World', hud: 'Hud', cutscene: 'Cutscene',
   result: 'Result', continue: 'Continue', gameOver: 'GameOver', nameEntry: 'NameEntry',
   codex: 'Codex', stageSelect: 'StageSelect', ending: 'Ending',
 } as const;
 
 export const TEX = {
-  tiles: 'tiles', portal: 'portal', portalLocked: 'portal_locked', savepoint: 'savepoint',
-  heart: 'drop_heart', item: 'drop_item', projectile: 'projectile', hit: 'hit',
+  projectile: 'projectile', hit: 'hit',
 } as const;
 
 export const playerTex = (member: MemberId): string => `player_${member}`;

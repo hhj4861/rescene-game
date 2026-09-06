@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const VoiceWaveSchema = z.enum(['square', 'triangle', 'sawtooth', 'pulse']);
+export type VoiceWave = z.infer<typeof VoiceWaveSchema>;
 export const VoiceProfileSchema = z.object({ baseHz: z.number().positive(), syllableMs: z.number().positive(), wave: VoiceWaveSchema, vibrato: z.number().min(0).optional() });
 export type VoiceProfile = z.infer<typeof VoiceProfileSchema>;
 export const BuffKeySchema = z.enum(['atk', 'spd', 'jump', 'gauge', 'heart', 'combo', 'score']);

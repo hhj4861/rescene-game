@@ -1,14 +1,9 @@
 // 문장을 훑어 멤버 음색 프로필에 따른 음성 블립 노트로 바꾸는 순수 함수 모음.
 // 실제 재생은 src/audio/AudioBus.ts 가 담당한다(Phaser 미의존 유지).
+// VoiceProfile/VoiceWave는 data/schema.ts가 원본이다(중복 선언 통일, T7).
+import type { VoiceProfile, VoiceWave } from '../data/schema';
 
-export type VoiceWave = 'square' | 'triangle' | 'sawtooth' | 'pulse';
-
-export interface VoiceProfile {
-  baseHz: number;
-  syllableMs: number;
-  wave: VoiceWave;
-  vibrato?: number;
-}
+export type { VoiceProfile, VoiceWave };
 
 export interface VoiceNote {
   at: number;
