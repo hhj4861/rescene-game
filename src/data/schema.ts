@@ -2,7 +2,17 @@ import { z } from 'zod';
 
 export const VoiceWaveSchema = z.enum(['square', 'triangle', 'sawtooth', 'pulse']);
 export type VoiceWave = z.infer<typeof VoiceWaveSchema>;
-export const VoiceProfileSchema = z.object({ baseHz: z.number().positive(), syllableMs: z.number().positive(), wave: VoiceWaveSchema, vibrato: z.number().min(0).optional() });
+// 문장 끝 억양: fall = 마지막 노트 -3반음, rise = +3, bounce = 노트마다 짝수 +1/홀수 -1 교대, flat = 변화 없음.
+export const VoiceAccentSchema = z.enum(['fall', 'rise', 'flat', 'bounce']);
+export type VoiceAccent = z.infer<typeof VoiceAccentSchema>;
+export const VoiceProfileSchema = z.object({
+  baseHz: z.number().positive(),
+  syllableMs: z.number().positive(),
+  wave: VoiceWaveSchema,
+  vibrato: z.number().min(0).optional(),
+  accent: VoiceAccentSchema.optional(),
+  spread: z.number().positive().optional(), // 음절 semitone 배율, 기본 1
+});
 export type VoiceProfile = z.infer<typeof VoiceProfileSchema>;
 export const BuffKeySchema = z.enum(['atk', 'spd', 'jump', 'gauge', 'heart', 'combo', 'score']);
 export type BuffKey = z.infer<typeof BuffKeySchema>;
@@ -28,6 +38,15 @@ export type StageDef = z.infer<typeof StageDefSchema>;
 export const StatKeySchema = z.enum(['hp', 'mp', 'atk', 'def', 'spd', 'luk']);
 export const MemberIdSchema = z.enum(['woni', 'liv', 'minami', 'may', 'zena']);
 
+// 멤버 말버릇 대사 4종, 각 3문장 이상. 창작 문장(실제 발언 인용 금지), 말풍선용 30자 이내.
+export const MemberLinesSchema = z.object({
+  cheer: z.array(z.string().min(1)).min(3), // 응원 NPC로 등장할 때
+  win: z.array(z.string().min(1)).min(3), // 결과 화면
+  hurt: z.array(z.string().min(1)).min(3), // 피격 말풍선(20% 확률)
+  card: z.array(z.string().min(1)).min(3), // 카드 획득 시 한 마디
+});
+export type MemberLines = z.infer<typeof MemberLinesSchema>;
+
 export const MemberDefSchema = z.object({
   id: MemberIdSchema,
   name: z.string().min(1),
@@ -43,6 +62,7 @@ export const MemberDefSchema = z.object({
   superSkill: z.string().min(1),
   superText: z.string().min(1),
   voice: VoiceProfileSchema,
+  lines: MemberLinesSchema,
 });
 export type MemberDef = z.infer<typeof MemberDefSchema>;
 

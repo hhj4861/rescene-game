@@ -43,12 +43,36 @@ function shiftFreq(freq: number, semitoneDelta: number): number {
   return toFreq(freq, semitoneDelta);
 }
 
+type PendingMark = { type: '!' | '?' | '~'; index: number };
+
+/** 문장 끝 억양(accent)을 notes 배열 전체에 적용한다. spread가 적용된 뒤, !·?·~ 보다 먼저 실행된다. */
+function applyAccent(notes: VoiceNote[], accent: VoiceProfile['accent']): void {
+  if (!accent || accent === 'flat' || notes.length === 0) return;
+  if (accent === 'fall') {
+    const last = notes[notes.length - 1]!;
+    last.freq = shiftFreq(last.freq, -3);
+    return;
+  }
+  if (accent === 'rise') {
+    const last = notes[notes.length - 1]!;
+    last.freq = shiftFreq(last.freq, 3);
+    return;
+  }
+  if (accent === 'bounce') {
+    notes.forEach((note, i) => {
+      note.freq = shiftFreq(note.freq, i % 2 === 0 ? 1 : -1);
+    });
+  }
+}
+
 /**
  * 문장을 문자 단위로 훑어 VoiceNote 배열을 만든다. 결정론적: 같은 문장 + 같은 프로필 = 같은 결과.
- * 스펙 §9.1 규칙을 그대로 따른다. 최대 MAX_NOTES 개에서 끊는다.
+ * 스펙 §9.1 규칙을 그대로 따른다. 순서: 음절 semitone × spread(반올림) → accent → !·?·~. 최대 MAX_NOTES 개에서 끊는다.
  */
 export function speakNotes(text: string, profile: VoiceProfile): VoiceNote[] {
   const notes: VoiceNote[] = [];
+  const marks: PendingMark[] = [];
+  const spread = profile.spread ?? 1;
   let cursor = 0;
 
   for (const ch of text) {
@@ -60,6 +84,7 @@ export function speakNotes(text: string, profile: VoiceProfile): VoiceNote[] {
       const hasJong = jong !== 0;
       let semitone = (jung % 7) - 3 + (cho % 3);
       if (hasJong) semitone -= 1;
+      semitone = Math.round(semitone * spread);
       const durationMs = profile.syllableMs + (hasJong ? 20 : 0);
       notes.push({
         at: cursor,
@@ -77,25 +102,11 @@ export function speakNotes(text: string, profile: VoiceProfile): VoiceNote[] {
       continue;
     }
 
-    if (ch === '!') {
-      const prev = notes[notes.length - 1];
-      if (prev) prev.gain = prev.gain * 1.3;
-      continue;
-    }
-
-    if (ch === '?') {
-      const prev = notes[notes.length - 1];
-      if (prev) prev.freq = shiftFreq(prev.freq, 4);
-      continue;
-    }
-
-    if (ch === '~') {
-      const prev = notes[notes.length - 1];
-      if (prev) {
-        const extra = prev.durationMs;
-        prev.slideTo = shiftFreq(prev.freq, 2);
-        prev.durationMs = prev.durationMs * 2;
-        cursor += extra;
+    if (ch === '!' || ch === '?' || ch === '~') {
+      const targetIndex = notes.length - 1;
+      if (targetIndex >= 0) {
+        marks.push({ type: ch, index: targetIndex });
+        if (ch === '~') cursor += notes[targetIndex]!.durationMs;
       }
       continue;
     }
@@ -114,6 +125,19 @@ export function speakNotes(text: string, profile: VoiceProfile): VoiceNote[] {
     }
 
     // 그 외 문자(…, 괄호 등)는 무시한다.
+  }
+
+  applyAccent(notes, profile.accent);
+
+  for (const mark of marks) {
+    const note = notes[mark.index];
+    if (!note) continue;
+    if (mark.type === '!') note.gain = note.gain * 1.3;
+    if (mark.type === '?') note.freq = shiftFreq(note.freq, 4);
+    if (mark.type === '~') {
+      note.slideTo = shiftFreq(note.freq, 2);
+      note.durationMs = note.durationMs * 2;
+    }
   }
 
   return notes;

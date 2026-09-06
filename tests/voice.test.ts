@@ -19,4 +19,39 @@ describe('voice blips', () => {
     const n = speakNotes('가 나', woni); expect(n[1]!.at).toBe(85 + 80);
     expect(speakNotes('가'.repeat(40), woni).length).toBe(MAX_NOTES);
   });
+  it('spread scales the syllable semitone step (rounded)', () => {
+    // '가' 음절: semitone = (0 % 7) - 3 + (0 % 3) = -3, jong 없음
+    const base = speakNotes('가', woni)[0]!.freq;
+    const wide = speakNotes('가', { ...woni, spread: 2 })[0]!.freq; // -3 * 2 = -6
+    expect(wide).toBeCloseTo(base * 2 ** (-3 / 12), 1);
+  });
+  it('accent fall shifts only the last note down 3 semitones', () => {
+    const base = speakNotes('안녕', woni);
+    const fallen = speakNotes('안녕', { ...woni, accent: 'fall' });
+    expect(fallen[0]!.freq).toBeCloseTo(base[0]!.freq, 1);
+    expect(fallen.at(-1)!.freq).toBeCloseTo(base.at(-1)!.freq * 2 ** (-3 / 12), 1);
+  });
+  it('accent rise shifts only the last note up 3 semitones', () => {
+    const base = speakNotes('안녕', woni);
+    const risen = speakNotes('안녕', { ...woni, accent: 'rise' });
+    expect(risen[0]!.freq).toBeCloseTo(base[0]!.freq, 1);
+    expect(risen.at(-1)!.freq).toBeCloseTo(base.at(-1)!.freq * 2 ** (3 / 12), 1);
+  });
+  it('accent bounce alternates +1/-1 semitone by note index', () => {
+    const base = speakNotes('가나다', woni);
+    const bounced = speakNotes('가나다', { ...woni, accent: 'bounce' });
+    expect(bounced[0]!.freq).toBeCloseTo(base[0]!.freq * 2 ** (1 / 12), 2);
+    expect(bounced[1]!.freq).toBeCloseTo(base[1]!.freq * 2 ** (-1 / 12), 2);
+    expect(bounced[2]!.freq).toBeCloseTo(base[2]!.freq * 2 ** (1 / 12), 2);
+  });
+  it('accent flat leaves notes unchanged', () => {
+    const base = speakNotes('안녕', woni);
+    const flat = speakNotes('안녕', { ...woni, accent: 'flat' });
+    expect(flat).toEqual(base);
+  });
+  it('applies ? after accent so the shift stacks on the accented note', () => {
+    const risenPlain = speakNotes('가', { ...woni, accent: 'rise' })[0]!.freq;
+    const q = speakNotes('가?', { ...woni, accent: 'rise' });
+    expect(q[0]!.freq).toBeCloseTo(risenPlain * 2 ** (4 / 12), 1);
+  });
 });
