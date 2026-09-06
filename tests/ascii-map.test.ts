@@ -85,4 +85,10 @@ describe('toTiled', () => {
     const obj = tiled.layers.find((l) => l.type === 'objectgroup')!.objects!.find((o) => o.type === 'jumppad')!;
     expect(obj).toMatchObject({ name: 'pad_1', width: 32, height: 32 });
   });
+  it('emits each object layer once even when two object types share a layer', () => {
+    const tiled = toTiled(parseAsciiMap('@meta id=t\n@tiles\n####\n@objects\nspawn start 0 0\nlock lock_a 2 0\njumppad pad_1 1 0\n'));
+    const names = tiled.layers.filter((l) => l.type === 'objectgroup').map((l) => l.name);
+    expect(new Set(names).size).toBe(names.length);
+    expect(tiled.layers.find((l) => l.name === 'objects')!.objects!.map((o) => o.type).sort()).toEqual(['jumppad', 'lock']);
+  });
 });

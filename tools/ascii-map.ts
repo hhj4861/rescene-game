@@ -99,7 +99,7 @@ export function toTiled(p: ParsedAsciiMap): TiledMap {
   const layers: TiledLayer[] = [tileLayer('ground', ['#']), tileLayer('platforms', ['=']), tileLayer('ladders', ['H'])];
 
   let nextObjectId = 1;
-  for (const layerName of Object.values(OBJECT_LAYER)) {
+  for (const layerName of [...new Set(Object.values(OBJECT_LAYER))]) {
     const objects = p.objects
       .filter((o) => OBJECT_LAYER[o.type] === layerName)
       .map((o): TiledObject => {
