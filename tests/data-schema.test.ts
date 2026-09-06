@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { MEMBERS } from '../src/data/members';
 import { SKILLS } from '../src/data/skills';
 import { MemberDefSchema, SkillDefSchema, EnemyDefSchema, ItemDefSchema, MemeDefSchema, NpcDefSchema, CutsceneDefSchema, DialogueScriptSchema, QuestDefSchema, StageDefSchema, VoiceProfileSchema } from '../src/data/schema';
-import { getMember, getSkill, validateAllData, ENEMIES, ITEMS, MEMES, getEnemy, getItem, getMeme, getDialogue, getNpc, speakerName, getCutscene } from '../src/data/index';
+import { getMember, getSkill, validateAllData, ENEMIES, ITEMS, MEMES, getEnemy, getItem, getMeme, getDialogue, getNpc, speakerName, getCutscene, STAGES, getStage } from '../src/data/index';
 import { MEMBER_IDS } from '../src/systems/types';
 import { NPCS, DIALOGUES, CUTSCENES, QUESTS } from '../src/data/chapters/index';
 import { MAPS } from '../src/data/maps';
@@ -140,4 +140,10 @@ describe('schema v2', () => {
     expect(() => StageDefSchema.parse({ id: 'x', index: 1, name: 'x', era: 'x', map: 'x', intro: ['a'], bgm: 'stage', timerSec: 180,
       sections: [{ lock: 'l', spawn: 's', waves: [{ spawn: 's', enemy: 'e', count: 1, intervalMs: 0 }] }], boss: { lock: 'lb', spawn: 'sb', id: 'b' }, cardPool: ['c'] })).toThrow();
   });
+});
+
+describe('stages', () => {
+  it('validateAllData accepts shipped stages and getStage resolves', () => { expect(() => validateAllData()).not.toThrow(); expect(getStage('s1_trainee').sections.length).toBe(4); });
+  it('stage indices are 1..n without gaps', () => { expect(STAGES.map((s) => s.index)).toEqual(STAGES.map((_, i) => i + 1)); });
+  it('getStage throws on unknown id', () => { expect(() => getStage('nope')).toThrow(); });
 });

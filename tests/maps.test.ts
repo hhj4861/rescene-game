@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseAsciiMap, toTiled } from '../tools/ascii-map';
 import { MAPS, getMap } from '../src/data/maps';
-import { getEnemy, getNpc } from '../src/data/index';
+import { getEnemy, getNpc, STAGES } from '../src/data/index';
 
 const files = readdirSync('maps').filter((f) => f.endsWith('.txt'));
 const parsed = files.map((f) => parseAsciiMap(readFileSync(join('maps', f), 'utf8')));
@@ -46,5 +46,19 @@ describe('map sources', () => {
     for (const s of ['start', 're_a', 're_b', 're_c', 're_d', 're_boss', 'sp_a1', 'sp_a2', 'sp_b1', 'sp_b2', 'sp_c1', 'sp_c2', 'sp_d1', 'sp_d2', 'sp_boss', 'sp_cheer_a', 'sp_cheer_c']) expect(names('spawn')).toContain(s);
     expect(p.rows.length).toBe(17);
     expect(p.rows[0]!.length).toBe(120);
+  });
+  it('stage data references only objects that exist in its map', () => {
+    for (const st of STAGES) {
+      const p = byId.get(st.map)!;
+      const has = (type: string, name: string) => p.objects.some((o) => o.type === type && o.name === name);
+      for (const s of st.sections) {
+        expect(has('lock', s.lock), `${st.id}/${s.lock}`).toBe(true);
+        expect(has('spawn', s.spawn), `${st.id}/${s.spawn}`).toBe(true);
+        for (const w of s.waves) expect(has('spawn', w.spawn), `${st.id}/${w.spawn}`).toBe(true);
+        if (s.cheer) expect(has('spawn', s.cheer.spawn)).toBe(true);
+      }
+      expect(has('lock', st.boss.lock)).toBe(true);
+      expect(has('spawn', st.boss.spawn)).toBe(true);
+    }
   });
 });

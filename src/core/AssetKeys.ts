@@ -3,6 +3,8 @@ import type { MemberId } from '../systems/types';
 export const SCENE = {
   boot: 'Boot', preload: 'Preload', title: 'Title', select: 'CharacterSelect',
   world: 'World', hud: 'Hud', dialogue: 'Dialogue', cutscene: 'Cutscene',
+  result: 'Result', continue: 'Continue', gameOver: 'GameOver', nameEntry: 'NameEntry',
+  codex: 'Codex', stageSelect: 'StageSelect', ending: 'Ending',
 } as const;
 
 export const TEX = {
