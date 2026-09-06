@@ -15,6 +15,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   hp: number;
   maxHp: number;
   elite = false;
+  /** 보스가 소환한 잡몹. 웨이브 카운트에 들어가지 않고 죽으면 보스에게 알린다. */
+  summoned = false;
   stunnedUntil = 0;
   invulnerableUntil = 0;
   dots: Dot[] = [];
@@ -55,7 +57,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.anims.play(enemyAnimKey(this.def.id, anim), true);
   }
 
-  private restoreTint(): void {
+  /** 피격 플래시 뒤 원래 색. 기믹 보스는 상태 틴트를 덮어쓴다. */
+  protected restoreTint(): void {
     if (this.elite) this.setTint(ELITE_TINT);
     else this.clearTint();
   }

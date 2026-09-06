@@ -2,10 +2,10 @@ import Phaser from 'phaser';
 import { TEX } from '../core/AssetKeys';
 import type { RunStore } from '../core/RunStore';
 import { sfx } from '../audio/audioSession';
-import { getEnemy, getMember, getSkill } from '../data/index';
+import { ENEMIES, getEnemy, getMember, getSkill } from '../data/index';
 import type { EnemyDef, MemberDef } from '../data/schema';
 import { damage } from '../systems/combat';
-import type { Boss } from '../entities/Boss';
+import { Boss, DEFLECT_TINT } from '../entities/Boss';
 import { createBoss } from '../entities/bosses/index';
 import { DropItem, type Drop } from '../entities/DropItem';
 import { Enemy } from '../entities/Enemy';
@@ -118,11 +118,27 @@ export class CombatController {
   private addBoss(def: EnemyDef, x: number, y: number, kind: BossKind): Boss {
     const boss = createBoss(this.scene, x, y, def);
     boss.fire = (fx, fy, dir, speed, range) => this.enemyProjectiles.add(new EnemyProjectile(this.scene, fx, fy, dir, speed, range, BOSS_HEARTS));
+    boss.spawnMinion = (id, mx, my) => { if (this.spawnMinion(id, mx, my)) boss.minionsAlive += 1; };
     this.enemies.add(boss);
     this.boss = boss;
     if (kind === 'stage') this.stageBoss = boss;
     this.hooks.onBossSpawned(boss, kind);
     return boss;
+  }
+
+  /**
+   * 보스 소환 잡몹. 웨이브 카운트 밖이고 죽으면 boss.notifyMinionKilled. x 는 물리 바운드 안으로 클램프.
+   * 데이터에 없는 id(다른 트랙의 적이 아직 안 머지됨)는 경고만 남기고 null.
+   */
+  spawnMinion(id: string, x: number, y: number): Enemy | null {
+    if (!ENEMIES.some((e) => e.id === id)) {
+      console.warn(`spawnMinion: unknown enemy '${id}'`);
+      return null;
+    }
+    const b = this.scene.physics.world.bounds;
+    const enemy = this.spawnEnemy(id, Phaser.Math.Clamp(x, b.left + 24, b.right - 24), y);
+    enemy.summoned = true;
+    return enemy;
   }
 
   dropAt(x: number, y: number, drop: Drop): void {
@@ -147,7 +163,10 @@ export class CombatController {
     for (const effect of skill.effects) {
       if (effect.kind === 'melee') this.meleeHit(effect.width, effect.height, !!effect.centered, dmg, effect.knockback * kb, third, now);
       else if (effect.kind === 'projectile') this.shoot({ damage: dmg, speed: effect.speed, range: effect.range, pierce: effect.pierce, knockback: PROJECTILE_KNOCKBACK * kb, strong: third });
+      else continue;
+      this.boss?.notifyPlayerAttack(effect.kind);
     }
+    if (third) this.boss?.notifyChainFinished();
     return true;
   }
 
@@ -179,9 +198,15 @@ export class CombatController {
     if (!p.spec.pierce) p.destroy();
   }
 
-  /** 타격 1회: 게이지 +4, 스파크, 넉백. 죽으면 처치 처리. */
+  /** 타격 1회: 게이지 +4, 스파크, 넉백. 죽으면 처치 처리. 기믹이 닫힌 보스는 피해·게이지 없이 튕긴다. */
   private hitEnemy(enemy: Enemy, dmg: number, knockbackX: number, now: number, strong: boolean, stunMs = 0): void {
     if (!enemy.active || now < enemy.invulnerableUntil) return;
+    if (enemy instanceof Boss && enemy.invulnerable) {
+      enemy.takeHit(0);
+      sfx(this.scene, 'menu');
+      this.spark(enemy.x, enemy.y - enemy.displayHeight / 2, false, DEFLECT_TINT);
+      return;
+    }
     this.run.hit();
     sfx(this.scene, strong ? 'hit3' : 'hit');
     this.spark(enemy.x, enemy.y - enemy.displayHeight / 2, strong);
@@ -189,9 +214,9 @@ export class CombatController {
     if (enemy.takeHit(dmg, knockbackX)) this.killEnemy(enemy, now);
   }
 
-  /** 데미지 숫자 대신 타격 스파크만 남긴다(스펙 §8). */
-  private spark(x: number, y: number, strong: boolean): void {
-    const s = this.scene.add.image(x, y, TEX.hit).setDepth(20).setScale(strong ? 2 : 1.2).setAngle(Phaser.Math.Between(0, 90));
+  /** 데미지 숫자 대신 타격 스파크만 남긴다(스펙 §8). tint 는 튕김(회색) 표시용. */
+  private spark(x: number, y: number, strong: boolean, tint = 0xffffff): void {
+    const s = this.scene.add.image(x, y, TEX.hit).setDepth(20).setScale(strong ? 2 : 1.2).setAngle(Phaser.Math.Between(0, 90)).setTint(tint);
     this.scene.tweens.add({ targets: s, scale: strong ? 5 : 3, alpha: 0, duration: 140, ease: 'Cubic.easeOut', onComplete: () => s.destroy() });
   }
 
@@ -233,6 +258,14 @@ export class CombatController {
       if (id) this.dropAt(x, y, { kind: 'card', memeId: id });
     } else if (Math.random() < def.heartChance) {
       this.dropAt(x, y, { kind: 'heart', member: this.run.state.member });
+    }
+    if (enemy.summoned) {
+      // 보스 소환 잡몹: 웨이브 카운트 밖. 보스가 아직 있으면 알린다(침묵의 약점 노출).
+      if (this.boss) {
+        this.boss.minionsAlive = Math.max(0, this.boss.minionsAlive - 1);
+        this.boss.notifyMinionKilled(def.id);
+      }
+      return;
     }
     this.hooks.onEnemyDied(now);
   }
@@ -299,6 +332,7 @@ export class CombatController {
   /** superSkill 의 effects 를 스펙 §5 범위로 실행: melee → 화면 안 전부, projectile → 관통 1발, dot → 화면 안 전부, buff → 8초. */
   private applySuper(): void {
     const now = this.scene.time.now;
+    this.boss?.notifySuper();
     const skill = getSkill(this.member.superSkill);
     const dmg = this.dmg(skill.multiplier);
     const targets = this.enemiesOnScreen();
