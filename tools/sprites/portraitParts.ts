@@ -277,35 +277,38 @@ const HAND_THUMB: Grid = rows('hand.thumb', 15, [
   '..KSSSSSSSSK...',
   '...KKKKKKKK....',
 ]);
-/** 브이(오른손, 손가락 사이를 넓게) 14×17. */
-const HAND_PEACE: Grid = rows('hand.peace', 14, [
-  '.KK......KK...',
-  'KSSK....KSSK..',
-  'KSSK....KSSK..',
-  'KSSK...KSSK...',
-  'KSSK...KSSK...',
-  '.KSSK.KSSK....',
-  '.KSSKKSSK.....',
-  '.KSSSSSSKKK...',
-  '.KSSSSSSSSSK..',
-  '.KSSSSSSSSSK..',
-  '.KSsSSsSSSSK..',
-  '.KSSSSSSSSSK..',
-  '.KSsSSsSSSSK..',
-  '.KSSSSSSSSSK..',
-  '..KSSSSSSSSK..',
-  '..KSSSSSSSK...',
-  '...KKKKKKK....',
+/** 브이(오른손, 손가락을 길게·사이를 넓게) 16×19. */
+const HAND_PEACE: Grid = rows('hand.peace', 16, [
+  '.KK.......KK....',
+  'KSSK.....KSSK...',
+  'KSSK.....KSSK...',
+  'KSSK....KSSK....',
+  'KSSK....KSSK....',
+  'KSSK...KSSK.....',
+  '.KSSK.KSSK......',
+  '.KSSKKSSK.......',
+  '.KSSSSSSKKKK....',
+  '.KSSSSSSSSSSK...',
+  '.KSSSSSSSSSSSK..',
+  '.KSsSSsSSSSSSK..',
+  '.KSSSSSSSSSSSK..',
+  '.KSsSSsSSSSSSK..',
+  '.KSSSSSSSSSSSK..',
+  '..KSSSSSSSSSSK..',
+  '..KSSSSSSSSSK...',
+  '...KSSSSSSSK....',
+  '....KKKKKKK.....',
 ]);
-/** 두 손 모음(턱 아래에서 두 주먹을 맞댄 모양, 손가락 마디가 위) 22×12. */
+/** 두 손 모음(턱 밑에서 두 주먹을 맞댄 모양, 손가락 마디 3줄 + 주름) 22×13. */
 const HANDS_CLASP: Grid = rows('hand.clasp', 22, [
   '..KK.KK.KK..KK.KK.KK..',
   '.KSSKSSKSSKKSSKSSKSSK.',
   '.KSSKSSKSSKKSSKSSKSSK.',
+  'KSSSKSSKSSSKSSSKSSKSSK',
   'KSSSSSSSSSKKSSSSSSSSSK',
   'KSSSSSSSSSKKSSSSSSSSSK',
   'KSSSSSSSSSKKSSSSSSSSSK',
-  'KSSSSSSSSSKKSSSSSSSSSK',
+  'KSsSSsSSsSKKSsSSsSSsSK',
   '.KSSSSSSSSKKSSSSSSSSK.',
   '.KSSSSSSSSKKSSSSSSSSK.',
   '..KSSSSSSSKKSSSSSSSK..',
@@ -316,13 +319,14 @@ export const HANDS: Record<HandVariant, Grid> = {
   none: blank(),
   up: stack(place(HAND_OPEN, 1, 22), place(mirror(HAND_OPEN), 51, 22)),
   thumb: place(HAND_THUMB, 46, 38),
-  peace: place(HAND_PEACE, 47, 28),
-  clasp: place(HANDS_CLASP, 21, 47),
+  peace: place(HAND_PEACE, 46, 28),
+  clasp: place(HANDS_CLASP, 21, 45),
 };
 
 // ---------- 액세서리 ----------
 const HOOP: Grid = rows('acc.hoop', 4, ['.GG.', 'G..G', 'G..G', '.GG.']);
-const CHOKER: Grid = rows('acc.choker', 12, ['KKKKKKKKKKKK', 'KKKKKKKKKKKK', '.....GG.....']);
+/** 초커: 목 중간 3행 검정 띠 + 금색 펜던트(옷깃과 떨어뜨려 띠로 읽히게). */
+const CHOKER: Grid = rows('acc.choker', 12, ['KKKKKKKKKKKK', 'KKKKKWKKKKKK', 'KKKKKKKKKKKK', '.....GG.....', '.....GG.....']);
 const CLIP: Grid = rows('acc.clip', 7, ['KKK....', 'KRRKK..', '.KRRRK.', '..KKRRK', '....KKK']);
 const RIBBON: Grid = rows('acc.ribbon', 9, [
   '.KK...KK.',
@@ -334,12 +338,12 @@ const RIBBON: Grid = rows('acc.ribbon', 9, [
 ]);
 export const ACCESSORY: Record<Accessory, Grid> = {
   earring: stack(place(HOOP, 11, 34), place(HOOP, 49, 34)),
-  choker: place(CHOKER, 26, 49),
-  galHighlight: stack(place(['W.W'], 22, 34), place(['W.W'], 39, 34)),
+  choker: place(CHOKER, 26, 47),
+  galHighlight: stack(place(['WW.WW'], 21, 34), place(['WW.WW'], 38, 34)),
   hairclip: place(CLIP, 14, 11),
   ribbon: stack(place(RIBBON, 2, 17), place(RIBBON, 53, 17)),
 };
 
 // ---------- 땀방울(피격) ----------
-const DROP: Grid = rows('sweat', 5, ['..K..', '.KOK.', '.KOK.', 'KOOOK', 'KOWOK', '.KKK.']);
-export const SWEAT: Grid = place(DROP, 47, 19);
+const DROP: Grid = rows('sweat', 6, ['...K..', '..KOK.', '..KOK.', '.KOOOK', '.KOOOK', 'KOWOOK', 'KOOOOK', '.KKKK.']);
+export const SWEAT: Grid = place(DROP, 48, 17);
