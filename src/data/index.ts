@@ -2,7 +2,7 @@ import type { MemberId } from '../systems/types';
 import { MEMBER_IDS } from '../systems/types';
 import {
   MemberDefSchema, SkillDefSchema, EnemyDefSchema, ItemDefSchema, MemeDefSchema,
-  CutsceneDefSchema, DialogueScriptSchema, NpcDefSchema, QuestDefSchema,
+  CutsceneDefSchema, DialogueScriptSchema, NpcDefSchema, QuestDefSchema, StageDefSchema,
   type MemberDef, type SkillDef, type EnemyDef, type ItemDef, type MemeDef,
   type CutsceneDef, type DialogueScript, type NpcDef, type QuestDef,
 } from './schema';
@@ -13,8 +13,9 @@ import { ITEMS } from './items';
 import { MEMES } from './memes';
 import { CUTSCENES, DIALOGUES, NPCS, QUESTS } from './chapters/index';
 import { MAPS, getMap } from './maps';
+import { STAGES, getStage, getStageByIndex } from './stages/index';
 
-export { MEMBERS, SKILLS, ENEMIES, ITEMS, MEMES, CUTSCENES, DIALOGUES, NPCS, QUESTS, MAPS, getMap };
+export { MEMBERS, SKILLS, ENEMIES, ITEMS, MEMES, CUTSCENES, DIALOGUES, NPCS, QUESTS, MAPS, getMap, STAGES, getStage, getStageByIndex };
 
 const memberById = new Map(MEMBERS.map((m) => [m.id, m]));
 const skillById = new Map(SKILLS.map((s) => [s.id, s]));
@@ -145,4 +146,21 @@ export function validateAllData(): void {
     }
   }
   for (const m of MEMBERS) { getMap(m.prologueMap); getCutscene(`ch0_intro_${m.id}`); }
+
+  STAGES.forEach((s) => StageDefSchema.parse(s));
+  assertUnique('stage', STAGES.map((s) => s.id));
+  const sortedIndices = STAGES.map((s) => s.index).sort((a, b) => a - b);
+  sortedIndices.forEach((idx, i) => {
+    if (idx !== i + 1) throw new Error(`stage indices must be 1..n without gaps, got ${sortedIndices.join(',')}`);
+  });
+  for (const st of STAGES) {
+    getMap(st.map);
+    for (const sec of st.sections) {
+      for (const w of sec.waves) getEnemy(w.enemy);
+      if (sec.cheer) getNpc(sec.cheer.npc);
+    }
+    const boss = getEnemy(st.boss.id);
+    if (boss.ai !== 'boss') throw new Error(`stage ${st.id}: boss ${st.boss.id} is not ai:boss`);
+    for (const c of st.cardPool) if (!hasMeme(c)) throw new Error(`stage ${st.id}: unknown meme ${c}`);
+  }
 }

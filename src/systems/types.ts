@@ -14,3 +14,5 @@ export interface PlayerState {
   mp: number;
   skillLevels: Record<string, number>;
 }
+
+export interface MemberStats { atk: number; spd: number; jump: number }

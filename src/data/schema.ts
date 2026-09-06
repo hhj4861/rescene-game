@@ -1,5 +1,26 @@
 import { z } from 'zod';
 
+export const VoiceWaveSchema = z.enum(['square', 'triangle', 'sawtooth', 'pulse']);
+export const VoiceProfileSchema = z.object({ baseHz: z.number().positive(), syllableMs: z.number().positive(), wave: VoiceWaveSchema, vibrato: z.number().min(0).optional() });
+export type VoiceProfile = z.infer<typeof VoiceProfileSchema>;
+export const BuffKeySchema = z.enum(['atk', 'spd', 'jump', 'gauge', 'heart', 'combo', 'score']);
+export type BuffKey = z.infer<typeof BuffKeySchema>;
+export const WaveDefSchema = z.object({ spawn: z.string().min(1), enemy: z.string().min(1), count: z.number().int().positive(), intervalMs: z.number().min(0), elite: z.boolean().optional() });
+export type WaveDef = z.infer<typeof WaveDefSchema>;
+export const SectionDefSchema = z.object({
+  lock: z.string().min(1), spawn: z.string().min(1), waves: z.array(WaveDefSchema).min(1), chest: z.boolean().optional(),
+  cheer: z.object({ npc: z.string().min(1), spawn: z.string().min(1), text: z.string().min(1) }).optional(),
+});
+export type SectionDef = z.infer<typeof SectionDefSchema>;
+export const StageDefSchema = z.object({
+  id: z.string().min(1), index: z.number().int().min(1), name: z.string().min(1), era: z.string().min(1), map: z.string().min(1),
+  intro: z.array(z.string().min(1)).length(3), bgm: z.enum(['title', 'stage', 'boss']), timerSec: z.number().int().positive(),
+  sections: z.array(SectionDefSchema).min(1),
+  boss: z.object({ lock: z.string().min(1), spawn: z.string().min(1), id: z.string().min(1) }),
+  cardPool: z.array(z.string().min(1)).min(1),
+});
+export type StageDef = z.infer<typeof StageDefSchema>;
+
 export const StatKeySchema = z.enum(['hp', 'mp', 'atk', 'def', 'spd', 'luk']);
 export const StatsSchema = z.object({
   hp: z.number(), mp: z.number(), atk: z.number(), def: z.number(), spd: z.number(), luk: z.number(),
@@ -18,6 +39,13 @@ export const MemberDefSchema = z.object({
   weapon: z.string().min(1),
   skills: z.array(z.string().min(1)).min(1),
   prologueMap: z.string().min(1),
+  atk: z.number().positive(),
+  spd: z.number().positive(),
+  jump: z.number().positive(),
+  basicSkill: z.string().min(1),
+  superSkill: z.string().min(1),
+  superText: z.string().min(1),
+  voice: VoiceProfileSchema,
 });
 export type MemberDef = z.infer<typeof MemberDefSchema>;
 
@@ -61,6 +89,11 @@ export const EnemyDefSchema = z.object({
   height: z.number().positive(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   drops: z.array(z.object({ itemId: z.string().min(1), chance: z.number().min(0).max(1) })),
+  score: z.number().int().min(0),
+  heartChance: z.number().min(0).max(1),
+  eliteScale: z.number().positive().optional(),
+  gimmick: z.enum(['lens', 'silence', 'copycat', 'trophy']).optional(),
+  phases: z.array(z.object({ hpRatio: z.number().min(0).max(1), name: z.string().min(1) })).optional(),
 });
 export type EnemyDef = z.infer<typeof EnemyDefSchema>;
 
@@ -86,6 +119,7 @@ export const MemeDefSchema = z.object({
   origin: z.string().min(1),
   note: z.string(),
   passive: z.object({ key: PassiveKeySchema, value: z.number() }).optional(),
+  buff: z.object({ key: BuffKeySchema, value: z.number() }),
 });
 export type MemeDef = z.infer<typeof MemeDefSchema>;
 
