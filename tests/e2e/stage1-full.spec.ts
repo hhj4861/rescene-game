@@ -8,7 +8,7 @@ type GameLike = { scene: { isActive(key: string): boolean }; registry: { get(key
 type Hooks = {
   killAllEnemies(): void; enemyCount(): number; sectionIndex(): number; sectionPhase(): string;
   warp(x: number): void; hurt(n: number): void; openChests(): void; pickupAll(): void; dropCount(): number;
-  lockLines(): number[]; bossHp(): number | null;
+  lockLines(): number[]; bossHp(): number | null; bossName(): string | null; slayBoss(): void;
 };
 type Win = Window & { __game?: GameLike; __rescene?: Hooks };
 
@@ -94,16 +94,18 @@ test('stage 1: full walkthrough to the boss, a death restart, and the clear tran
   // 보스 구간: 등장 확인 → 사망 → 같은 구간에서 재시작(목숨 -1) → 보스 다시 등장
   expect(await hook(page, (h) => h.sectionIndex())).toBe(4);
   await expect.poll(() => hook(page, (h) => h.bossHp()), { timeout: 5_000 }).not.toBeNull();
+  expect(await hook(page, (h) => h.bossName())).toBe('월말평가 심사위원단');
   await hook(page, (h) => h.hurt(99));
   await expect.poll(async () => (await runState(page))?.lives, { timeout: 5_000 }).toBe(2);
   await expect.poll(() => hook(page, (h) => h.sectionIndex()), { timeout: 5_000 }).toBe(4);
   await expect.poll(() => hook(page, (h) => h.bossHp()), { timeout: 5_000 }).not.toBeNull();
   expect((await state(page)).hearts).toBe(afterD.maxHearts);
 
-  // 보스 처치 → 점수 보너스 반영 → World 종료(Result 로 전환 큐잉)
+  // 보스 처치(slayBoss 는 기믹·불사 상태를 무시한다) → 점수 보너스 반영 → World 종료(Result 로 전환 큐잉)
   const before = await state(page);
-  await hook(page, (h) => h.killAllEnemies());
+  await hook(page, (h) => h.slayBoss());
   const after = await state(page);
+  expect(await hook(page, (h) => h.bossName())).toBeNull();
   expect(after.stageIndex).toBe(before.stageIndex + 1);
   expect(after.score).toBeGreaterThan(before.score + 3000);
   await expect.poll(() => isActive(page, 'World'), { timeout: 5_000 }).toBe(false);
