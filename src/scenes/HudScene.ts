@@ -16,6 +16,9 @@ const CARD_MS = 1500;
 const CHEER_MS = 2500;
 const RAINBOW = [0xf7768e, 0xff9e64, 0xe0af68, 0x9ece6a, 0x7dcfff, 0x7aa2f7, 0xbb9af7];
 const GAUGE_COLOR = 0xbb9af7;
+const BOSS_BAR_COLOR = 0xbb9af7;
+const BOSS_BAR_INVULNERABLE = 0x9aa3c7;   // Boss.DEFLECT_TINT 와 같은 회색
+const BOSS_NOW_BLINK_MS = 160;
 const CX = GAME_WIDTH / 2;
 
 const pad7 = (n: number): string => String(Math.max(0, Math.min(9_999_999, Math.floor(n)))).padStart(7, '0');
@@ -33,6 +36,10 @@ export class HudScene extends Phaser.Scene {
   private go!: Phaser.GameObjects.Sprite;
   private bossName!: Phaser.GameObjects.Text;
   private bossBar!: Bar;
+  /** 보스 바 오른쪽 상태 라벨: 기믹이 닫히면 "무적", 열리면 "지금!" 깜빡임. */
+  private bossState!: Phaser.GameObjects.Text;
+  private bossMid = false;
+  private bossBlinkAt = 0;
   private cardText!: Phaser.GameObjects.Text;
   private cheerText!: Phaser.GameObjects.Text;
   private clearText!: Phaser.GameObjects.Text;
@@ -81,6 +88,7 @@ export class HudScene extends Phaser.Scene {
     // 하단: 보스 체력 바(페이즈 구분선은 hud:boss 에서)
     this.bossBar = new Bar(this, CX - 200, GAME_HEIGHT - 46, 400, 12, '#bb9af7', false);
     this.bossBar.setVisible(false);
+    this.bossState = this.add.text(CX + 208, GAME_HEIGHT - 46, '', stroked(13, '#9aa3c7', { fontStyle: 'bold' })).setOrigin(0, 0.5).setVisible(false);
 
     // 조작 힌트는 좌하단(게이지 왼쪽 끝 374px 안쪽에서 끝나야 "S" 라벨과 겹치지 않는다).
     this.add.text(12, GAME_HEIGHT - 8, '←→ 이동 · Space 점프 · ↑↓ 사다리 · A 공격 · S 필살기 · M 음소거', stroked(11, '#a9b1d6')).setOrigin(0, 1);
@@ -155,11 +163,19 @@ export class HudScene extends Phaser.Scene {
     const on = !!info;
     this.bossName.setVisible(on);
     this.bossBar.setVisible(on);
+    this.bossState.setVisible(false);
     if (!info) return;
-    this.bossName.setText(info.name);
+    this.bossMid = info.mid;
+    this.bossName.setText(this.bossLabel(info.name, null));
     this.bossBar.setTicks(info.phases.map((p) => p.hpRatio));
     this.bossBar.set(1);
+    this.bossBar.setFillColor(BOSS_BAR_COLOR);
     this.bossBar.setVisible(true);
+  }
+
+  private bossLabel(name: string, phase: string | null): string {
+    const tag = this.bossMid ? '중간보스 · ' : '';
+    return phase ? `${tag}${name} — ${phase}` : `${tag}${name}`;
   }
 
   private showCheer(c: HudCheer): void {
@@ -207,7 +223,17 @@ export class HudScene extends Phaser.Scene {
     const boss = (this.scene.get(SCENE.world) as WorldScene | null)?.activeBoss() ?? null;
     if (boss && this.bossBar) {
       this.bossBar.set(Math.max(0, boss.hp) / boss.maxHp);
-      this.bossName.setText(`${boss.def.name} — ${boss.phaseName()}`);
+      this.bossName.setText(this.bossLabel(boss.def.name, boss.phaseName()));
+      this.bossBar.setFillColor(boss.invulnerable ? BOSS_BAR_INVULNERABLE : BOSS_BAR_COLOR);
+      if (boss.invulnerable) {
+        this.bossState.setText('무적').setColor('#9aa3c7').setVisible(true);
+      } else if (boss.exposed) {
+        // 렌즈 열림·약점 노출: "지금!" 깜빡임
+        if (now >= this.bossBlinkAt) { this.bossBlinkAt = now + BOSS_NOW_BLINK_MS; this.bossState.setVisible(!this.bossState.visible); }
+        this.bossState.setText('지금!').setColor('#ffd166');
+      } else {
+        this.bossState.setVisible(false);
+      }
     }
   }
 }

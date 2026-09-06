@@ -399,6 +399,10 @@ export class WorldScene extends Phaser.Scene {
       dropCount: () => this.combat.drops.countActive(true),
       lockLines: () => this.section.lockLines(),
       bossHp: () => this.combat.boss?.hp ?? null,
+      /** 현재 보스(스테이지 보스 또는 중간보스) 이름. 없으면 null. */
+      bossName: () => this.combat.boss?.def.name ?? null,
+      /** 기믹(불사)을 무시하고 현재 보스를 즉시 처치한다. */
+      slayBoss: () => { const b = this.combat.boss; if (b) this.combat.slay(b); },
     };
   }
 }
