@@ -89,4 +89,8 @@ describe('stages', () => {
   it('validateAllData accepts shipped stages and getStage resolves', () => { expect(() => validateAllData()).not.toThrow(); expect(getStage('s1_trainee').sections.length).toBe(4); });
   it('stage indices are 1..n without gaps', () => { expect(STAGES.map((s) => s.index)).toEqual(STAGES.map((_, i) => i + 1)); });
   it('getStage throws on unknown id', () => { expect(() => getStage('nope')).toThrow(); });
+  it('every stage names a tileset palette and enemies may be static or summon minions', () => {
+    for (const st of STAGES) expect(st.palette.length, st.id).toBeGreaterThan(0);
+    expect(() => EnemyDefSchema.parse({ id: 'x', name: 'x', hp: 1, atk: 0, spd: 0, ai: 'static', width: 8, height: 8, color: '#000000', score: 0, heartChance: 0, minion: 'enemy_sleep_slime' })).not.toThrow();
+  });
 });

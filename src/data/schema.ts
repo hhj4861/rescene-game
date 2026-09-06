@@ -16,6 +16,7 @@ export type SectionDef = z.infer<typeof SectionDefSchema>;
 export const StageDefSchema = z.object({
   id: z.string().min(1), index: z.number().int().min(1), name: z.string().min(1), era: z.string().min(1), map: z.string().min(1),
   intro: z.array(z.string().min(1)).length(3), bgm: z.enum(['title', 'stage', 'boss']), timerSec: z.number().int().positive(),
+  palette: z.string().min(1), // 타일셋 팔레트 키 (tilesetTex(palette))
   sections: z.array(SectionDefSchema).min(1),
   boss: z.object({ lock: z.string().min(1), spawn: z.string().min(1), id: z.string().min(1) }),
   cardPool: z.array(z.string().min(1)).min(1),
@@ -72,7 +73,7 @@ export const EnemyDefSchema = z.object({
   hp: z.number().positive(),
   atk: z.number().min(0),
   spd: z.number().min(0),
-  ai: z.enum(['patrol', 'chase', 'boss']),
+  ai: z.enum(['patrol', 'chase', 'static', 'boss']),
   width: z.number().positive(),
   height: z.number().positive(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
@@ -81,6 +82,7 @@ export const EnemyDefSchema = z.object({
   eliteScale: z.number().positive().optional(),
   gimmick: z.enum(['lens', 'silence', 'copycat', 'trophy']).optional(),
   phases: z.array(z.object({ hpRatio: z.number().min(0).max(1), name: z.string().min(1) })).optional(),
+  minion: z.string().min(1).optional(), // 보스가 소환하는 잡몹 id (침묵·트로피)
 });
 export type EnemyDef = z.infer<typeof EnemyDefSchema>;
 

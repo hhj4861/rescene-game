@@ -1,7 +1,7 @@
 export const TILE = 32;
 export const TILE_GIDS: Record<string, number> = { '#': 1, '=': 2, 'H': 3 };
 const EMPTY = '.';
-const OBJECT_TYPES = ['spawn', 'portal', 'npc', 'enemy', 'savepoint', 'boss', 'lock'] as const;
+const OBJECT_TYPES = ['spawn', 'portal', 'npc', 'enemy', 'savepoint', 'boss', 'lock', 'jumppad'] as const;
 export type AsciiObjectType = (typeof OBJECT_TYPES)[number];
 
 export interface AsciiObject {
@@ -86,7 +86,7 @@ export interface TiledMap {
 }
 
 const OBJECT_LAYER: Record<AsciiObjectType, string> = {
-  lock: 'objects', spawn: 'spawns_player', portal: 'portals', npc: 'spawns_npc', enemy: 'spawns_enemy', savepoint: 'savepoints', boss: 'bosses',
+  lock: 'objects', jumppad: 'objects', spawn: 'spawns_player', portal: 'portals', npc: 'spawns_npc', enemy: 'spawns_enemy', savepoint: 'savepoints', boss: 'bosses',
 };
 
 export function toTiled(p: ParsedAsciiMap): TiledMap {
@@ -109,7 +109,7 @@ export function toTiled(p: ParsedAsciiMap): TiledMap {
           .map(([name, value]): TiledProperty => ({ name, type: 'string', value }));
         const base = { id: nextObjectId++, name: o.name, type: o.type, rotation: 0 as const, visible: true as const, properties };
         if (o.type === 'portal') return { ...base, x: footX - TILE / 2, y: footY - 2 * TILE, width: TILE, height: 2 * TILE };
-        if (o.type === 'lock') return { ...base, x: footX - TILE / 2, y: footY - TILE, width: TILE, height: TILE };
+        if (o.type === 'lock' || o.type === 'jumppad') return { ...base, x: footX - TILE / 2, y: footY - TILE, width: TILE, height: TILE };
         return { ...base, x: footX, y: footY, width: 0, height: 0, point: true };
       });
     layers.push({ id: 0, name: layerName, type: 'objectgroup', x: 0, y: 0, opacity: 1, visible: true, objects });

@@ -79,4 +79,10 @@ describe('toTiled', () => {
     expect(layer('spawns_npc').objects![0]!.properties).toEqual([{ name: 'dialogue', type: 'string', value: 'd1' }]);
     expect(layer('savepoints').objects![0]).toMatchObject({ name: 'scent_t' });
   });
+  it('parses jumppad objects as one-tile boxes like locks', () => {
+    const p = parseAsciiMap('@meta id=t\n@tiles\n####\n@objects\nspawn start 0 0\njumppad pad_1 1 0\n');
+    const tiled = toTiled(p);
+    const obj = tiled.layers.find((l) => l.type === 'objectgroup')!.objects!.find((o) => o.type === 'jumppad')!;
+    expect(obj).toMatchObject({ name: 'pad_1', width: 32, height: 32 });
+  });
 });
