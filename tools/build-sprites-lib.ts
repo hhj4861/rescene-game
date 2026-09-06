@@ -1,11 +1,14 @@
+import { heartTex, lifeTex, TEX2 } from '../src/core/ArcadeAssetKeys';
 import { ENEMY_FRAME_COUNT, NPC_FRAME, NPC_FRAME_COUNT, PLAYER_ANIMS, PLAYER_FRAME, PLAYER_FRAME_COUNT } from '../src/core/spriteFrames';
 import { NPCS } from '../src/data/chapters/index';
 import { ENEMIES } from '../src/data/enemies';
-import type { MemberId } from '../src/systems/types';
-import { blit, composeLayers, encodePng, packSheet, rasterize, type Grid } from './pixel-art';
+import { MEMBER_IDS, type MemberId } from '../src/systems/types';
+import { blit, composeLayers, crop, encodePng, packSheet, rasterize, type Grid } from './pixel-art';
 import { ENEMY_SPRITES } from './sprites/enemies';
+import { CARD_FRAMES, CARD_H, CARD_PALETTE, CARD_W, CHEST_FRAMES, CHEST_H, CHEST_PALETTE, CHEST_W, HEART_FOODS, HEART_H, HEART_W, heartFrames } from './sprites/items';
 import { NPC_LOOKS } from './sprites/npcs';
 import { ATTACK_ARM, BASE_PALETTE, BODY, HAIR, HURT_EYES, LEGS, LOOKS, PROPS, SPRITE_H, SPRITE_W } from './sprites/templates';
+import { buildGoFrames, GO_H, GO_PALETTE, GO_W, HUD_HEART_EMPTY, HUD_HEART_FULL, HUD_HEART_H, HUD_HEART_W } from './sprites/ui';
 
 export const SPRITES_DIR = 'public/assets/sprites';
 export const playerSheetFile = (member: MemberId): string => `${SPRITES_DIR}/player_${member}.png`;
@@ -96,4 +99,44 @@ export function buildNpcSheet(npcId: string): Sheet {
   const frames = [stand, sink(stand, 28, 1)];
   if (frames.length !== NPC_FRAME_COUNT) throw new Error('npc frame count drift');
   return sheetOf(frames, palette, SPRITE_W, SPRITE_H, NPC_FRAME.width, NPC_FRAME.height);
+}
+
+export interface NamedSheet { file: string; png: Uint8Array; width: number; height: number }
+
+/** 프레임들을 그대로(오프셋 없이) 이어붙인 시트 PNG. */
+const packFrames = (grids: Grid[], palette: Record<string, string>, w: number, h: number, file: string): NamedSheet => {
+  const frames = grids.map((g) => rasterize(g, palette, w, h));
+  const sheet = packSheet(frames, w, h);
+  return { file, width: sheet.width, height: sheet.height, png: encodePng(sheet.width, sheet.height, sheet.rgba) };
+};
+
+/** 단일 프레임 이미지 PNG. */
+const image = (grid: Grid, palette: Record<string, string>, w: number, h: number, file: string): NamedSheet => {
+  const rgba = rasterize(grid, palette, w, h);
+  return { file, width: w, height: h, png: encodePng(w, h, rgba) };
+};
+
+/** 하트 음식 5종·카드·상자 시트(Task 15). */
+export function buildItemSheets(): NamedSheet[] {
+  const hearts = MEMBER_IDS.map((m) => {
+    const food = HEART_FOODS[m];
+    if (!food) throw new Error(`no heart food for ${m}`);
+    return packFrames(heartFrames(food), food.palette, HEART_W, HEART_H, `${SPRITES_DIR}/${heartTex(m)}.png`);
+  });
+  const card = packFrames(CARD_FRAMES, CARD_PALETTE, CARD_W, CARD_H, `${SPRITES_DIR}/${TEX2.card}.png`);
+  const chest = packFrames(CHEST_FRAMES, CHEST_PALETTE, CHEST_W, CHEST_H, `${SPRITES_DIR}/${TEX2.chest}.png`);
+  return [...hearts, card, chest];
+}
+
+/** HUD 하트·GO 화살표·초상(목숨 아이콘) 시트(Task 15). */
+export function buildUiSheets(): NamedSheet[] {
+  const heartFull = image(HUD_HEART_FULL.grid, HUD_HEART_FULL.palette, HUD_HEART_W, HUD_HEART_H, `${SPRITES_DIR}/${TEX2.hudHeartFull}.png`);
+  const heartEmpty = image(HUD_HEART_EMPTY.grid, HUD_HEART_EMPTY.palette, HUD_HEART_W, HUD_HEART_H, `${SPRITES_DIR}/${TEX2.hudHeartEmpty}.png`);
+  const go = packFrames(buildGoFrames(), GO_PALETTE, GO_W, GO_H, `${SPRITES_DIR}/${TEX2.go}.png`);
+  const lives = MEMBER_IDS.map((m) => {
+    const sheet = buildPlayerSheet(m);
+    const rgba = crop(sheet.rgba, sheet.width, 4, 0, 16, 16);
+    return { file: `${SPRITES_DIR}/${lifeTex(m)}.png`, width: 16, height: 16, png: encodePng(16, 16, rgba) };
+  });
+  return [heartFull, heartEmpty, go, ...lives];
 }
