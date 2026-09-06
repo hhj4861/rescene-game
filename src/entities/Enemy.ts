@@ -2,17 +2,21 @@ import Phaser from 'phaser';
 import { enemyTex } from '../core/AssetKeys';
 import { enemyAnimKey, type EnemyAnim } from '../core/spriteFrames';
 import type { EnemyDef } from '../data/schema';
-import type { StatKey, Stats } from '../systems/types';
 import type { Player } from './Player';
 
 interface Dot { amount: number; ticksLeft: number; intervalMs: number; nextAt: number }
 
+export const ELITE_TINT = 0xffd166;
+export const ELITE_HP_MULT = 3;
+export const DEFAULT_ELITE_SCALE = 1.5;
+
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   readonly def: EnemyDef;
   hp: number;
+  maxHp: number;
+  elite = false;
   stunnedUntil = 0;
   invulnerableUntil = 0;
-  statMods: Partial<Record<StatKey, { ratio: number; until: number }>> = {};
   dots: Dot[] = [];
   dir: 1 | -1 = -1;
   declare body: Phaser.Physics.Arcade.Body;
@@ -21,6 +25,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, enemyTex(def.id));
     this.def = def;
     this.hp = def.hp;
+    this.maxHp = def.hp;
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setOrigin(0.5, 1).setDepth(8);
@@ -29,23 +34,30 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.playAnim('move');
   }
 
+  /** 엘리트: 큰 크기·금색 틴트·체력 ×3. 바디는 Arcade 가 스케일에 맞춰 자동으로 키운다. */
+  makeElite(): this {
+    this.elite = true;
+    this.setScale(this.def.eliteScale ?? DEFAULT_ELITE_SCALE);
+    this.maxHp = this.def.hp * ELITE_HP_MULT;
+    this.hp = this.maxHp;
+    this.restoreTint();
+    return this;
+  }
+
   protected playAnim(anim: EnemyAnim): void {
     this.anims.play(enemyAnimKey(this.def.id, anim), true);
   }
 
-  stats(): Stats {
-    const now = this.scene.time.now;
-    const mod = (k: StatKey, base: number): number => {
-      const m = this.statMods[k];
-      return m && m.until > now ? Math.max(0, Math.round(base * (1 + m.ratio))) : base;
-    };
-    return { hp: this.def.hp, mp: 0, atk: mod('atk', this.def.atk), def: mod('def', this.def.def), spd: mod('spd', this.def.spd), luk: 0 };
+  private restoreTint(): void {
+    if (this.elite) this.setTint(ELITE_TINT);
+    else this.clearTint();
   }
 
+  /** 피해를 입힌다. 죽었으면 true. */
   takeHit(amount: number, knockbackX: number): boolean {
     this.hp -= amount;
     this.setTintFill(0xffffff);
-    this.scene.time.delayedCall(70, () => this.clearTint());
+    this.scene.time.delayedCall(70, () => { if (this.active) this.restoreTint(); });
     if (knockbackX !== 0) this.setVelocity(knockbackX, -120);
     return this.hp <= 0;
   }
@@ -54,15 +66,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.stunnedUntil = Math.max(this.stunnedUntil, until);
   }
 
-  applyDebuff(stat: StatKey, ratio: number, until: number): void {
-    this.statMods[stat] = { ratio, until };
-  }
-
   applyDot(amountPerTick: number, ticks: number, intervalMs: number, now: number): void {
     this.dots.push({ amount: amountPerTick, ticksLeft: ticks, intervalMs, nextAt: now + intervalMs });
   }
 
-  /** 이번 프레임에 터진 도트 데미지 목록 */
+  /** 이번 프레임에 터진 지속 피해 목록 */
   tickDots(now: number): number[] {
     const out: number[] = [];
     for (const d of this.dots) {
@@ -83,14 +91,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       return;
     }
     this.playAnim('move');
-    const spd = this.stats().spd;
+    const spd = this.def.spd;
     const dx = player.x - this.x;
     if (this.def.ai === 'chase' && Math.abs(dx) < 280 && Math.abs(player.y - this.y) < 80) {
       this.dir = dx < 0 ? -1 : 1;
     } else if (this.body.blocked.down) {
       if (this.body.blocked.left) this.dir = 1;
       else if (this.body.blocked.right) this.dir = -1;
-      else if (!hasFloor(this.x + this.dir * (this.def.width / 2 + 6), this.y + 4)) this.dir = this.dir === 1 ? -1 : 1;
+      else if (!hasFloor(this.x + this.dir * (this.displayWidth / 2 + 6), this.y + 4)) this.dir = this.dir === 1 ? -1 : 1;
     }
     this.setVelocityX(this.dir * spd);
     this.setFlipX(this.dir === 1);

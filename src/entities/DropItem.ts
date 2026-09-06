@@ -1,21 +1,24 @@
 import Phaser from 'phaser';
-import { TEX } from '../core/AssetKeys';
+import { TEX2, heartTex } from '../core/ArcadeAssetKeys';
+import type { MemberId } from '../systems/types';
 
-export class DropItem extends Phaser.Physics.Arcade.Image {
-  readonly kind: 'hearts' | 'item';
-  readonly amount: number;
-  readonly itemId: string | undefined;
+/** 바닥에 떨어지는 아이템: 하트(멤버 시그니처 음식)·유행어 카드. */
+export type Drop = { kind: 'heart'; member: MemberId } | { kind: 'card'; memeId: string };
+
+export class DropItem extends Phaser.Physics.Arcade.Sprite {
+  readonly drop: Drop;
   declare body: Phaser.Physics.Arcade.Body;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, kind: 'hearts' | 'item', amount: number, itemId?: string) {
-    super(scene, x, y, kind === 'hearts' ? TEX.heart : TEX.item);
-    this.kind = kind;
-    this.amount = amount;
-    this.itemId = itemId;
+  constructor(scene: Phaser.Scene, x: number, y: number, drop: Drop) {
+    const tex = drop.kind === 'heart' ? heartTex(drop.member) : TEX2.card;
+    super(scene, x, y, tex);
+    this.drop = drop;
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setDepth(7);
+    // collideWorldBounds 는 켜지 않는다: 구간 바운드가 옆으로 옮겨질 때 남은 아이템이 새 바운드 끝으로 끌려온다.
     this.body.setBounce(0.4, 0.4).setDrag(200, 0);
     this.setVelocity(Phaser.Math.Between(-80, 80), -220);
+    this.anims.play(`${tex}_anim`, true);
   }
 }

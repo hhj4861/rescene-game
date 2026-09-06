@@ -1,68 +1,90 @@
 import Phaser from 'phaser';
-import { SCENE, TEX, mapKey } from '../core/AssetKeys';
-import { getSession, type Session } from '../core/session';
-import { getItem, getMap, getMember, getMeme, getNpc, getSkill, hasItem } from '../data/index';
-import { Npc } from '../entities/Npc';
+import { SCENE, mapKey } from '../core/AssetKeys';
+import { tilesetTex } from '../core/ArcadeAssetKeys';
+import { RunStore } from '../core/RunStore';
+import { getRun, hasRun, setRun } from '../core/runSession';
+import { getSession, hasSession } from '../core/session'; // TODO(T7): 옛 세션 호환 — 제거
+import { loadArcadeSave, persistArcadeSave } from '../core/arcadeSave';
+import { getAudio, sayMeme, sfx, speakAs } from '../audio/audioSession';
+import { getMember, getMeme, getNpc, getStage } from '../data/index';
+import type { NpcDef, SectionDef, StageDef } from '../data/schema';
+import { NPC_VOICE } from '../data/voice';
+import { setMuted } from '../systems/highscore';
+import type { MoveConfig } from '../systems/movement';
+import { clearBonus } from '../systems/score';
+import type { MemberId } from '../systems/types';
+import type { Boss, BossPhase } from '../entities/Boss';
+import { CheerNpc } from '../entities/CheerNpc';
+import { Chest } from '../entities/Chest';
+import type { Enemy } from '../entities/Enemy';
 import { Player } from '../entities/Player';
-import { Portal } from '../entities/Portal';
-import { ScentSavePoint } from '../entities/ScentSavePoint';
-import { removeItem } from '../systems/inventory';
-import { passiveTotals } from '../systems/memes';
-import { DEFAULT_MOVE_CONFIG, type MoveConfig } from '../systems/movement';
-import { markerFor, pickNpcAction } from '../systems/npcInteraction';
-import { saveGame } from '../systems/save';
-import type { Reward } from '../data/schema';
-import type { Boss } from '../entities/Boss';
 import { floatText } from '../ui/FloatText';
-import { SMALL_TEXT } from '../ui/textStyles';
-import { CombatController } from './CombatController';
-import type { CutsceneData } from './CutsceneScene';
-import type { DialogueData } from './DialogueScene';
-import { findSpawn, objectsOf } from './worldObjects';
+import { CombatController, type CombatHooks } from './CombatController';
+import { SectionController, type SectionHooks } from './SectionController';
+import { findSpawn } from './worldObjects';
 
-export interface WorldData {
-  mapId: string;
-  spawnId: string;
-}
+// ---- 씬 데이터 계약(플랜 상단). T6 메뉴 씬과는 SCENE 키와 이 형태로만 통신한다. ----
+export interface WorldData { stageId: string; sectionIndex?: number }
+export interface ResultData { stageId: string; kills: number; maxCombo: number; noHitBoss: boolean; remainingSec: number }
+export interface ContinueData { stageId: string }
+
+// ---- HudScene 이 듣는 이벤트 페이로드(this.events.emit('hud:*')). ----
+export type HudBossInfo = { name: string; phases: BossPhase[] } | null;
+export interface HudCheer { name: string; text: string }
+export interface HudClear { noHit: boolean }
+
+const TILESET_PALETTE = 'stage1';          // 스테이지 팔레트는 지금 하나
+const FALLBACK_STAGE_ID = 's1_trainee';    // TODO(T7): 옛 Select/Cutscene 이 { mapId, spawnId } 로 들어올 때
+const FALLBACK_MEMBER: MemberId = 'woni';  // TODO(T7)
+const DEATH_FADE_MS = 900;
+const STAGE_CLEAR_HOLD_MS = 1800;
+const CHEST_CARD_CHANCE = 0.3;
+const CHEST_OPEN_DELAY_MS = 350;
 
 export class WorldScene extends Phaser.Scene {
-  private mapId = '';
-  private spawnId = 'start';
-  private session!: Session;
+  private stageId = FALLBACK_STAGE_ID;
+  private sectionIndex: number | undefined;
+  private stage!: StageDef;
+  private run!: RunStore;
   private map!: Phaser.Tilemaps.Tilemap;
   private ladders!: Phaser.Tilemaps.TilemapLayer;
   private player!: Player;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private portals: Portal[] = [];
-  private portalLabels = new Map<Portal, Phaser.GameObjects.Text>();
-  private unsubChanged: (() => void) | null = null;
-  private savepoints: ScentSavePoint[] = [];
-  private npcs: Npc[] = [];
-  private transitioning = false;
-  private combat!: CombatController;
   private keyA!: Phaser.Input.Keyboard.Key;
   private keyS!: Phaser.Input.Keyboard.Key;
-  private keyD!: Phaser.Input.Keyboard.Key;
-  private keyF!: Phaser.Input.Keyboard.Key;
-  private mpRegenAcc = 0;
+  private keyM!: Phaser.Input.Keyboard.Key;
+  private combat!: CombatController;
+  private section!: SectionController;
+  private chests!: Phaser.Physics.Arcade.Group;
+  private cheerNpcs = new Map<number, CheerNpc>();
+  private lockBar!: Phaser.GameObjects.Rectangle;
+  private transitioning = false;
+  private superPlaying = false;
+  private startedAt = 0;
+  private unsubs: (() => void)[] = [];
 
   constructor() {
     super(SCENE.world);
   }
 
-  init(data: WorldData): void {
-    this.mapId = data.mapId;
-    this.spawnId = data.spawnId ?? 'start';
+  init(data: Partial<WorldData>): void {
+    this.stageId = data.stageId ?? FALLBACK_STAGE_ID;
+    this.sectionIndex = data.sectionIndex;
   }
 
   create(): void {
+    // scene.restart() 는 같은 인스턴스를 재사용하므로 플래그를 여기서 리셋한다.
     this.transitioning = false;
-    this.portalLabels.clear();
-    this.session = getSession(this);
-    const gs = this.session.gs;
+    this.superPlaying = false;
+    this.cheerNpcs.clear();
+    this.ensureRun();
+    this.run = getRun(this);
+    this.run.restartSection();
+    this.stage = getStage(this.stageId);
+    this.startedAt = this.time.now;
 
-    this.map = this.make.tilemap({ key: mapKey(this.mapId) });
-    const tiles = this.map.addTilesetImage('tiles', TEX.tiles)!;
+    this.map = this.make.tilemap({ key: mapKey(this.stage.map) });
+    const tiles = this.map.addTilesetImage('tiles', tilesetTex(TILESET_PALETTE))!;
     const ground = this.map.createLayer('ground', tiles, 0, 0)!;
     ground.setCollisionByExclusion([-1, 0]);
     const platforms = this.map.createLayer('platforms', tiles, 0, 0)!;
@@ -70,182 +92,254 @@ export class WorldScene extends Phaser.Scene {
     platforms.forEachTile((t) => { if (t.index > 0) t.setCollision(false, false, true, false); });
     this.ladders = this.map.createLayer('ladders', tiles, 0, 0)!;
 
-    const spawn = findSpawn(this.map, this.spawnId);
-    this.player = new Player(this, spawn.x, spawn.y, gs.player.member);
+    this.section = new SectionController(this.stage, this.map, this.sectionHooks(), this.sectionIndex ?? 0);
+    const spawn = this.sectionIndex === undefined ? findSpawn(this.map, 'start') : this.section.entrySpawn(this.sectionIndex);
+    this.player = new Player(this, spawn.x, spawn.y, this.run.state.member);
     this.physics.add.collider(this.player, ground);
     this.physics.add.collider(this.player, platforms, undefined, () =>
       this.time.now > this.player.dropThroughUntil && this.player.body.velocity.y >= 0 && !this.player.moveState.climbing);
 
-    this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
-    this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+    this.lockBar = this.add.rectangle(0, 0, 6, this.map.heightInPixels, 0xf7768e, 0.35).setOrigin(1, 0).setDepth(5).setVisible(false);
+    this.applyBounds(0, this.map.widthInPixels, false);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.cameras.main.setBackgroundColor('#1f2335');
 
-    this.portals = objectsOf(this.map, 'portals').map((o) => new Portal(this, o, gs.flags));
-    this.savepoints = objectsOf(this.map, 'savepoints').map((o) => new ScentSavePoint(this, o));
-    for (const p of this.portals) this.portalLabels.set(p, this.add.text(p.x, p.y - 70, '', SMALL_TEXT).setOrigin(0.5).setDepth(6));
-    this.refreshPortals();
-    for (const s of this.savepoints) this.add.text(s.x, s.y - 46, '향기', SMALL_TEXT).setOrigin(0.5).setDepth(6);
-    this.npcs = objectsOf(this.map, 'spawns_npc')
-      .map((o) => ({ o, def: getNpc(o.name) }))
-      .filter(({ def }) => def.member !== gs.player.member)
-      .map(({ o, def }) => new Npc(this, o.x, o.y, def, o.props.dialogue));
+    const member = this.run.state.member;
+    this.stage.sections.forEach((sec, i) => {
+      if (!sec.cheer) return;
+      const def = getNpc(sec.cheer.npc);
+      if (def.member === member) return; // 내가 고른 멤버는 배경에 서 있지 않는다
+      const at = findSpawn(this.map, sec.cheer.spawn);
+      this.cheerNpcs.set(i, new CheerNpc(this, at.x, at.y, def));
+    });
+
+    this.chests = this.physics.add.group();
+    this.chests.defaults = {} as Phaser.Types.Physics.Arcade.PhysicsGroupDefaults;
+    this.physics.add.collider(this.chests, ground);
+    this.physics.add.collider(this.chests, platforms);
+    this.physics.add.overlap(this.player, this.chests, (_p, c) => this.openChest(c as Chest));
+
+    this.combat = new CombatController(this, this.player, this.run, [ground, platforms], this.combatHooks());
+
+    const kb = this.input.keyboard!;
+    this.cursors = kb.createCursorKeys();
+    this.keyA = kb.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    this.keyS = kb.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+    this.keyM = kb.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+    kb.once('keydown', () => getAudio(this)?.unlock());
+
+    this.unsubs = [this.run.bus.on('died', () => this.onPlayerDied())];
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      for (const u of this.unsubs) u();
+      this.unsubs = [];
+      getAudio(this)?.bgm(null);
+    });
+
+    if (this.scene.isActive(SCENE.hud)) this.events.emit('hud:reset');
+    else this.scene.launch(SCENE.hud);
+    const audio = getAudio(this);
+    audio?.setMuted(loadArcadeSave().settings.muted);
+    audio?.bgm(this.stage.bgm);
     this.cameras.main.fadeIn(200, 0, 0, 0);
+    this.installDevHooks();
+  }
 
-    this.combat = new CombatController(this, this.player, gs, [ground, platforms]);
-    for (const o of objectsOf(this.map, 'spawns_enemy')) this.combat.spawnEnemy(o.name, o.x, o.y);
-    for (const o of objectsOf(this.map, 'bosses')) {
-      if (!gs.flags.has(`boss_${o.name}_defeated`)) this.combat.spawnBoss(o.name, o.x, o.y);
-    }
-    this.combat.onPlayerDied = () => this.onPlayerDied();
-    this.keyA = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+  // ---------- 런 ----------
 
-    this.cursors = this.input.keyboard!.createCursorKeys();
-
-    const def = getMap(this.mapId);
-    gs.location = { mapId: this.mapId, spawnId: this.spawnId };
-    gs.chapter = Math.max(gs.chapter, def.chapter);
-    gs.report({ type: 'map_entered', mapId: this.mapId });
-
-    if (this.scene.isActive(SCENE.hud)) this.scene.stop(SCENE.hud);
-    this.scene.launch(SCENE.hud);
-    this.keyS = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-    this.keyD = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-    this.keyF = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F);
-
-    this.refreshMarkers();
-    this.unsubChanged = gs.bus.on('changed', () => { this.refreshMarkers(); this.refreshPortals(); });
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubChanged?.());
-
-    if (def.chapter >= 1 && !gs.flags.has(`seen_ch${def.chapter}_intro`)) {
-      gs.flags.add(`seen_ch${def.chapter}_intro`);
-      this.events.once(Phaser.Scenes.Events.CREATE, () => this.playCutscene(`ch${def.chapter}_intro`));
-    }
+  /** TODO(T7): 옛 Title/Select 흐름(세션만 있고 런이 없음)에서도 스테이지를 돌리기 위한 임시 호환. */
+  private ensureRun(): void {
+    if (hasRun(this)) return;
+    const member: MemberId = hasSession(this) ? getSession(this).gs.player.member : FALLBACK_MEMBER;
+    setRun(this, new RunStore(member, (id) => getMeme(id).buff));
   }
 
   private moveConfig(): MoveConfig {
-    return { ...DEFAULT_MOVE_CONFIG, maxJumps: this.session.gs.player.level >= 10 ? 2 : 1 };
+    const m = getMember(this.run.state.member);
+    const b = this.run.buffs;
+    return {
+      speed: 160 + 20 * (m.spd + b.spd),
+      jumpVelocity: -(380 + 20 * (m.jump + b.jump)),
+      climbSpeed: 140,
+      maxJumps: 2,
+    };
   }
 
-  private overlapsPlayer(obj: Phaser.GameObjects.Components.GetBounds): boolean {
-    return Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), obj.getBounds());
+  private remainingSec(): number {
+    return Math.max(0, Math.round(this.stage.timerSec - (this.time.now - this.startedAt) / 1000));
   }
 
-  /** ↑ 키 상호작용. 우선순위: NPC → 포탈 → 향기 */
-  private interact(): void {
-    const npc = this.npcs.find((n) => this.overlapsPlayer(n));
-    if (npc) { this.talkTo(npc); return; }
-    const portal = this.portals.find((p) => this.overlapsPlayer(p));
-    if (portal) {
-      if (portal.locked) floatText(this, this.player.x, this.player.y - 60, '아직 열리지 않은 문이다', '#a9b1d6');
-      else this.transitionTo(portal.target, portal.spawn);
-      return;
-    }
-    const scent = this.savepoints.find((s) => this.overlapsPlayer(s));
-    if (scent) this.saveAt(scent.saveName);
-  }
-
-  openDialogue(scriptId: string, onDone?: (flags: Set<string>) => void): void {
-    this.scene.pause();
-    this.scene.launch(SCENE.dialogue, { scriptId, onDone } satisfies DialogueData);
-  }
-
+  /** HUD 가 보스 바를 그릴 때 읽는다. */
   activeBoss(): Boss | null {
     return this.combat?.boss ?? null;
   }
 
-  private talkTo(npc: Npc): void {
-    const gs = this.session.gs;
-    const action = pickNpcAction(gs.quests, npc.def.id, npc.dialogueOverride ?? npc.def.dialogue);
-    this.openDialogue(action.scriptId, () => {
-      gs.report({ type: 'npc_talked', npcId: npc.def.id, dialogueId: action.scriptId });
-      if (action.kind === 'offer') gs.startQuest(action.questId);
-      if (action.kind === 'complete') this.afterQuestComplete(action.questId, gs.completeQuest(action.questId));
-      this.refreshMarkers();
+  // ---------- 구간 ----------
+
+  private sectionHooks(): SectionHooks {
+    return {
+      spawnEnemy: (id, x, y, elite) => { this.combat.spawnEnemy(id, x, y, elite); },
+      spawnBoss: (id, x, y) => {
+        const boss = this.combat.spawnBoss(id, x, y);
+        boss.onPhaseChange = (_phase, name) => {
+          sfx(this, 'boss_phase');
+          floatText(this, boss.x, boss.y - boss.displayHeight - 20, name, '#bb9af7', 18);
+        };
+        this.events.emit('hud:boss', { name: boss.def.name, phases: boss.phases } satisfies HudBossInfo);
+      },
+      onSectionStart: (index, def) => this.onSectionStart(index, def),
+      onSectionCleared: (index, chest) => this.onSectionCleared(index, chest),
+      setCameraBounds: (minX, maxX, locked) => this.applyBounds(minX, maxX, locked),
+    };
+  }
+
+  /** 카메라·물리 월드 바운드를 함께 맞춘다. 플레이어는 collideWorldBounds 라 잠금선을 넘지 못한다. */
+  private applyBounds(minX: number, maxX: number, locked: boolean): void {
+    const h = this.map.heightInPixels;
+    this.cameras.main.setBounds(minX, 0, maxX - minX, h);
+    this.physics.world.setBounds(minX, 0, maxX - minX, h);
+    this.lockBar.setPosition(maxX, 0).setVisible(locked && maxX < this.map.widthInPixels);
+  }
+
+  private onSectionStart(index: number, def: SectionDef | 'boss'): void {
+    if (def === 'boss') {
+      getAudio(this)?.bgm('boss');
+      return;
+    }
+    if (!def.cheer) return;
+    const npc = this.cheerNpcs.get(index);
+    if (!npc) return;
+    npc.cheer(def.cheer.text);
+    speakAs(this, def.cheer.text, this.voiceOf(npc.def));
+    this.events.emit('hud:cheer', { name: npc.def.name, text: def.cheer.text } satisfies HudCheer);
+  }
+
+  private voiceOf(def: NpcDef) {
+    return def.member ? getMember(def.member).voice : NPC_VOICE;
+  }
+
+  private onSectionCleared(_index: number, chest: boolean): void {
+    sfx(this, 'go');
+    this.events.emit('hud:go');
+    if (!chest) return;
+    const b = this.physics.world.bounds;
+    const x = Phaser.Math.Clamp(this.player.x + this.player.facing * 110, b.left + 24, b.right - 24);
+    this.chests.add(new Chest(this, x, this.player.y - 40));
+  }
+
+  private openChest(chest: Chest): void {
+    if (!chest.open()) return;
+    sfx(this, 'menu');
+    const x = chest.x;
+    const y = chest.y - 24;
+    this.time.delayedCall(CHEST_OPEN_DELAY_MS, () => {
+      if (!this.scene.isActive()) return;
+      const card = Math.random() < CHEST_CARD_CHANCE ? this.nextCardId() : null;
+      if (card) this.combat.dropAt(x, y, { kind: 'card', memeId: card });
+      else this.combat.dropAt(x, y, { kind: 'heart', member: this.run.state.member });
     });
   }
 
-  private afterQuestComplete(_questId: string, reward: Reward): void {
-    this.refreshPortals();
-    for (const f of reward.flags ?? []) {
-      const m = /^ch(\d+)_clear$/.exec(f);
-      if (!m) continue;
-      const gs = this.session.gs;
-      gs.savedAt = Date.now();
-      saveGame(this.session.store, this.session.slot, gs.snapshot());
-      this.playCutscene(`ch${m[1]}_clear`);
-    }
+  /** cardPool 에서 아직 안 가진 카드 우선, 다 가졌으면 아무거나. */
+  private nextCardId(): string | null {
+    const owned = new Set(this.run.state.cards);
+    const fresh = this.stage.cardPool.filter((id) => !owned.has(id));
+    const pool = fresh.length > 0 ? fresh : this.stage.cardPool;
+    return pool[Math.floor(Math.random() * pool.length)] ?? null;
   }
 
-  private playCutscene(cutsceneId: string): void {
-    this.scene.pause();
-    this.scene.launch(SCENE.cutscene, { cutsceneId, next: { resume: SCENE.world } } satisfies CutsceneData);
+  // ---------- 전투 훅 ----------
+
+  private combatHooks(): CombatHooks {
+    return {
+      onEnemyDied: (now) => this.section.enemyDied(now),
+      onBossKilled: () => this.onBossKilled(),
+      isBossSection: () => this.section.isBossSection(),
+      nextCardId: () => this.nextCardId(),
+      onHeartPicked: () => {
+        sfx(this, 'heart');
+        floatText(this, this.player.x, this.player.y - 60, '♥', '#f7768e', 18);
+      },
+      onCardPicked: (memeId) => {
+        const meme = getMeme(memeId);
+        sfx(this, 'card');
+        sayMeme(this, memeId, meme.text, getMember(meme.member).voice);
+      },
+    };
   }
 
-  private refreshMarkers(): void {
-    for (const n of this.npcs) {
-      const m = markerFor(this.session.gs.quests, n.def.id);
-      n.setMarker(m?.text ?? '', m?.color ?? '#ffffff');
-    }
-  }
-
-  private refreshPortals(): void {
-    const flags = this.session.gs.flags;
-    for (const p of this.portals) {
-      if (p.locked && p.requiresFlag && flags.has(p.requiresFlag)) p.unlock();
-      this.portalLabels.get(p)?.setText(p.locked ? '잠김' : getMap(p.target).name);
-    }
-  }
-
-  private transitionTo(mapId: string, spawnId: string): void {
+  private onBossKilled(): void {
     if (this.transitioning) return;
     this.transitioning = true;
-    this.cameras.main.fadeOut(200, 0, 0, 0);
-    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.restart({ mapId, spawnId } satisfies WorldData));
-  }
-
-  private saveAt(saveName: string): void {
-    const gs = this.session.gs;
-    const max = gs.maxStats();
-    gs.heal(max.hp, max.mp);
-    gs.location = { mapId: this.mapId, spawnId: saveName };
-    gs.savedAt = Date.now();
-    saveGame(this.session.store, this.session.slot, gs.snapshot());
-    floatText(this, this.player.x, this.player.y - 60, '향기를 남겼다 (저장됨)', '#ff9e64');
+    const s = this.run.state;
+    const result: ResultData = {
+      stageId: this.stageId,
+      kills: s.stageKills,
+      maxCombo: s.maxCombo,
+      noHitBoss: !s.bossHit,
+      remainingSec: this.remainingSec(),
+    };
+    const bonus = clearBonus(s.lives, result.remainingSec, result.noHitBoss);
+    this.run.stageClear(bonus.total);
+    getAudio(this)?.bgm(null);
+    sfx(this, 'clear');
+    this.player.setVelocity(0, 0);
+    this.events.emit('hud:clear', { noHit: result.noHitBoss } satisfies HudClear);
+    this.time.delayedCall(STAGE_CLEAR_HOLD_MS, () => {
+      this.cameras.main.fadeOut(300, 0, 0, 0);
+      this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+        this.scene.stop(SCENE.hud);
+        this.scene.start(SCENE.result, result);
+      });
+    });
   }
 
   private onPlayerDied(): void {
     if (this.transitioning) return;
     this.transitioning = true;
+    this.physics.pause();
     this.player.setVelocity(0, 0).setTint(0x565f89);
     floatText(this, this.player.x, this.player.y - 60, '무대 실수...', '#f7768e', 18);
-    this.cameras.main.fadeOut(900, 0, 0, 0);
+    getAudio(this)?.bgm(null);
+    this.cameras.main.fadeOut(DEATH_FADE_MS, 0, 0, 0);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      const gs = this.session.gs;
-      const max = gs.maxStats();
-      gs.heal(Math.floor(max.hp / 2), Math.floor(max.mp / 2));
-      this.scene.restart({ mapId: gs.location.mapId, spawnId: gs.location.spawnId } satisfies WorldData);
+      const lives = this.run.loseLife();
+      if (lives > 0) {
+        this.scene.restart({ stageId: this.stageId, sectionIndex: this.section.index } satisfies WorldData);
+      } else {
+        this.scene.stop(SCENE.hud);
+        this.scene.start(SCENE.continue, { stageId: this.stageId } satisfies ContinueData);
+      }
     });
   }
 
-  update(_time: number, delta: number): void {
-    this.session.gs.playTimeMs += delta;
+  private toggleMute(): void {
+    const audio = getAudio(this);
+    if (!audio) return;
+    const muted = !audio.muted;
+    audio.setMuted(muted);
+    persistArcadeSave(setMuted(loadArcadeSave(), muted));
+    floatText(this, this.player.x, this.player.y - 70, muted ? '음소거' : '소리 켜짐', '#a9b1d6', 12);
+  }
+
+  // ---------- 프레임 ----------
+
+  update(): void {
     if (this.transitioning) return;
+    const now = this.time.now;
+    this.run.tick(now);
+    if (this.superPlaying) return; // 필살기 연출: 물리 정지·입력 무시
+    this.section.update(now, this.player.x);
+
+    if (Phaser.Input.Keyboard.JustDown(this.keyM)) this.toggleMute();
+    if (Phaser.Input.Keyboard.JustDown(this.keyA)) this.combat.attack(now);
+    if (Phaser.Input.Keyboard.JustDown(this.keyS) && this.combat.castSuper(now, () => { this.superPlaying = false; })) {
+      this.superPlaying = true;
+      return;
+    }
+
+    this.combat.update(now);
     const probe = this.ladders.getTileAtWorldXY(this.player.x, this.player.y - 20);
     const onLadder = !!probe && probe.index > 0;
-    const upJustPressed = Phaser.Input.Keyboard.JustDown(this.cursors.up);
-    if (!onLadder && upJustPressed) this.interact();
-    if (Phaser.Input.Keyboard.JustDown(this.keyA)) this.combat.castSkill(getSkill(`${this.session.gs.player.member}_basic`));
-    const member = getMember(this.session.gs.player.member);
-    if (Phaser.Input.Keyboard.JustDown(this.keyS)) this.castSlot(member.skills[1]!);
-    if (Phaser.Input.Keyboard.JustDown(this.keyD)) this.castSlot(member.skills[2]!);
-    if (Phaser.Input.Keyboard.JustDown(this.keyF)) this.useFirstConsumable();
-    this.mpRegenAcc += delta;
-    if (this.mpRegenAcc >= 1000) {
-      this.mpRegenAcc -= 1000;
-      if (this.session.gs.player.mp < this.session.gs.maxStats().mp) this.session.gs.heal(0, 1);
-    }
-    this.combat.update(this.time.now);
     this.player.applyMovement(
       {
         left: this.cursors.left.isDown,
@@ -260,25 +354,26 @@ export class WorldScene extends Phaser.Scene {
     );
   }
 
-  private castSlot(skillId: string): void {
-    const skill = getSkill(skillId);
-    if (this.session.gs.player.level < skill.level) {
-      floatText(this, this.player.x, this.player.y - 60, `${skill.name}: Lv.${skill.level}에 해금`, '#a9b1d6');
-      return;
-    }
-    this.combat.castSkill(skill);
-  }
+  // ---------- 개발용 훅 (e2e) ----------
 
-  private useFirstConsumable(): void {
-    const gs = this.session.gs;
-    const food = Object.keys(gs.inventory.items).filter(hasItem).map((id) => getItem(id)).find((it) => it.type === 'consumable');
-    if (!food || food.type !== 'consumable') {
-      floatText(this, this.player.x, this.player.y - 60, '먹을 게 없다', '#a9b1d6');
-      return;
-    }
-    const bonus = 1 + (passiveTotals(gs.memes, getMeme).foodHeal ?? 0);
-    gs.inventory = removeItem(gs.inventory, food.id);
-    gs.heal(Math.floor((food.heal.hp ?? 0) * bonus), Math.floor((food.heal.mp ?? 0) * bonus));
-    floatText(this, this.player.x, this.player.y - 60, `${food.name} 냠`, '#9ece6a');
+  private installDevHooks(): void {
+    if (!import.meta.env.DEV) return;
+    (window as unknown as { __rescene?: unknown }).__rescene = {
+      killAllEnemies: () => { for (const e of [...this.combat.enemies.getChildren()]) this.combat.slay(e as Enemy); },
+      fillGauge: () => { let guard = 0; while (this.run.state.gauge < 100 && guard++ < 100) this.run.hit(); },
+      enemyCount: () => this.combat.enemies.countActive(true),
+      sectionIndex: () => this.section.index,
+      sectionPhase: () => this.section.phase,
+      gauge: () => this.run.state.gauge,
+      /** 플레이어를 x 로 옮긴다(바운드 안이어야 한다). */
+      warp: (x: number) => { this.player.setPosition(x, this.player.y); },
+      /** 하트 n 칸 피해(사망 흐름 검증용). */
+      hurt: (n: number) => { this.run.takeHit(n); },
+      openChests: () => { for (const c of [...this.chests.getChildren()]) this.openChest(c as Chest); },
+      pickupAll: () => this.combat.pickupAll(),
+      dropCount: () => this.combat.drops.countActive(true),
+      lockLines: () => this.section.lockLines(),
+      bossHp: () => this.combat.boss?.hp ?? null,
+    };
   }
 }

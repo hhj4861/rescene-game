@@ -1,18 +1,16 @@
 import Phaser from 'phaser';
 import { TEX } from '../core/AssetKeys';
-import type { Stats } from '../systems/types';
 
+/** 적(보스) 탄. 맞으면 하트 `damage` 칸. */
 export class EnemyProjectile extends Phaser.Physics.Arcade.Image {
-  readonly attacker: Stats;
-  readonly multiplier: number;
+  readonly damage: number;
   readonly range: number;
   readonly startX: number;
   declare body: Phaser.Physics.Arcade.Body;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, dir: 1 | -1, speed: number, range: number, attacker: Stats, multiplier: number) {
+  constructor(scene: Phaser.Scene, x: number, y: number, dir: 1 | -1, speed: number, range: number, damage: number) {
     super(scene, x, y, TEX.projectile);
-    this.attacker = attacker;
-    this.multiplier = multiplier;
+    this.damage = damage;
     this.range = range;
     this.startX = x;
     scene.add.existing(this);
