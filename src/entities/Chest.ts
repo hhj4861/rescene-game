@@ -11,8 +11,8 @@ export class Chest extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setOrigin(0.5, 1).setDepth(7);
+    // collideWorldBounds 는 켜지 않는다(DropItem 과 같은 이유).
     this.body.setBounce(0.2, 0.2).setDrag(300, 0);
-    this.setCollideWorldBounds(true);
     this.setVelocityY(-160);
   }
 

@@ -16,8 +16,8 @@ export class DropItem extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setDepth(7);
+    // collideWorldBounds 는 켜지 않는다: 구간 바운드가 옆으로 옮겨질 때 남은 아이템이 새 바운드 끝으로 끌려온다.
     this.body.setBounce(0.4, 0.4).setDrag(200, 0);
-    this.setCollideWorldBounds(true);
     this.setVelocity(Phaser.Math.Between(-80, 80), -220);
     this.anims.play(`${tex}_anim`, true);
   }

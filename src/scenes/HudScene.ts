@@ -82,7 +82,8 @@ export class HudScene extends Phaser.Scene {
     this.bossBar = new Bar(this, CX - 200, GAME_HEIGHT - 46, 400, 12, '#bb9af7', false);
     this.bossBar.setVisible(false);
 
-    this.add.text(GAME_WIDTH - 12, GAME_HEIGHT - 8, '←→ 이동  Space 점프(2단)  ↑↓ 사다리  ↓+Space 내려가기  A 공격  S 필살기  M 음소거', stroked(11, '#a9b1d6')).setOrigin(1, 1);
+    // 조작 힌트는 좌하단(게이지 왼쪽 끝 374px 안쪽에서 끝나야 "S" 라벨과 겹치지 않는다).
+    this.add.text(12, GAME_HEIGHT - 8, '←→ 이동 · Space 점프 · ↑↓ 사다리 · A 공격 · S 필살기 · M 음소거', stroked(11, '#a9b1d6')).setOrigin(0, 1);
 
     this.unsubs = [
       run.bus.on('changed', () => this.refresh()),
