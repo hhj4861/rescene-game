@@ -75,7 +75,8 @@ describe('object sprites', () => {
 });
 
 describe('npc sprite sheets', () => {
-  it('every npc builds a 32×48 sheet with two differing idle frames', () => {
+  it('every npc builds a 40×64 sheet with two differing idle frames', () => {
+    expect(NPC_FRAME).toEqual({ width: 40, height: 64 });
     expect(NPC_ANIMS.idle.frames.length).toBe(NPC_FRAME_COUNT);
     for (const n of NPCS) {
       const sheet = buildNpcSheet(n.id);
@@ -85,10 +86,16 @@ describe('npc sprite sheets', () => {
       expect(frameOf(sheet, NPC_FRAME.width, 0)).not.toBe(frameOf(sheet, NPC_FRAME.width, 1));
     }
   });
-  it('member npcs look exactly like the member player sprite', () => {
-    const npc = buildNpcSheet('npc_woni');
-    const player = buildPlayerSheet('woni');
-    expect(frameOf(npc, NPC_FRAME.width, 0)).toBe(frameOf(player, PLAYER_FRAME.width, 0));
+  it('member npcs look exactly like the member player sprite (training outfit)', () => {
+    for (const m of ['woni', 'liv', 'minami', 'may', 'zena'] as const) {
+      const npc = buildNpcSheet(`npc_${m}`);
+      const player = buildPlayerSheet(m, 'training');
+      expect(frameOf(npc, NPC_FRAME.width, 0), m).toBe(frameOf(player, PLAYER_FRAME.width, 0));
+    }
+  });
+  it('non-member npcs differ from each other', () => {
+    const ids = NPCS.filter((n) => !n.member).map((n) => frameOf(buildNpcSheet(n.id), NPC_FRAME.width, 0));
+    expect(new Set(ids).size).toBe(ids.length);
   });
   it('non-member npcs differ from every member', () => {
     const judge = frameOf(buildNpcSheet('npc_audition_judge'), NPC_FRAME.width, 0);

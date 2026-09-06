@@ -1,53 +1,90 @@
 import { heartTex, lifeTex, TEX2 } from '../src/core/ArcadeAssetKeys';
-import { ENEMY_FRAME_COUNT, NPC_FRAME, NPC_FRAME_COUNT, PLAYER_ANIMS, PLAYER_FRAME, PLAYER_FRAME_COUNT } from '../src/core/spriteFrames';
+import { ENEMY_FRAME_COUNT, NPC_FRAME, NPC_FRAME_COUNT, PLAYER_ANIMS, PLAYER_FRAME, PLAYER_FRAME_COUNT, type Outfit } from '../src/core/spriteFrames';
 import { NPCS } from '../src/data/npcs';
 import { ENEMIES } from '../src/data/enemies';
 import { MEMBER_IDS, type MemberId } from '../src/systems/types';
-import { blit, composeLayers, crop, encodePng, packSheet, rasterize, type Grid } from './pixel-art';
+import { blit, crop, encodePng, packSheet, pasteGrid, rasterize, type Grid } from './pixel-art';
 import { ENEMY_SPRITES } from './sprites/enemies';
 import { CARD_FRAMES, CARD_H, CARD_PALETTE, CARD_W, CHEST_FRAMES, CHEST_H, CHEST_PALETTE, CHEST_W, HEART_FOODS, HEART_H, HEART_W, heartFrames } from './sprites/items';
 import { NPC_LOOKS } from './sprites/npcs';
 import { OBJECT_SPRITES } from './sprites/objects';
-import { ATTACK_ARM, BASE_PALETTE, BODY, HAIR, HURT_EYES, LEGS, LOOKS, PROPS, SPRITE_H, SPRITE_W } from './sprites/templates';
+import { OUTFIT_PALETTES, outfitPalette, torsoFor } from './sprites/outfits';
+import { FLOURISH, POSES, SUPER, WIN, armLayer, lean, legsGrid, sink, type PoseSpec } from './sprites/poses';
+import { ACCESSORIES, BLUSH, BODY_X, CANVAS_W, EYES, EYE_X, EYE_Y, FACE, HAIR, HEAD_BACK, LOOKS, MOUTHS, MOUTH_POS, PROPS, SPRITE_H, blank, flipH, type MemberLook } from './sprites/templates';
 import { GROUND_TILE, LADDER_TILE, PLATFORM_TILE, TILE, TILESET_PALETTES } from './sprites/tiles';
-import { buildGoFrames, GO_H, GO_PALETTE, GO_W, HUD_HEART_EMPTY, HUD_HEART_FULL, HUD_HEART_H, HUD_HEART_W } from './sprites/ui';
+import { buildGoFrames, GO_H, GO_PALETTE, GO_W, HUD_HEART_EMPTY, HUD_HEART_FULL, HUD_HEART_H, HUD_HEART_W, LIFE_CROP } from './sprites/ui';
 
 export const TILES_DIR = 'public/assets/tiles';
 
 export const SPRITES_DIR = 'public/assets/sprites';
-export const playerSheetFile = (member: MemberId): string => `${SPRITES_DIR}/player_${member}.png`;
+/** training 시트는 옛 이름(player_<m>.png)을 유지하고, 나머지 의상은 player_<m>_<outfit>.png. */
+export const playerSheetFile = (member: MemberId, outfit: Outfit = 'training'): string =>
+  outfit === 'training' ? `${SPRITES_DIR}/player_${member}.png` : `${SPRITES_DIR}/player_${member}_${outfit}.png`;
 // 적·NPC id는 이미 enemy_/boss_/npc_ 접두사를 가진다
 export const enemySheetFile = (enemyId: string): string => `${SPRITES_DIR}/${enemyId}.png`;
 export const npcSheetFile = (npcId: string): string => `${SPRITES_DIR}/${npcId}.png`;
 
 export interface Sheet { width: number; height: number; rgba: Uint8Array; png: Uint8Array }
 
-const replaceRows = (grid: Grid, from: number, rows: Grid): Grid => grid.map((r, y) => (y >= from && y < from + rows.length ? rows[y - from]! : r));
-/** 위쪽 rows 줄을 dy만큼 아래로 내린다(숨쉬기). 맨 윗줄은 비운다. */
-const sink = (grid: Grid, rows: number, dy: number): Grid => grid.map((r, y) => (y < dy ? '.'.repeat(SPRITE_W) : y < rows + dy ? grid[y - dy]! : r));
-/** 위쪽 rows 줄을 dx만큼 오른쪽으로 민다(기울기). */
-const lean = (grid: Grid, rows: number, dx: number): Grid => grid.map((r, y) => (y < rows ? ('.'.repeat(dx) + r).slice(0, SPRITE_W) : r));
+if (CANVAS_W !== PLAYER_FRAME.width || SPRITE_H !== PLAYER_FRAME.height) throw new Error('template canvas != PLAYER_FRAME');
+if (NPC_FRAME.width !== PLAYER_FRAME.width || NPC_FRAME.height !== PLAYER_FRAME.height) throw new Error('NPC_FRAME != PLAYER_FRAME');
 
-function poses(member: MemberId): Grid[] {
-  const look = LOOKS[member];
-  if (!look) throw new Error(`no look for member ${member}`);
-  const hair = HAIR[look.hair]!;
-  const prop = PROPS[look.prop]!;
-  const withLegs = (legs: Grid): Grid => replaceRows(BODY, 32, legs);
-  const stand = composeLayers([BODY, hair, prop], SPRITE_W, SPRITE_H);
-  const legsOnly = (legs: Grid): Grid => composeLayers([withLegs(legs), hair, prop], SPRITE_W, SPRITE_H);
-  const attackBody = replaceRows(BODY, 20, ATTACK_ARM);
-  const attack1 = composeLayers([attackBody, hair], SPRITE_W, SPRITE_H);
-  const attack2 = lean(attack1, 28, 1);
-  const hurt = composeLayers([replaceRows(BODY, 7, HURT_EYES), hair, prop], SPRITE_W, SPRITE_H);
-  const byAnim: Record<keyof typeof PLAYER_ANIMS, Grid[]> = {
-    idle: [stand, sink(stand, 28, 1)],
-    walk: [legsOnly(LEGS.strideL), stand, legsOnly(LEGS.strideR), stand],
-    jump: [legsOnly(LEGS.tuck)],
-    attack: [attack1, attack2],
-    hurt: [hurt],
+/**
+ * 한 포즈를 40×64 캔버스에 합성한다. 순서: 뒷머리 → 뒷팔 → 얼굴·몸통·다리 → 눈·입·홍조 → 앞머리 → 액세서리 → 앞팔 → 소품 → 기울기·숨쉬기 → 바닥 소품 → 효과.
+ * overlays 는 NPC 전용(안경·모자 등, 그리드 좌표)이며 앞머리 뒤·액세서리 자리에 얹는다.
+ */
+export function renderPose(look: MemberLook, outfit: Outfit, spec: PoseSpec, overlays: Grid[] = [], plain = false): Grid {
+  const at = (base: Grid, g: Grid, x = BODY_X, y = 0): Grid => pasteGrid(base, g, x, y);
+  const hair = HAIR[look.hair];
+  const propIdleArm = PROPS[look.prop].idleArm;
+  const front = armLayer(spec.holdProp && propIdleArm ? { path: propIdleArm } : spec.front);
+  const back = armLayer(spec.back);
+  let c = blank(SPRITE_H, CANVAS_W);
+  c = at(c, hair.back);
+  c = at(c, back.grid, 0, 0);
+  c = at(c, spec.backView ? HEAD_BACK : FACE);
+  c = at(c, torsoFor(outfit, plain));
+  c = at(c, legsGrid(OUTFIT_PALETTES[outfit].skirt, spec.legs));
+  if (!spec.backView) {
+    const left = EYES[spec.eyes ?? 'open'], right = flipH(EYES[spec.eyesRight ?? spec.eyes ?? 'open']);
+    c = at(c, left, BODY_X + EYE_X.left - 1, EYE_Y);
+    c = at(c, right, BODY_X + EYE_X.right - 1, EYE_Y);
+    c = at(c, MOUTHS[spec.mouth ?? 'smile'], BODY_X + MOUTH_POS.x, MOUTH_POS.y);
+    c = at(c, BLUSH);
+  }
+  c = at(c, hair.front);
+  for (const o of overlays) c = at(c, o);
+  if (!spec.backView || look.accessory !== 'galHighlight') c = at(c, ACCESSORIES[look.accessory]);
+  c = at(c, front.grid, 0, 0);
+  const prop = PROPS[look.prop];
+  const propMode = spec.prop ?? 'idle';
+  const grounded = prop.grounded && propMode === 'idle';
+  if (propMode === 'idle' && prop.idle && !grounded) c = at(c, prop.idle.grid, front.hand[0] + prop.idle.x, front.hand[1] + prop.idle.y);
+  if (propMode === 'grip' && prop.grip) c = at(c, prop.grip.grid, front.hand[0] + prop.grip.x, front.hand[1] + prop.grip.y);
+  if (propMode === 'swing' && prop.swing) c = at(c, prop.swing.grid, front.hand[0] + prop.swing.x, front.hand[1] + prop.swing.y);
+  if (spec.lean) c = lean(c, spec.lean);
+  if (spec.sink) c = sink(c, spec.sink);
+  if (grounded && prop.idle) c = at(c, prop.idle.grid, prop.idle.x, prop.idle.y);
+  if (spec.fx) c = at(c, spec.fx, 0, 0);
+  return c;
+}
+
+/** 멤버의 15프레임(PLAYER_ANIMS 순서). */
+export function playerPoses(member: MemberId): PoseSpec[] {
+  const byAnim: Record<keyof typeof PLAYER_ANIMS, PoseSpec[]> = {
+    idle: [POSES.idle, POSES.breathe],
+    flourish: [FLOURISH[member]],
+    walk: [POSES.walkA, POSES.pass, POSES.walkB, POSES.pass],
+    jump: [POSES.jump],
+    attack: [POSES.attack1, POSES.attack2, POSES.attack3],
+    attack1: [POSES.attack1],
+    attack2: [POSES.attack2],
+    attack3: [POSES.attack3],
+    hurt: [POSES.hurt],
+    super: SUPER[member],
+    win: [WIN[member]],
   };
-  const frames: Grid[] = Array<Grid>(PLAYER_FRAME_COUNT);
+  const frames: PoseSpec[] = Array<PoseSpec>(PLAYER_FRAME_COUNT);
   for (const [anim, def] of Object.entries(PLAYER_ANIMS) as [keyof typeof PLAYER_ANIMS, { frames: readonly number[] }][]) {
     def.frames.forEach((idx, i) => { frames[idx] = byAnim[anim][i]!; });
   }
@@ -55,10 +92,11 @@ function poses(member: MemberId): Grid[] {
   return frames;
 }
 
-export function buildPlayerSheet(member: MemberId): Sheet {
-  const look = LOOKS[member]!;
-  const palette = { ...BASE_PALETTE, H: look.hairColor[0], h: look.hairColor[1], T: look.top, t: look.topShade };
-  return sheetOf(poses(member), palette, SPRITE_W, SPRITE_H, PLAYER_FRAME.width, PLAYER_FRAME.height);
+export function buildPlayerSheet(member: MemberId, outfit: Outfit = 'training'): Sheet {
+  const look = LOOKS[member];
+  if (!look) throw new Error(`no look for member ${member}`);
+  const grids = playerPoses(member).map((spec) => renderPose(look, outfit, spec));
+  return sheetOf(grids, outfitPalette(look, outfit), CANVAS_W, SPRITE_H, PLAYER_FRAME.width, PLAYER_FRAME.height);
 }
 
 /** 그리드 프레임들을 (fw×fh) 프레임 안에 아래 가운데 정렬로 배치한 시트. */
@@ -88,27 +126,29 @@ export function buildEnemySheet(enemyId: string): Sheet {
   return sheetOf(art.frames, art.palette, art.width, art.height, art.width, art.height);
 }
 
+/** NPC: 멤버 NPC는 멤버 연습복 외형 그대로, 배경 NPC는 머리·팔레트·오버레이만 다른 같은 템플릿. 대기 2프레임. */
 export function buildNpcSheet(npcId: string): Sheet {
   const def = NPCS.find((n) => n.id === npcId);
   if (!def) throw new Error(`unknown npc ${npcId}`);
-  let stand: Grid;
+  let grids: Grid[];
   let palette: Record<string, string>;
   if (def.member) {
     const look = LOOKS[def.member]!;
-    stand = composeLayers([BODY, HAIR[look.hair]!, PROPS[look.prop]!], SPRITE_W, SPRITE_H);
-    palette = { ...BASE_PALETTE, H: look.hairColor[0], h: look.hairColor[1], T: look.top, t: look.topShade };
+    grids = [POSES.idle, POSES.breathe].map((spec) => renderPose(look, 'training', spec));
+    palette = outfitPalette(look, 'training');
   } else {
-    const look = NPC_LOOKS[npcId];
-    if (!look) throw new Error(`no look for npc ${npcId}`);
-    stand = composeLayers([BODY, HAIR[look.hair]!, ...look.overlays], SPRITE_W, SPRITE_H);
-    palette = { ...BASE_PALETTE, H: look.hairColor[0], h: look.hairColor[1], T: look.top, t: look.topShade, ...(look.bottom ? { B: look.bottom, b: look.bottom } : {}), ...(look.extra ?? {}) };
+    const npc = NPC_LOOKS[npcId];
+    if (!npc) throw new Error(`no look for npc ${npcId}`);
+    const look: MemberLook = { hair: npc.hair, hairColor: npc.hairColor, top: npc.top, topShade: npc.topShade, prop: 'none', accessory: npc.accessory ?? 'none', accent: '#12131c' };
+    // 배경 NPC는 후드 끈·주머니 없는 단색 상의(plain)
+    grids = [POSES.idle, POSES.breathe].map((spec) => renderPose(look, 'training', { ...spec, prop: 'none' }, npc.overlays, true));
+    palette = { ...outfitPalette(look, 'training'), ...(npc.bottom ? { B: npc.bottom, b: npc.bottom } : {}), ...(npc.extra ?? {}) };
   }
-  const frames = [stand, sink(stand, 28, 1)];
-  if (frames.length !== NPC_FRAME_COUNT) throw new Error('npc frame count drift');
-  return sheetOf(frames, palette, SPRITE_W, SPRITE_H, NPC_FRAME.width, NPC_FRAME.height);
+  if (grids.length !== NPC_FRAME_COUNT) throw new Error('npc frame count drift');
+  return sheetOf(grids, palette, CANVAS_W, SPRITE_H, NPC_FRAME.width, NPC_FRAME.height);
 }
 
-export interface NamedSheet { file: string; png: Uint8Array; width: number; height: number }
+export interface NamedSheet { file: string; png: Uint8Array; width: number; height: number; rgba?: Uint8Array }
 
 /** 프레임들을 그대로(오프셋 없이) 이어붙인 시트 PNG. */
 const packFrames = (grids: Grid[], palette: Record<string, string>, w: number, h: number, file: string): NamedSheet => {
@@ -142,8 +182,8 @@ export function buildUiSheets(): NamedSheet[] {
   const go = packFrames(buildGoFrames(), GO_PALETTE, GO_W, GO_H, `${SPRITES_DIR}/${TEX2.go}.png`);
   const lives = MEMBER_IDS.map((m) => {
     const sheet = buildPlayerSheet(m);
-    const rgba = crop(sheet.rgba, sheet.width, 4, 0, 16, 16);
-    return { file: `${SPRITES_DIR}/${lifeTex(m)}.png`, width: 16, height: 16, png: encodePng(16, 16, rgba) };
+    const rgba = crop(sheet.rgba, sheet.width, LIFE_CROP.x, LIFE_CROP.y, LIFE_CROP.w, LIFE_CROP.h);
+    return { file: `${SPRITES_DIR}/${lifeTex(m)}.png`, width: LIFE_CROP.w, height: LIFE_CROP.h, rgba, png: encodePng(LIFE_CROP.w, LIFE_CROP.h, rgba) };
   });
   return [heartFull, heartEmpty, go, ...lives];
 }

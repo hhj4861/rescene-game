@@ -1,8 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { buildItemSheets, buildTileset, buildUiSheets } from '../tools/build-sprites-lib';
+import { buildItemSheets, buildPlayerSheet, buildTileset, buildUiSheets } from '../tools/build-sprites-lib';
+import { crop } from '../tools/pixel-art';
 
 describe('item and ui sheets', () => {
+  it('life icons are the 16×16 head crop (rows 2..17, cols 12..27) of the member idle frame and are mostly opaque', () => {
+    const ui = buildUiSheets();
+    for (const m of ['woni', 'liv', 'minami', 'may', 'zena'] as const) {
+      const life = ui.find((s) => s.file.endsWith(`life_${m}.png`))!;
+      const sheet = buildPlayerSheet(m);
+      const expected = crop(sheet.rgba, sheet.width, 12, 2, 16, 16);
+      expect(life.rgba, `${m} rgba`).toBeDefined();
+      expect(Buffer.compare(Buffer.from(life.rgba!), Buffer.from(expected)), m).toBe(0);
+      let opaque = 0;
+      for (let i = 3; i < expected.length; i += 4) if (expected[i]! > 0) opaque++;
+      expect(opaque, `${m} opaque`).toBeGreaterThan(16 * 16 * 0.6);
+    }
+  });
   it('builds the expected files with the expected sizes', () => {
     const items = buildItemSheets();
     expect(items.map((s) => s.file).sort()).toEqual(['public/assets/sprites/heart_liv.png', 'public/assets/sprites/heart_may.png', 'public/assets/sprites/heart_minami.png', 'public/assets/sprites/heart_woni.png', 'public/assets/sprites/heart_zena.png', 'public/assets/sprites/item_card.png', 'public/assets/sprites/item_chest.png']);

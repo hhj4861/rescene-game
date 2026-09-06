@@ -6,6 +6,10 @@ const rowsOf = (name: string, width: number, g: Grid): Grid => {
   return g;
 };
 
+// ---------- life_<member> 16×16: 멤버 시트 0프레임(40×64)에서 머리를 잘라낸 초상 아이콘 ----------
+/** 프레임 좌표: 행 2~17 · 열 12~27(앞머리·눈·입이 들어오는 얼굴 중심). */
+export const LIFE_CROP = { x: 12, y: 2, w: 16, h: 16 } as const;
+
 // ---------- hud_heart_full / hud_heart_empty 12×12 ----------
 export const HUD_HEART_W = 12;
 export const HUD_HEART_H = 12;
