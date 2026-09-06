@@ -66,6 +66,55 @@ describe('npcs', () => {
   });
 });
 
+describe('member voice v2 and lines', () => {
+  const VOICE_TABLE: Record<string, { accent: string; spread: number }> = {
+    woni: { accent: 'fall', spread: 1.0 },
+    liv: { accent: 'flat', spread: 0.8 },
+    minami: { accent: 'rise', spread: 1.3 },
+    may: { accent: 'bounce', spread: 1.2 },
+    zena: { accent: 'fall', spread: 0.7 },
+  };
+  const BANNED_WORDS = ['진경은', '예빈'];
+
+  it('every member has all four line categories with at least 3 lines each', () => {
+    for (const m of MEMBERS) {
+      for (const key of ['cheer', 'win', 'hurt', 'card'] as const) {
+        expect(m.lines[key].length, `${m.id}.${key}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
+  it('every line is at most 30 characters (speech bubble)', () => {
+    for (const m of MEMBERS) {
+      for (const key of ['cheer', 'win', 'hurt', 'card'] as const) {
+        for (const line of m.lines[key]) {
+          expect(line.length, `${m.id}.${key}: "${line}"`).toBeLessThanOrEqual(30);
+        }
+      }
+    }
+  });
+
+  it('no line contains a banned real name', () => {
+    for (const m of MEMBERS) {
+      for (const key of ['cheer', 'win', 'hurt', 'card'] as const) {
+        for (const line of m.lines[key]) {
+          for (const banned of BANNED_WORDS) {
+            expect(line.includes(banned), `${m.id}.${key}: "${line}"`).toBe(false);
+          }
+        }
+      }
+    }
+  });
+
+  it('accent and spread match the character v2 design table', () => {
+    for (const m of MEMBERS) {
+      const expected = VOICE_TABLE[m.id]!;
+      expect(m.voice.accent, m.id).toBe(expected.accent);
+      expect(m.voice.spread, m.id).toBe(expected.spread);
+    }
+  });
+});
+
 describe('schema v2', () => {
   it('members carry arcade stats, super text and a voice profile', () => {
     for (const m of MEMBERS) {
