@@ -95,6 +95,14 @@ describe('stages', () => {
   });
 });
 
+describe('plan-2 stages', () => {
+  it('registers stages 2-5 with the plan-2 boss gate wave', () => {
+    expect(STAGES.map((s) => s.id)).toEqual(['s1_trainee', 's2_debut', 's3_road', 's4_comeback', 's5_first_win']);
+    expect(getStage('s3_road').sections[2]!.waves.at(-1)!.enemy).toBe('boss_top100_gate');
+    expect(() => validateAllData()).not.toThrow();
+  });
+});
+
 describe('plan-2 enemies and bosses', () => {
   it('has every plan-2 enemy and boss with the shared sizes', () => {
     const dims: Record<string, [number, number]> = {
