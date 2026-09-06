@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addGauge, addScore, heal, isDead, isGaugeFull, loseLife, newRun, spendGauge, stageCleared, takeHit, useContinue, raiseMaxHearts, recordKill } from '../src/systems/run';
+import { addGauge, addScore, heal, isDead, isGaugeFull, loseLife, newRun, spendGauge, stageCleared, takeHit, useContinue, raiseMaxHearts, lowerMaxHearts, recordKill } from '../src/systems/run';
 import { emptyBuffs } from '../src/systems/cards';
 const B = emptyBuffs();
 describe('run state', () => {
@@ -18,6 +18,12 @@ describe('run state', () => {
   });
   it('score applies the score buff and floors', () => { expect(addScore(newRun('woni'), 105, { ...B, score: 0.1 }).score).toBe(115); });
   it('heal and raiseMaxHearts respect the cap', () => { expect(heal(takeHit(newRun('liv'), 3), 9).hearts).toBe(5); expect(raiseMaxHearts(takeHit(newRun('liv'), 1), 1)).toMatchObject({ maxHearts: 6, hearts: 5 }); });
+  it('lowerMaxHearts floors at 1 and clamps current hearts', () => {
+    const up = raiseMaxHearts(newRun('liv'), 2);                                   // 7/7
+    expect(lowerMaxHearts(up, 2)).toMatchObject({ maxHearts: 5, hearts: 5 });
+    expect(lowerMaxHearts(takeHit(up, 1), 1)).toMatchObject({ maxHearts: 6, hearts: 6 });
+    expect(lowerMaxHearts(newRun('liv'), 99)).toMatchObject({ maxHearts: 1, hearts: 1 });
+  });
   it('stage clear adds bonus, advances and resets per-stage counters', () => {
     const s = stageCleared({ ...recordKill(newRun('minami'), 7), gauge: 30, hearts: 2, bossHit: true }, 1500);
     expect(s).toMatchObject({ score: 1500, stageIndex: 2, hearts: 5, gauge: 0, bossHit: false, stageKills: 0, maxCombo: 0 });

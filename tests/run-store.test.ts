@@ -11,6 +11,13 @@ describe('RunStore', () => {
     expect(r.combo.count).toBe(5); expect(r.state.score).toBe(600); r.kill(100, 1600, true); expect(r.state.score).toBe(1600);
   });
   it('picking a heart card raises max hearts', () => { const r = new RunStore('may', lookup); r.pickCard('heart'); expect(r.state.maxHearts).toBe(6); expect(r.buffs.heart).toBe(1); });
+  it('a heart card pushed out of the hand lowers max hearts again', () => {
+    const r = new RunStore('may', lookup); r.pickCard('heart'); r.pickCard('a'); r.pickCard('b');
+    expect(r.state.maxHearts).toBe(6); expect(r.state.cards).toEqual(['heart', 'a', 'b']);
+    let dropped: string | null = null; r.bus.on('card', (c) => { dropped = c.dropped; });
+    r.pickCard('c');                                                                   // 4장째 → 'heart' 탈락
+    expect(dropped).toBe('heart'); expect(r.state.cards).toEqual(['a', 'b', 'c']); expect(r.state.maxHearts).toBe(5); expect(r.state.hearts).toBe(5); expect(r.buffs.heart).toBe(0);
+  });
   it('takeHit to zero emits died and loseLife reports remaining lives', () => {
     const r = new RunStore('zena', lookup); let died = 0; r.bus.on('died', () => died++);
     r.takeHit(5); expect(died).toBe(1); expect(r.loseLife()).toBe(2); expect(r.state.hearts).toBe(5);

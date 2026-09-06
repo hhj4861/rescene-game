@@ -15,23 +15,26 @@ import type { Boss, BossPhase } from '../entities/Boss';
 import { CheerNpc } from '../entities/CheerNpc';
 import { Chest } from '../entities/Chest';
 import type { Enemy } from '../entities/Enemy';
+import { JumpPad } from '../entities/JumpPad';
 import { Player } from '../entities/Player';
 import { floatText } from '../ui/FloatText';
-import { CombatController, type CombatHooks } from './CombatController';
+import { CombatController, type BossKind, type CombatHooks } from './CombatController';
 import { SectionController, type SectionHooks } from './SectionController';
-import { findSpawn } from './worldObjects';
+import { findSpawn, jumpPadSpots } from './worldObjects';
 
 // ---- 씬 데이터 계약(플랜 상단). T6 메뉴 씬과는 SCENE 키와 이 형태로만 통신한다. ----
-export interface WorldData { stageId: string; sectionIndex?: number }
+/** elapsedMs: 구간 재시작 때 스테이지 타이머를 이어 가기 위한 누적 시간. 컨티뉴·새 스테이지는 생략(0). */
+export interface WorldData { stageId: string; sectionIndex?: number; elapsedMs?: number }
 export interface ResultData { stageId: string; kills: number; maxCombo: number; noHitBoss: boolean; remainingSec: number }
 export interface ContinueData { stageId: string }
 
 // ---- HudScene 이 듣는 이벤트 페이로드(this.events.emit('hud:*')). ----
-export type HudBossInfo = { name: string; phases: BossPhase[] } | null;
+/** mid: 중간보스(웨이브 안의 ai:'boss' 적). HUD 가 라벨을 달리 한다. */
+export type HudBossInfo = { name: string; phases: BossPhase[]; mid: boolean } | null;
 export interface HudCheer { name: string; text: string }
 export interface HudClear { noHit: boolean }
 
-const TILESET_PALETTE = 'stage1';          // 스테이지 팔레트는 지금 하나
+const FALLBACK_PALETTE = 'stage1';         // 팔레트 텍스처가 아직 없으면(P2 머지 전) 스테이지 1 타일로
 const DEATH_FADE_MS = 900;
 const STAGE_CLEAR_HOLD_MS = 1800;
 const CHEST_CARD_CHANCE = 0.3;
@@ -40,6 +43,7 @@ const CHEST_OPEN_DELAY_MS = 350;
 export class WorldScene extends Phaser.Scene {
   private stageId!: string;
   private sectionIndex: number | undefined;
+  private elapsedMs = 0;
   private stage!: StageDef;
   private run!: RunStore;
   private map!: Phaser.Tilemaps.Tilemap;
@@ -52,6 +56,7 @@ export class WorldScene extends Phaser.Scene {
   private combat!: CombatController;
   private section!: SectionController;
   private chests!: Phaser.Physics.Arcade.Group;
+  private jumpPads!: Phaser.GameObjects.Group;
   private cheerNpcs = new Map<number, CheerNpc>();
   private lockBar!: Phaser.GameObjects.Rectangle;
   private transitioning = false;
@@ -66,6 +71,7 @@ export class WorldScene extends Phaser.Scene {
   init(data: WorldData): void {
     this.stageId = data.stageId;
     this.sectionIndex = data.sectionIndex;
+    this.elapsedMs = Math.max(0, data.elapsedMs ?? 0);
   }
 
   create(): void {
@@ -76,10 +82,10 @@ export class WorldScene extends Phaser.Scene {
     this.run = getRun(this);
     this.run.restartSection();
     this.stage = getStage(this.stageId);
-    this.startedAt = this.time.now;
+    this.startedAt = this.time.now - this.elapsedMs;
 
     this.map = this.make.tilemap({ key: mapKey(this.stage.map) });
-    const tiles = this.map.addTilesetImage('tiles', tilesetTex(TILESET_PALETTE))!;
+    const tiles = this.map.addTilesetImage('tiles', this.tilesetKey())!;
     const ground = this.map.createLayer('ground', tiles, 0, 0)!;
     ground.setCollisionByExclusion([-1, 0]);
     const platforms = this.map.createLayer('platforms', tiles, 0, 0)!;
@@ -114,6 +120,11 @@ export class WorldScene extends Phaser.Scene {
     this.physics.add.collider(this.chests, platforms);
     this.physics.add.overlap(this.player, this.chests, (_p, c) => this.openChest(c as Chest));
 
+    // 점프대(밈의 파도). 정적 바디라 물리 그룹이 아니어도 overlap 이 돈다.
+    this.jumpPads = this.add.group();
+    for (const at of jumpPadSpots(this.map)) this.jumpPads.add(new JumpPad(this, at.x, at.y));
+    this.physics.add.overlap(this.player, this.jumpPads, (_p, pad) => this.bounce(pad as JumpPad));
+
     this.combat = new CombatController(this, this.player, this.run, [ground, platforms], this.combatHooks());
 
     const kb = this.input.keyboard!;
@@ -141,6 +152,12 @@ export class WorldScene extends Phaser.Scene {
 
   // ---------- 런 ----------
 
+  /** 스테이지 팔레트 타일셋. 텍스처가 아직 없으면 스테이지 1 팔레트로 그린다(크래시 대신 폴백). */
+  private tilesetKey(): string {
+    const key = tilesetTex(this.stage.palette);
+    return this.textures.exists(key) ? key : tilesetTex(FALLBACK_PALETTE);
+  }
+
   private moveConfig(): MoveConfig {
     const m = getMember(this.run.state.member);
     const b = this.run.buffs;
@@ -166,14 +183,7 @@ export class WorldScene extends Phaser.Scene {
   private sectionHooks(): SectionHooks {
     return {
       spawnEnemy: (id, x, y, elite) => { this.combat.spawnEnemy(id, x, y, elite); },
-      spawnBoss: (id, x, y) => {
-        const boss = this.combat.spawnBoss(id, x, y);
-        boss.onPhaseChange = (_phase, name) => {
-          sfx(this, 'boss_phase');
-          floatText(this, boss.x, boss.y - boss.displayHeight - 20, name, '#bb9af7', 18);
-        };
-        this.events.emit('hud:boss', { name: boss.def.name, phases: boss.phases } satisfies HudBossInfo);
-      },
+      spawnBoss: (id, x, y) => { this.combat.spawnBoss(id, x, y); },
       onSectionStart: (index, def) => this.onSectionStart(index, def),
       onSectionCleared: (index, chest) => this.onSectionCleared(index, chest),
       setCameraBounds: (minX, maxX, locked) => this.applyBounds(minX, maxX, locked),
@@ -214,6 +224,10 @@ export class WorldScene extends Phaser.Scene {
     this.chests.add(new Chest(this, x, this.player.y - 40));
   }
 
+  private bounce(pad: JumpPad): void {
+    if (pad.launch(this.player, this.time.now)) sfx(this, 'jump');
+  }
+
   private openChest(chest: Chest): void {
     if (!chest.open()) return;
     sfx(this, 'menu');
@@ -241,6 +255,8 @@ export class WorldScene extends Phaser.Scene {
     return {
       onEnemyDied: (now) => this.section.enemyDied(now),
       onBossKilled: () => this.onBossKilled(),
+      onBossSpawned: (boss, kind) => this.onBossSpawned(boss, kind),
+      onMidBossKilled: () => { this.events.emit('hud:boss', null satisfies HudBossInfo); },
       isBossSection: () => this.section.isBossSection(),
       nextCardId: () => this.nextCardId(),
       onHeartPicked: () => {
@@ -253,6 +269,15 @@ export class WorldScene extends Phaser.Scene {
         sayMeme(this, memeId, meme.text, getMember(meme.member).voice);
       },
     };
+  }
+
+  /** 스테이지 보스·중간보스 공통: 페이즈 연출과 HUD 보스 바. */
+  private onBossSpawned(boss: Boss, kind: BossKind): void {
+    boss.onPhaseChange = (_phase, name) => {
+      sfx(this, 'boss_phase');
+      floatText(this, boss.x, boss.y - boss.displayHeight - 20, name, '#bb9af7', 18);
+    };
+    this.events.emit('hud:boss', { name: boss.def.name, phases: boss.phases, mid: kind === 'mid' } satisfies HudBossInfo);
   }
 
   private onBossKilled(): void {
@@ -292,7 +317,8 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       const lives = this.run.loseLife();
       if (lives > 0) {
-        this.scene.restart({ stageId: this.stageId, sectionIndex: this.section.index } satisfies WorldData);
+        // 같은 구간에서 다시: 스테이지 타이머는 이어 간다(컨티뉴는 ContinueScene 이 0 부터).
+        this.scene.restart({ stageId: this.stageId, sectionIndex: this.section.index, elapsedMs: this.time.now - this.startedAt } satisfies WorldData);
       } else {
         this.scene.stop(SCENE.hud);
         this.scene.start(SCENE.continue, { stageId: this.stageId } satisfies ContinueData);

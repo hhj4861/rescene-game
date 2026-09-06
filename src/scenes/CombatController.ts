@@ -3,8 +3,10 @@ import { TEX } from '../core/AssetKeys';
 import type { RunStore } from '../core/RunStore';
 import { sfx } from '../audio/audioSession';
 import { getEnemy, getMember, getSkill } from '../data/index';
-import type { MemberDef } from '../data/schema';
-import { Boss } from '../entities/Boss';
+import type { EnemyDef, MemberDef } from '../data/schema';
+import { damage } from '../systems/combat';
+import type { Boss } from '../entities/Boss';
+import { createBoss } from '../entities/bosses/index';
 import { DropItem, type Drop } from '../entities/DropItem';
 import { Enemy } from '../entities/Enemy';
 import { EnemyProjectile } from '../entities/EnemyProjectile';
@@ -12,12 +14,19 @@ import type { Player } from '../entities/Player';
 import { Projectile } from '../entities/Projectile';
 import { SUPER_TOTAL_MS, SuperFx } from './SuperFx';
 
+/** 보스 종류: 스테이지 보스(spawnBoss, 죽으면 클리어) · 중간보스(웨이브에 ai:'boss' 적, 죽으면 잡몹처럼 카운트). */
+export type BossKind = 'stage' | 'mid';
+
 /** 씬(WorldScene)이 구현하는 접착 훅. */
 export interface CombatHooks {
-  /** 웨이브 카운트(SectionController.enemyDied). 보스는 제외. */
+  /** 웨이브 카운트(SectionController.enemyDied). 스테이지 보스는 제외, 중간보스는 포함. */
   onEnemyDied(now: number): void;
-  /** 보스 사망 → 스테이지 클리어. */
+  /** 스테이지 보스 사망 → 스테이지 클리어. */
   onBossKilled(): void;
+  /** 보스(스테이지·중간) 등장. HUD 보스 바·페이즈 연출을 씬이 붙인다. */
+  onBossSpawned(boss: Boss, kind: BossKind): void;
+  /** 중간보스 처치(스테이지 클리어 아님). HUD 보스 바를 내린다. */
+  onMidBossKilled(): void;
   /** 피격 시 노히트 플래그를 위해. */
   isBossSection(): boolean;
   /** 카드 드랍 id(cardPool 에서 아직 안 가진 것 우선). 없으면 null. */
@@ -45,7 +54,9 @@ export class CombatController {
   readonly projectiles: Phaser.Physics.Arcade.Group;
   readonly drops: Phaser.Physics.Arcade.Group;
   readonly enemyProjectiles: Phaser.Physics.Arcade.Group;
+  /** 살아 있는 보스(스테이지 보스 또는 중간보스). HUD 보스 바·개발 훅이 읽는다. */
   boss: Boss | null = null;
+  private stageBoss: Boss | null = null;
   private chainStep = 0;
   private lastAttackAt = -Infinity;
   private atkBuffUntil = 0;
@@ -80,27 +91,37 @@ export class CombatController {
 
   // ---------- 데미지 ----------
 
-  /** 데미지 = max(1, round((atk + 카드 atk) × 배율)). 방어·치명타 없음. 필살기 뒤 8초는 +20%. */
-  damage(multiplier: number): number {
+  /** 데미지 = systems/combat.damage(atk + 카드 atk, 배율 × 필살기 버프). 필살기 뒤 8초는 +20%. */
+  private dmg(multiplier: number): number {
     const atk = this.member.atk + this.run.buffs.atk;
     const buff = this.scene.time.now < this.atkBuffUntil ? 1 + SUPER_BUFF_RATIO : 1;
-    return Math.max(1, Math.round(atk * multiplier * buff));
+    return damage(atk, multiplier * buff);
   }
 
   // ---------- 스폰 ----------
 
+  /** 웨이브 스폰. `ai: 'boss'` 적은 중간보스로 만든다(죽으면 웨이브 카운트, 클리어 아님). */
   spawnEnemy(id: string, x: number, y: number, elite = false): Enemy {
-    const enemy = new Enemy(this.scene, x, y, getEnemy(id));
+    const def = getEnemy(id);
+    if (def.ai === 'boss') return this.addBoss(def, x, y, 'mid');
+    const enemy = new Enemy(this.scene, x, y, def);
     if (elite) enemy.makeElite();
     this.enemies.add(enemy);
     return enemy;
   }
 
+  /** 스테이지 보스(StageDef.boss). 죽으면 스테이지 클리어. */
   spawnBoss(id: string, x: number, y: number): Boss {
-    const boss = new Boss(this.scene, x, y, getEnemy(id));
+    return this.addBoss(getEnemy(id), x, y, 'stage');
+  }
+
+  private addBoss(def: EnemyDef, x: number, y: number, kind: BossKind): Boss {
+    const boss = createBoss(this.scene, x, y, def);
     boss.fire = (fx, fy, dir, speed, range) => this.enemyProjectiles.add(new EnemyProjectile(this.scene, fx, fy, dir, speed, range, BOSS_HEARTS));
     this.enemies.add(boss);
     this.boss = boss;
+    if (kind === 'stage') this.stageBoss = boss;
+    this.hooks.onBossSpawned(boss, kind);
     return boss;
   }
 
@@ -121,7 +142,7 @@ export class CombatController {
     this.player.playAttack();
     const skill = getSkill(this.member.basicSkill);
     const third = this.chainStep === 3;
-    const dmg = this.damage(skill.multiplier * (third ? CHAIN3_MULT : 1));
+    const dmg = this.dmg(skill.multiplier * (third ? CHAIN3_MULT : 1));
     const kb = third ? CHAIN3_KNOCKBACK : 1;
     for (const effect of skill.effects) {
       if (effect.kind === 'melee') this.meleeHit(effect.width, effect.height, !!effect.centered, dmg, effect.knockback * kb, third, now);
@@ -189,11 +210,19 @@ export class CombatController {
     this.enemies.remove(enemy, true, true);
 
     if (def.ai === 'boss') {
-      this.boss = null;
+      if (this.boss === enemy) this.boss = null;
       for (const ep of [...this.enemyProjectiles.getChildren()]) ep.destroy();
-      this.run.bossKilled();
       sfx(this.scene, 'elite');
-      this.hooks.onBossKilled();
+      if (enemy === this.stageBoss) {
+        this.stageBoss = null;
+        this.run.bossKilled();
+        this.hooks.onBossKilled();
+        return;
+      }
+      // 중간보스: 점수는 데이터 score, 웨이브 카운트에 들어간다. 스테이지 클리어는 아니다.
+      this.run.kill(def.score, now, false);
+      this.hooks.onMidBossKilled();
+      this.hooks.onEnemyDied(now);
       return;
     }
 
@@ -229,7 +258,8 @@ export class CombatController {
 
   private onContact(enemy: Enemy): void {
     const now = this.scene.time.now;
-    if (!enemy.active || now < enemy.stunnedUntil) return;
+    // atk 0 인 정적 적(무반응 관객)은 길만 막는 장애물이다.
+    if (!enemy.active || now < enemy.stunnedUntil || enemy.def.atk <= 0) return;
     const dir = this.player.x < enemy.x ? -1 : 1;
     this.hurt(enemy.def.ai === 'boss' ? BOSS_HEARTS : CONTACT_HEARTS, dir, now);
   }
@@ -270,7 +300,7 @@ export class CombatController {
   private applySuper(): void {
     const now = this.scene.time.now;
     const skill = getSkill(this.member.superSkill);
-    const dmg = this.damage(skill.multiplier);
+    const dmg = this.dmg(skill.multiplier);
     const targets = this.enemiesOnScreen();
     for (const effect of skill.effects) {
       switch (effect.kind) {

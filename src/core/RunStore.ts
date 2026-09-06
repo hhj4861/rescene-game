@@ -8,6 +8,7 @@ import {
   useContinue as applyUseContinue,
   heal as applyHeal,
   raiseMaxHearts,
+  lowerMaxHearts,
   addGauge,
   isGaugeFull,
   spendGauge,
@@ -110,6 +111,10 @@ export class RunStore {
     this.state = { ...this.state, cards };
     const { key, value } = this.lookupBuff(memeId);
     if (key === 'heart') this.state = raiseMaxHearts(this.state, value);
+    if (dropped) {
+      const gone = this.lookupBuff(dropped);
+      if (gone.key === 'heart') this.state = lowerMaxHearts(this.state, gone.value);
+    }
     this.bus.emit('card', { memeId, dropped });
     this.bus.emit('changed', undefined);
   }

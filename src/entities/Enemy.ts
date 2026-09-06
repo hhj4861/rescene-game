@@ -31,7 +31,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.setOrigin(0.5, 1).setDepth(8);
     this.body.setSize(Math.max(8, def.width - 4), Math.max(8, def.height - 2));
     this.setCollideWorldBounds(true);
-    this.playAnim('move');
+    // static(무반응 관객·무대 트랩): 제자리에서 접촉 피해만 준다. 밀리지도 않는다.
+    if (def.ai === 'static') this.body.setImmovable(true);
+    this.playAnim(def.ai === 'static' ? 'idle' : 'move');
+  }
+
+  /** 제자리 적(ai: 'static'). 이동·넉백이 없다. */
+  get isStatic(): boolean {
+    return this.def.ai === 'static';
   }
 
   /** 엘리트: 큰 크기·금색 틴트·체력 ×3. 바디는 Arcade 가 스케일에 맞춰 자동으로 키운다. */
@@ -58,7 +65,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.hp -= amount;
     this.setTintFill(0xffffff);
     this.scene.time.delayedCall(70, () => { if (this.active) this.restoreTint(); });
-    if (knockbackX !== 0) this.setVelocity(knockbackX, -120);
+    if (knockbackX !== 0 && !this.isStatic) this.setVelocity(knockbackX, -120);
     return this.hp <= 0;
   }
 
@@ -85,7 +92,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   updateAi(player: Player, now: number, hasFloor: (x: number, y: number) => boolean): void {
-    if (now < this.stunnedUntil) {
+    if (this.isStatic || now < this.stunnedUntil) {
       this.setVelocityX(0);
       this.playAnim('idle');
       return;

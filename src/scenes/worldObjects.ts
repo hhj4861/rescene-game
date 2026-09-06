@@ -38,3 +38,10 @@ export function lockX(map: Phaser.Tilemaps.Tilemap, name: string): number {
   if (!hit) throw new Error(`map has no lock '${name}'`);
   return hit.x + hit.width;
 }
+
+/** 점프대 자리. `jumppad` 오브젝트는 잠금선처럼 1타일 박스라 아래 변 가운데(발 위치)로 돌려준다. */
+export function jumpPadSpots(map: Phaser.Tilemaps.Tilemap): { x: number; y: number }[] {
+  return objectsOf(map, 'objects')
+    .filter((o) => o.type === 'jumppad')
+    .map((o) => ({ x: o.x + o.width / 2, y: o.y + o.height }));
+}

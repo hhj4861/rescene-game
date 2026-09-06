@@ -68,6 +68,12 @@ export function raiseMaxHearts(s: RunState, n: number): RunState {
   return { ...s, maxHearts: s.maxHearts + n, hearts: s.hearts + n };
 }
 
+/** 하트 카드가 손에서 밀려났을 때. 최대 하트는 1 아래로 내려가지 않고 현재 하트는 최대에 맞춰 잘린다. */
+export function lowerMaxHearts(s: RunState, n: number): RunState {
+  const maxHearts = Math.max(1, s.maxHearts - n);
+  return { ...s, maxHearts, hearts: Math.min(s.hearts, maxHearts) };
+}
+
 export function addGauge(s: RunState, amount: number, buffs: BuffTotals): RunState {
   const gained = Math.floor(amount * (1 + buffs.gauge));
   return { ...s, gauge: Math.min(RUN_DEFAULTS.gaugeMax, s.gauge + gained) };
