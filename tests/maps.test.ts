@@ -61,4 +61,10 @@ describe('map sources', () => {
       expect(has('spawn', st.boss.spawn)).toBe(true);
     }
   });
+  it('every stage map has a re_boss spawn (SectionController re-enters the boss section there on death)', () => {
+    for (const st of STAGES) {
+      const p = byId.get(st.map)!;
+      expect(p.objects.some((o) => o.type === 'spawn' && o.name === 're_boss'), st.id).toBe(true);
+    }
+  });
 });
