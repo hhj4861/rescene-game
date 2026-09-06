@@ -3,7 +3,7 @@ import { dueSpawns, enemyDied, openSection, remainingInSection, startSection } f
 const def = { lock: 'lock_a', spawn: 're_a', waves: [{ spawn: 'sp1', enemy: 'e1', count: 2, intervalMs: 500 }, { spawn: 'sp2', enemy: 'e2', count: 1, intervalMs: 0, elite: true }] };
 describe('section waves', () => {
   it('spawns the first wave on schedule', () => {
-    let s = startSection(def, 0, 1000);
+    const s = startSection(def, 0, 1000);
     let r = dueSpawns(s, 1000); expect(r.spawns.map((o) => o.spawn)).toEqual(['sp1']); expect(r.state.alive).toBe(1);
     r = dueSpawns(r.state, 1499); expect(r.spawns).toEqual([]);
     r = dueSpawns(r.state, 1500); expect(r.spawns.length).toBe(1); expect(r.state.pending).toEqual([]);
