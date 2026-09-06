@@ -7,3 +7,7 @@ playwright-report
 # 디자인 캔버스 시드 결과물(생성 파일, 수 MB)
 docs/design/*.html
 !docs/design/*.dc.html
+
+# 음성 파일(권리 확보분만 로컬에 두고, 저장소에는 manifest.json만 커밋)
+public/assets/voice/*.ogg
+public/assets/voice/*.mp3
