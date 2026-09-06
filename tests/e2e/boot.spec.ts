@@ -55,7 +55,7 @@ test('stage 1: clears the first section, shows GO and fires a super without cons
   // 새 에셋이 실제로 로드됐는지(플레이스홀더 대체가 아닌지)
   const frameCount = (key: string): Promise<number> =>
     page.evaluate((k) => (window as unknown as Win).__game?.textures.get(k).getFrameNames().length ?? 0, key);
-  expect(await frameCount('player_woni')).toBe(10);
+  expect(await frameCount('player_woni')).toBe(15);
   expect(await frameCount('heart_woni')).toBe(2);
   expect(await page.evaluate(() => (window as unknown as Win).__game?.textures.exists('tiles_stage1') ?? false)).toBe(true);
 
