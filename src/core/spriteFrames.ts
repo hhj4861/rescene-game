@@ -15,7 +15,20 @@ export type PlayerAnim = keyof typeof PLAYER_ANIMS;
 export const PLAYER_FRAME_COUNT = 10;
 
 export const playerAnimKey = (member: MemberId, anim: PlayerAnim): string => `player_${member}_${anim}`;
-export const playerSheetUrl = (member: MemberId): string => `assets/sprites/player_${member}.png`;
+
+/** 스테이지별 의상. training 시트는 파일 이름을 유지한다(player_<member>.png). */
+export const OUTFITS = ['training', 'debut', 'road', 'comeback', 'pretty'] as const;
+export type Outfit = (typeof OUTFITS)[number];
+export const playerSheetUrl = (member: MemberId, outfit: Outfit = 'training'): string =>
+  outfit === 'training' ? `assets/sprites/player_${member}.png` : `assets/sprites/player_${member}_${outfit}.png`;
+
+/** 프레임 좌표계의 물리 몸. 프레임 크기를 바꾸는 쪽(빌드 도구)이 함께 갱신하고 Player는 이 값만 쓴다. */
+export const PLAYER_BODY = { width: 28, height: 46, offsetX: 2, offsetY: 2 } as const;
+
+/** 멤버 초상화 시트: 64×64 × 3프레임(0 기본 · 1 시그니처 · 2 피격). */
+export const PORTRAIT_FRAME = { width: 64, height: 64 } as const;
+export const PORTRAIT_FRAME_COUNT = 3;
+export const portraitSheetUrl = (member: MemberId): string => `assets/portraits/portrait_${member}.png`;
 
 /** 적 시트: 프레임 크기는 EnemyDef의 width×height, 4프레임(대기 2·이동 2). */
 export const ENEMY_ANIMS = {

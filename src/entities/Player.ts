@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { playerTex } from '../core/AssetKeys';
-import { playerAnimKey, type PlayerAnim } from '../core/spriteFrames';
+import { PLAYER_BODY, playerAnimKey, type PlayerAnim } from '../core/spriteFrames';
 import { stepMovement, type MoveConfig, type MoveInput, type MoveState } from '../systems/movement';
 import type { MemberId } from '../systems/types';
 
@@ -19,7 +19,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setOrigin(0.5, 1);
-    this.body.setSize(28, 46).setOffset(2, 2);
+    this.body.setSize(PLAYER_BODY.width, PLAYER_BODY.height).setOffset(PLAYER_BODY.offsetX, PLAYER_BODY.offsetY);
     this.setCollideWorldBounds(true);
     this.setDepth(10);
     this.anims.play(playerAnimKey(member, 'idle'), true);

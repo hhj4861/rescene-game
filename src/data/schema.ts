@@ -17,6 +17,7 @@ export const StageDefSchema = z.object({
   id: z.string().min(1), index: z.number().int().min(1), name: z.string().min(1), era: z.string().min(1), map: z.string().min(1),
   intro: z.array(z.string().min(1)).length(3), bgm: z.enum(['title', 'stage', 'boss']), timerSec: z.number().int().positive(),
   palette: z.string().min(1), // 타일셋 팔레트 키 (tilesetTex(palette))
+  outfit: z.enum(['training', 'debut', 'road', 'comeback', 'pretty']).optional(), // 멤버 의상(기본 training)
   sections: z.array(SectionDefSchema).min(1),
   boss: z.object({ lock: z.string().min(1), spawn: z.string().min(1), id: z.string().min(1) }),
   cardPool: z.array(z.string().min(1)).min(1),
