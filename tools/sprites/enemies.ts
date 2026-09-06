@@ -1,6 +1,7 @@
 // 적 도트 템플릿(감정 의인화). 프레임 크기는 src/data/enemies.ts의 width×height와 같아야 한다.
 // 역할: K 외곽선  F/f 몸·그늘  L/l 빛·희미  W 흰자  E 눈동자  A/a 포인트·그늘  S/s 줄기  M 금속  T 정장  H/I/J 머리색  D/d 책상  P 명패
 import { pasteGrid, shiftGrid, type Grid } from '../pixel-art';
+import { ENEMY_SPRITES_2 } from './enemies2';
 
 const rows = (name: string, w: number, g: Grid): Grid => {
   g.forEach((r, i) => { if (r.length !== w) throw new Error(`${name} row ${i} has ${r.length} != ${w}`); });
@@ -367,4 +368,6 @@ export const ENEMY_SPRITES: Record<string, EnemySprite> = {
     palette: { K: '#1a1b26', S: '#f2cfb3', E: '#1a1b26', W: '#ffffff', T: '#2d2f45', H: '#2b2330', I: '#5d4436', J: '#c0caf5', A: '#ffffff', D: '#6b4a2f', d: '#8a6340', P: '#e0af68' },
     frames: [judges(0, null), judges(1, null), judges(0, 0), judges(0, -3)],
   },
+  // 2차 플랜(스테이지 2~5) 신규 잡몹 10종·보스 5종 — tools/sprites/enemies2.ts
+  ...ENEMY_SPRITES_2,
 };

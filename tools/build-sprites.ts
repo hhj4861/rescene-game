@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { NPCS } from '../src/data/npcs';
 import { MEMBERS } from '../src/data/members';
 import { ENEMY_SPRITES } from './sprites/enemies';
-import { SPRITES_DIR, TILES_DIR, buildEnemySheet, buildItemSheets, buildNpcSheet, buildPlayerSheet, buildTileset, buildUiSheets, enemySheetFile, npcSheetFile, playerSheetFile } from './build-sprites-lib';
+import { SPRITES_DIR, TILES_DIR, buildEnemySheet, buildItemSheets, buildNpcSheet, buildObjectSheets, buildPlayerSheet, buildTileset, buildUiSheets, enemySheetFile, npcSheetFile, playerSheetFile } from './build-sprites-lib';
 
 mkdirSync(SPRITES_DIR, { recursive: true });
 mkdirSync(TILES_DIR, { recursive: true });
@@ -17,7 +17,7 @@ for (const [out, build] of jobs) {
   writeFileSync(out, sheet.png);
   console.log(`${out} (${sheet.width}x${sheet.height}, ${sheet.png.length} bytes)`);
 }
-for (const sheet of [...buildItemSheets(), ...buildUiSheets(), buildTileset('stage1')]) {
+for (const sheet of [...buildItemSheets(), ...buildUiSheets(), ...buildObjectSheets(), buildTileset('stage1')]) {
   writeFileSync(sheet.file, sheet.png);
   console.log(`${sheet.file} (${sheet.width}x${sheet.height}, ${sheet.png.length} bytes)`);
 }

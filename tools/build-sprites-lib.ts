@@ -7,6 +7,7 @@ import { blit, composeLayers, crop, encodePng, packSheet, rasterize, type Grid }
 import { ENEMY_SPRITES } from './sprites/enemies';
 import { CARD_FRAMES, CARD_H, CARD_PALETTE, CARD_W, CHEST_FRAMES, CHEST_H, CHEST_PALETTE, CHEST_W, HEART_FOODS, HEART_H, HEART_W, heartFrames } from './sprites/items';
 import { NPC_LOOKS } from './sprites/npcs';
+import { OBJECT_SPRITES } from './sprites/objects';
 import { ATTACK_ARM, BASE_PALETTE, BODY, HAIR, HURT_EYES, LEGS, LOOKS, PROPS, SPRITE_H, SPRITE_W } from './sprites/templates';
 import { GROUND_TILE, LADDER_TILE, PLATFORM_TILE, TILE, TILESET_PALETTE } from './sprites/tiles';
 import { buildGoFrames, GO_H, GO_PALETTE, GO_W, HUD_HEART_EMPTY, HUD_HEART_FULL, HUD_HEART_H, HUD_HEART_W } from './sprites/ui';
@@ -153,4 +154,9 @@ export function buildTileset(palette: 'stage1'): NamedSheet {
   const frames = [GROUND_TILE, PLATFORM_TILE, LADDER_TILE].map((g) => rasterize(g, TILESET_PALETTE, TILE, TILE));
   const sheet = packSheet(frames, TILE, TILE);
   return { file: `${TILES_DIR}/stage1.png`, width: sheet.width, height: sheet.height, png: encodePng(sheet.width, sheet.height, sheet.rgba) };
+}
+
+/** 점프대 등 맵 오브젝트 시트(Task 5). */
+export function buildObjectSheets(): NamedSheet[] {
+  return Object.entries(OBJECT_SPRITES).map(([id, art]) => packFrames(art.frames, art.palette, art.width, art.height, `${SPRITES_DIR}/${id}.png`));
 }

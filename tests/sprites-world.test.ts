@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { pasteGrid, shiftGrid } from '../tools/pixel-art';
-import { buildEnemySheet, buildNpcSheet, enemySheetFile, npcSheetFile } from '../tools/build-sprites-lib';
+import { buildEnemySheet, buildNpcSheet, buildObjectSheets, enemySheetFile, npcSheetFile } from '../tools/build-sprites-lib';
 import { buildPlayerSheet } from '../tools/build-sprites-lib';
 import { ENEMIES } from '../src/data/enemies';
 import { NPCS } from '../src/data/npcs';
@@ -60,6 +60,17 @@ describe('enemy sprite sheets', () => {
       expect(art, e.id).toBeDefined();
       expect([art!.width, art!.height], e.id).toEqual([e.width, e.height]);
     }
+  });
+});
+
+describe('object sprites', () => {
+  it('builds the jumppad sheet (32×16 × 2 frames) matching its generated file', () => {
+    const pad = buildObjectSheets().find((s) => s.file.endsWith('obj_jumppad.png'));
+    expect(pad).toBeDefined();
+    expect(pad!.width).toBe(64);
+    expect(pad!.height).toBe(16);
+    expect(existsSync(pad!.file), pad!.file).toBe(true);
+    expect(Buffer.compare(readFileSync(pad!.file), Buffer.from(pad!.png))).toBe(0);
   });
 });
 

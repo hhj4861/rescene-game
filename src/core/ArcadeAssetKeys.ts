@@ -9,6 +9,7 @@ export const TEX2 = {
   hudHeartEmpty: 'hud_heart_empty',
   go: 'hud_go',
   chest: 'item_chest',
+  jumppad: 'obj_jumppad',
 } as const;
 
 /** 멤버 시트 0프레임의 머리를 잘라낸 16×16 초상 텍스처 키. */
