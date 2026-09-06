@@ -41,8 +41,14 @@ export const PLATFORM_TILE: Grid = pasteGrid(blank32, scale2(PLATFORM_16.slice(0
 /** gid 3: 사다리. */
 export const LADDER_TILE: Grid = scale2(LADDER_16);
 
-export const TILESET_PALETTE: Record<string, string> = {
-  G: '#3b4261', g: '#2a2f47',
-  P: '#9ece6a', p: '#4f6b2f',
-  R: '#e0af68', r: '#a97f3f',
+/** 스테이지별 타일 팔레트(2차 플랜 공유 데이터 표 3). 그리드는 공용, 색만 바뀐다. */
+export const TILESET_PALETTES: Record<'stage1' | 'stage2' | 'stage3' | 'stage4' | 'stage5', Record<string, string>> = {
+  stage1: { G: '#3b4261', g: '#2a2f47', P: '#9ece6a', p: '#4f6b2f', R: '#e0af68', r: '#a97f3f' },
+  stage2: { G: '#3d4a6b', g: '#2b3550', P: '#7dcfff', p: '#3d7fa6', R: '#c0caf5', r: '#8a94c2' },
+  stage3: { G: '#2f2a4a', g: '#1f1b33', P: '#bb9af7', p: '#6c57a8', R: '#9d7cd8', r: '#5b4a8c' },
+  stage4: { G: '#8a6340', g: '#6b4a2f', P: '#9ece6a', p: '#4f6b2f', R: '#e0af68', r: '#a97f3f' },
+  stage5: { G: '#1a1a24', g: '#0d0d14', P: '#ffd166', p: '#b8902e', R: '#f7768e', r: '#a94c60' },
 };
+
+/** 기존 이름 유지(하위 호환): 스테이지 1 팔레트. */
+export const TILESET_PALETTE: Record<string, string> = TILESET_PALETTES.stage1;

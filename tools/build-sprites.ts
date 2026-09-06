@@ -17,7 +17,8 @@ for (const [out, build] of jobs) {
   writeFileSync(out, sheet.png);
   console.log(`${out} (${sheet.width}x${sheet.height}, ${sheet.png.length} bytes)`);
 }
-for (const sheet of [...buildItemSheets(), ...buildUiSheets(), ...buildObjectSheets(), buildTileset('stage1')]) {
+const tilesets = (['stage1', 'stage2', 'stage3', 'stage4', 'stage5'] as const).map((p) => buildTileset(p));
+for (const sheet of [...buildItemSheets(), ...buildUiSheets(), ...buildObjectSheets(), ...tilesets]) {
   writeFileSync(sheet.file, sheet.png);
   console.log(`${sheet.file} (${sheet.width}x${sheet.height}, ${sheet.png.length} bytes)`);
 }

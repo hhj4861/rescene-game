@@ -13,6 +13,9 @@ const HEART_FRAME = { width: 16, height: 16 } as const;
 const CARD_FRAME = { width: 16, height: 20 } as const;
 const CHEST_FRAME = { width: 24, height: 20 } as const;
 const GO_FRAME = { width: 32, height: 16 } as const;
+// P2 sprites-2 Task 6: 점프대 오브젝트 시트 규격(tools/sprites/objects.ts와 짝을 맞춘다).
+const JUMPPAD_FRAME = { width: 32, height: 16 } as const;
+const TILE_PALETTES = ['stage1', 'stage2', 'stage3', 'stage4', 'stage5'] as const;
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -25,7 +28,8 @@ export class PreloadScene extends Phaser.Scene {
     for (const m of MEMBERS) this.load.spritesheet(playerTex(m.id), playerSheetUrl(m.id), { frameWidth: PLAYER_FRAME.width, frameHeight: PLAYER_FRAME.height });
     for (const e of ENEMIES) this.load.spritesheet(enemyTex(e.id), enemySheetUrl(e.id), { frameWidth: e.width, frameHeight: e.height });
     for (const n of NPCS) this.load.spritesheet(npcTex(n.id), npcSheetUrl(n.id), { frameWidth: NPC_FRAME.width, frameHeight: NPC_FRAME.height });
-    this.load.image(tilesetTex('stage1'), 'assets/tiles/stage1.png');
+    for (const p of TILE_PALETTES) this.load.image(tilesetTex(p), `assets/tiles/${p}.png`);
+    this.load.spritesheet(TEX2.jumppad, `assets/sprites/${TEX2.jumppad}.png`, { frameWidth: JUMPPAD_FRAME.width, frameHeight: JUMPPAD_FRAME.height });
     for (const m of MEMBERS) {
       this.load.spritesheet(heartTex(m.id), `assets/sprites/${heartTex(m.id)}.png`, { frameWidth: HEART_FRAME.width, frameHeight: HEART_FRAME.height });
       this.load.image(lifeTex(m.id), `assets/sprites/${lifeTex(m.id)}.png`);
@@ -58,6 +62,7 @@ export class PreloadScene extends Phaser.Scene {
     for (const m of MEMBERS) loop(heartTex(m.id));
     loop(TEX2.card);
     loop(TEX2.go);
+    loop(TEX2.jumppad);
   }
 
   /** 시트별 공용 애니메이션을 등록한다(도트 필터는 main.ts의 pixelArt가 담당). */

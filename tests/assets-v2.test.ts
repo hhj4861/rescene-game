@@ -13,16 +13,21 @@ describe('item and ui sheets', () => {
   it('generated files match sources (run npm run sprites)', () => { for (const s of [...buildItemSheets(), ...buildUiSheets()]) { expect(existsSync(s.file), s.file).toBe(true); expect(Buffer.compare(readFileSync(s.file), Buffer.from(s.png))).toBe(0); } });
 });
 
-describe('stage1 tileset', () => {
-  it('builds the stage1 tileset 96×32', () => {
-    const tileset = buildTileset('stage1');
-    expect(tileset.file).toBe('public/assets/tiles/stage1.png');
-    expect(tileset.width).toBe(96);
-    expect(tileset.height).toBe(32);
+describe('stage tilesets', () => {
+  const palettes = ['stage1', 'stage2', 'stage3', 'stage4', 'stage5'] as const;
+  it('builds all 5 stage tilesets 96×32', () => {
+    for (const p of palettes) {
+      const tileset = buildTileset(p);
+      expect(tileset.file, p).toBe(`public/assets/tiles/${p}.png`);
+      expect(tileset.width, p).toBe(96);
+      expect(tileset.height, p).toBe(32);
+    }
   });
-  it('generated tileset png matches the source (run npm run sprites)', () => {
-    const tileset = buildTileset('stage1');
-    expect(existsSync(tileset.file), tileset.file).toBe(true);
-    expect(Buffer.compare(readFileSync(tileset.file), Buffer.from(tileset.png))).toBe(0);
+  it('generated tileset png files match the sources (run npm run sprites)', () => {
+    for (const p of palettes) {
+      const tileset = buildTileset(p);
+      expect(existsSync(tileset.file), tileset.file).toBe(true);
+      expect(Buffer.compare(readFileSync(tileset.file), Buffer.from(tileset.png))).toBe(0);
+    }
   });
 });
