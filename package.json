@@ -13,6 +13,7 @@
     "maps": "tsx tools/build-maps.ts",
     "e2e": "playwright test",
     "sprites": "tsx tools/build-sprites.ts",
+    "portraits": "tsx tools/build-portraits.ts",
     "voice": "tsx tools/build-voice-manifest.ts"
   },
   "dependencies": {
