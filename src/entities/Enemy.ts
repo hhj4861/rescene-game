@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { enemyTex } from '../core/AssetKeys';
+import { enemyAnimKey, type EnemyAnim } from '../core/spriteFrames';
 import type { EnemyDef } from '../data/schema';
 import type { StatKey, Stats } from '../systems/types';
 import type { Player } from './Player';
@@ -25,6 +26,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.setOrigin(0.5, 1).setDepth(8);
     this.body.setSize(Math.max(8, def.width - 4), Math.max(8, def.height - 2));
     this.setCollideWorldBounds(true);
+    this.playAnim('move');
+  }
+
+  protected playAnim(anim: EnemyAnim): void {
+    this.anims.play(enemyAnimKey(this.def.id, anim), true);
   }
 
   stats(): Stats {
@@ -73,8 +79,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   updateAi(player: Player, now: number, hasFloor: (x: number, y: number) => boolean): void {
     if (now < this.stunnedUntil) {
       this.setVelocityX(0);
+      this.playAnim('idle');
       return;
     }
+    this.playAnim('move');
     const spd = this.stats().spd;
     const dx = player.x - this.x;
     if (this.def.ai === 'chase' && Math.abs(dx) < 280 && Math.abs(player.y - this.y) < 80) {

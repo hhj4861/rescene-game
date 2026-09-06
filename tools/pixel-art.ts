@@ -122,3 +122,28 @@ export function encodePng(width: number, height: number, rgba: Uint8Array): Uint
   for (const p of parts) { png.set(p, off); off += p.length; }
   return png;
 }
+
+/** sub 그리드를 base 위 (x, y)에 붙인다. '.'는 건너뛰고 범위를 벗어나면 잘린다. */
+export function pasteGrid(base: Grid, sub: Grid, x: number, y: number): Grid {
+  const out = base.map((r) => [...r]);
+  sub.forEach((row, sy) => {
+    const ty = y + sy;
+    if (ty < 0 || ty >= out.length) return;
+    for (let sx = 0; sx < row.length; sx++) {
+      const tx = x + sx;
+      const ch = row[sx]!;
+      if (ch === '.' || tx < 0 || tx >= out[ty]!.length) continue;
+      out[ty]![tx] = ch;
+    }
+  });
+  return out.map((r) => r.join(''));
+}
+
+/** 가로로 dx만큼 민다(양수 = 오른쪽). 빈 곳은 투명. */
+export function shiftGrid(grid: Grid, dx: number): Grid {
+  return grid.map((r) => {
+    const w = r.length;
+    if (dx >= 0) return ('.'.repeat(dx) + r).slice(0, w);
+    return (r + '.'.repeat(-dx)).slice(-dx, -dx + w);
+  });
+}

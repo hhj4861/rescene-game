@@ -24,7 +24,10 @@ test('boots into the prologue map and survives movement and an attack without co
   ).toBe(true);
   await page.waitForTimeout(400);
   // 스프라이트시트가 실제로 로드됐는지(플레이스홀더로 대체되지 않았는지) 확인
-  expect(await page.evaluate(() => (window as unknown as { __game: GameLike }).__game.textures.get('player_liv').getFrameNames().length)).toBe(10);
+  const frameCount = (key: string): Promise<number> => page.evaluate((k) => (window as unknown as { __game: GameLike }).__game.textures.get(k).getFrameNames().length, key);
+  expect(await frameCount('player_liv')).toBe(10);
+  expect(await frameCount('enemy_enemy_nerves')).toBe(4);
+  expect(await frameCount('npc_npc_audition_judge')).toBe(2);
 
   await page.keyboard.down('ArrowRight');
   await page.waitForTimeout(600);

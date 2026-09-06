@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 import { npcTex } from '../core/AssetKeys';
+import { npcAnimKey } from '../core/spriteFrames';
 import type { NpcDef } from '../data/schema';
 import { style } from '../ui/textStyles';
 
-export class Npc extends Phaser.Physics.Arcade.Image {
+export class Npc extends Phaser.Physics.Arcade.Sprite {
   readonly def: NpcDef;
   readonly dialogueOverride: string | undefined;
   readonly marker: Phaser.GameObjects.Text;
@@ -16,6 +17,7 @@ export class Npc extends Phaser.Physics.Arcade.Image {
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
     this.setOrigin(0.5, 1).setDepth(6);
+    this.anims.play(npcAnimKey(def.id, 'idle'), true);
     this.label = scene.add.text(x, y - 54, def.name, style(11, '#ffffff', { stroke: '#000000', strokeThickness: 3 })).setOrigin(0.5).setDepth(6);
     this.marker = scene.add.text(x, y - 74, '', style(18, '#ffd166', { fontStyle: 'bold', stroke: '#000000', strokeThickness: 3 })).setOrigin(0.5).setDepth(6);
   }

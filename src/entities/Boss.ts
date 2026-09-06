@@ -25,7 +25,8 @@ export class Boss extends Enemy {
       this.onPhaseChange(target, PHASE_NAMES[target]!);
       return;
     }
-    if (now < this.stunnedUntil) { this.setVelocityX(0); return; }
+    if (now < this.stunnedUntil) { this.setVelocityX(0); this.playAnim('idle'); return; }
+    this.playAnim(this.phase === 3 ? 'idle' : 'move');
     const dx = player.x - this.x;
     const dir: 1 | -1 = dx < 0 ? -1 : 1;
     this.setFlipX(dir === 1);
