@@ -35,6 +35,14 @@ describe('parseAsciiMap', () => {
     expect(() => parseAsciiMap(SRC.replace(' target=other spawn=in', ''))).toThrow(/portal exit/);
     expect(() => parseAsciiMap(SRC.replace('savepoint scent_t', 'tree scent_t'))).toThrow(/tree/);
   });
+  it('parses lock objects and emits them as one-tile objects on the objects layer', () => {
+    const p = parseAsciiMap('@meta id=t\n@tiles\n####\n@objects\nspawn start 0 0\nlock lock_a 2 0\n');
+    const lock = p.objects.find((o) => o.type === 'lock');
+    expect(lock).toMatchObject({ name: 'lock_a', tx: 2, ty: 0 });
+    const tiled = toTiled(p);
+    const obj = tiled.layers.find((l) => l.type === 'objectgroup')!.objects!.find((o) => o.type === 'lock')!;
+    expect(obj.x + obj.width).toBe(3 * 32);
+  });
 });
 
 describe('toTiled', () => {
