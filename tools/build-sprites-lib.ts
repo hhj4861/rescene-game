@@ -1,6 +1,6 @@
 import { heartTex, lifeTex, TEX2 } from '../src/core/ArcadeAssetKeys';
 import { ENEMY_FRAME_COUNT, NPC_FRAME, NPC_FRAME_COUNT, PLAYER_ANIMS, PLAYER_FRAME, PLAYER_FRAME_COUNT } from '../src/core/spriteFrames';
-import { NPCS } from '../src/data/chapters/index';
+import { NPCS } from '../src/data/npcs';
 import { ENEMIES } from '../src/data/enemies';
 import { MEMBER_IDS, type MemberId } from '../src/systems/types';
 import { blit, composeLayers, crop, encodePng, packSheet, rasterize, type Grid } from './pixel-art';

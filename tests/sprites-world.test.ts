@@ -4,7 +4,7 @@ import { pasteGrid, shiftGrid } from '../tools/pixel-art';
 import { buildEnemySheet, buildNpcSheet, enemySheetFile, npcSheetFile } from '../tools/build-sprites-lib';
 import { buildPlayerSheet } from '../tools/build-sprites-lib';
 import { ENEMIES } from '../src/data/enemies';
-import { NPCS } from '../src/data/chapters/index';
+import { NPCS } from '../src/data/npcs';
 import { ENEMY_ANIMS, ENEMY_FRAME_COUNT, NPC_ANIMS, NPC_FRAME, NPC_FRAME_COUNT, PLAYER_FRAME } from '../src/core/spriteFrames';
 
 const frameOf = (sheet: { width: number; height: number; rgba: Uint8Array }, fw: number, i: number): string => {

@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { NPCS } from '../src/data/chapters/index';
+import { NPCS } from '../src/data/npcs';
 import { ENEMIES } from '../src/data/enemies';
 import { MEMBERS } from '../src/data/members';
 import { SPRITES_DIR, TILES_DIR, buildEnemySheet, buildItemSheets, buildNpcSheet, buildPlayerSheet, buildTileset, buildUiSheets, enemySheetFile, npcSheetFile, playerSheetFile } from './build-sprites-lib';
