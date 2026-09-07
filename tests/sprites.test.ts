@@ -1,9 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { buildPlayerSheet, playerSheetFile } from '../tools/build-sprites-lib';
+import { buildNpcSheet, buildPlayerSheet, playerSheetFile, renderPose } from '../tools/build-sprites-lib';
 import { MEMBERS } from '../src/data/members';
 import { OUTFITS, PLAYER_ANIMS, PLAYER_BODY, PLAYER_FRAME, PLAYER_FRAME_COUNT } from '../src/core/spriteFrames';
-import { LOOKS } from '../tools/sprites/templates';
+import { BASE_PALETTE, DETAIL_LINE, HAIR, HEAD_SHEEN, LOOKS } from '../tools/sprites/templates';
+import { armLayer, legsGrid, POSES, SHOULDER } from '../tools/sprites/poses';
+import { OUTFIT_PALETTES } from '../tools/sprites/outfits';
+import { ramp } from '../tools/sprites/ramps';
+import { variantChar } from '../tools/sprites/shading';
 
 type Sheet = { width: number; height: number; rgba: Uint8Array };
 const frameOf = (sheet: Sheet, i: number): string => {
@@ -21,6 +25,25 @@ const countColor = (sheet: Sheet, i: number, color: string): number => {
     if (sheet.rgba[o + 3]! > 0 && sheet.rgba[o] === r && sheet.rgba[o + 1] === g && sheet.rgba[o + 2] === b) n++;
   }
   return n;
+};
+/** 프레임 i의 (x, y) 픽셀 색(#rrggbb), 투명이면 null. */
+const pixelAt = (sheet: Sheet, i: number, x: number, y: number): string | null => {
+  const o = (y * sheet.width + i * PLAYER_FRAME.width + x) * 4;
+  return sheet.rgba[o + 3]! > 0 ? '#' + [0, 1, 2].map((k) => sheet.rgba[o + k]!.toString(16).padStart(2, '0')).join('') : null;
+};
+/** 프레임 i의 실루엣 가장자리(4방향 이웃 중 투명·프레임 밖이 있는 불투명 픽셀) 수와 그중 외곽선 검정 수. */
+const silhouette = (sheet: Sheet, i: number): { all: number; black: number } => {
+  let all = 0, black = 0;
+  for (let y = 0; y < PLAYER_FRAME.height; y++) for (let x = 0; x < PLAYER_FRAME.width; x++) {
+    const c = pixelAt(sheet, i, x, y);
+    if (!c) continue;
+    const edge = [[0, -1], [0, 1], [-1, 0], [1, 0]].some(([dx, dy]) => {
+      const nx = x + dx!, ny = y + dy!;
+      return nx < 0 || ny < 0 || nx >= PLAYER_FRAME.width || ny >= PLAYER_FRAME.height || !pixelAt(sheet, i, nx, ny);
+    });
+    if (edge) { all++; if (c === BASE_PALETTE.K) black++; }
+  }
+  return { all, black };
 };
 /** 프레임 i의 불투명 픽셀 경계(프레임 좌표). */
 const bounds = (sheet: Sheet, i: number): { left: number; right: number; top: number; bottom: number } => {
@@ -110,6 +133,96 @@ describe('player sprite sheets (character v2, 40×64 × 15)', () => {
       expect(file).toBe(o === 'training' ? `public/assets/sprites/player_${m.id}.png` : `public/assets/sprites/player_${m.id}_${o}.png`);
       expect(existsSync(file), file).toBe(true);
       expect(Buffer.compare(readFileSync(file), Buffer.from(buildPlayerSheet(m.id, o).png)), file).toBe(0);
+    }
+  });
+});
+
+describe('sprite shading (A안: 형태 음영 + 접촉 그림자 + 정수리 광택 + 선택적 외곽선)', () => {
+  it('idle frame carries the hair light tone, the top shade/dark tones and the skin rim shade', () => {
+    for (const m of MEMBERS) {
+      const sheet = buildPlayerSheet(m.id);
+      const look = LOOKS[m.id]!;
+      expect(countColor(sheet, 0, ramp(look.hairColor[0]).light), `${m.id} hair light`).toBeGreaterThan(0);
+      expect(countColor(sheet, 0, ramp(look.top).shade), `${m.id} top shade`).toBeGreaterThan(0);
+      expect(countColor(sheet, 0, ramp(look.top).dark), `${m.id} top dark`).toBeGreaterThan(0);
+      expect(countColor(sheet, 0, ramp(BASE_PALETTE.S!).shade), `${m.id} skin rim`).toBeGreaterThan(0);
+    }
+  });
+  it('keeps the silhouette outline black in every frame of every outfit (selective outline only softens internal lines)', () => {
+    for (const m of MEMBERS) for (const o of OUTFITS) {
+      const sheet = buildPlayerSheet(m.id, o);
+      for (let i = 0; i < PLAYER_FRAME_COUNT; i++) {
+        const s = silhouette(sheet, i);
+        expect(s.black, `${m.id}/${o} frame ${i} black edge`).toBeGreaterThan(100);
+        // 소품 막대(M 1px)·리본·효과만 검정이 아니다. 실측 최솟값 0.80(zena/road 공격1) — 0.7은 여유를 둔 하한선.
+        expect(s.black / s.all, `${m.id}/${o} frame ${i} black edge ratio`).toBeGreaterThan(0.7);
+      }
+    }
+  });
+  it('keeps black detail lines that sit next to the eyes: judge glasses and liv choker', () => {
+    const judge = buildNpcSheet('npc_audition_judge');
+    for (const x of [12, 13, 14, 15, 16, 17]) { expect(pixelAt(judge, 0, x, 11), `glasses top x${x}`).toBe(BASE_PALETTE.K); expect(pixelAt(judge, 0, x, 15), `glasses bottom x${x}`).toBe(BASE_PALETTE.K); }
+    const liv = buildPlayerSheet('liv');
+    for (const x of [16, 17, 18, 19, 20, 21, 22, 23]) expect(pixelAt(liv, 0, x, 24), `choker x${x}`).toBe(BASE_PALETTE.K);
+    expect(BASE_PALETTE[DETAIL_LINE]).toBe(BASE_PALETTE.K);
+  });
+  it('short-sleeve (skin) arms are outlined with the detail line so they stay visible over light tops', () => {
+    const spec = { path: [SHOULDER.front, [22, 34] as [number, number]] };
+    const skin = armLayer(spec, true).grid.join(''), sleeve = armLayer(spec).grid.join('');
+    expect(skin).toContain(DETAIL_LINE); expect(skin).not.toContain('K');
+    expect(sleeve).toContain('K'); expect(sleeve).not.toContain(DETAIL_LINE);
+    // 메이 개인기(손 모으기)는 팔이 가슴을 가로지른다: 몸통 안쪽(프레임 x14~25·y29~40)의 검정은 연습복에선 상의 어둠색으로 바뀌어 0, 반소매 프리티에선 남는다.
+    // 후드 아랫선(y28)은 뺀다 — 후드 끈(포인트색 A)에 닿은 외곽선은 끈 구멍처럼 검정으로 남기는 게 맞다.
+    const blackInTorso = (sheet: Sheet, i: number): number => { let n = 0; for (let y = 29; y <= 40; y++) for (let x = 14; x <= 25; x++) if (pixelAt(sheet, i, x, y) === BASE_PALETTE.K) n++; return n; };
+    const flourish = PLAYER_ANIMS.flourish.frames[0];
+    expect(blackInTorso(buildPlayerSheet('may', 'training'), flourish)).toBe(0);
+    expect(blackInTorso(buildPlayerSheet('may', 'pretty'), flourish)).toBeGreaterThan(0);
+  });
+  it('hand highlights: bangs tips and back-hair ends are dark, bent arms crease, skirts pleat, shoes glint', () => {
+    expect(HAIR.long.front[10]).toContain(variantChar('H', 'dark'));
+    expect(HAIR.long.back[40]).toContain(variantChar('h', 'dark'));
+    expect(HAIR.twin.back[37]).toContain(variantChar('h', 'dark'));
+    expect(HAIR.wavy.back[43]).toContain(variantChar('h', 'dark'));
+    const bent = armLayer({ path: [SHOULDER.front, [33, 22], [31, 13]] }).grid.join('');
+    expect(bent).toContain(variantChar('L', 'shade'));
+    expect(armLayer({ path: [SHOULDER.front, [33, 22]] }).grid.join('')).not.toContain(variantChar('L', 'shade'));
+    expect(legsGrid('skirt', 'stand').join('')).toContain(variantChar('B', 'dark'));
+    expect(legsGrid('pants', 'stand').join('')).toContain(variantChar('O', 'light'));
+  });
+  it('shoes keep the hand-painted tones (rule shading is off for O so the 4×3 block never speckles)', () => {
+    // 왼쪽 신발 = 프레임 x15~18 · y60~62(아래 y63 은 외곽선). 발등 왼쪽 광택 · 오른쪽 1px 그늘 · 밑창 한 줄.
+    for (const m of MEMBERS) for (const o of OUTFITS) {
+      const sheet = buildPlayerSheet(m.id, o), r = ramp(OUTFIT_PALETTES[o].O);
+      const at = (x: number, y: number): string | null => pixelAt(sheet, 0, x, y);
+      expect(at(15, 60), `${m.id}/${o} toe light`).toBe(r.light);
+      expect([at(16, 60), at(17, 60), at(15, 61), at(16, 61), at(17, 61)], `${m.id}/${o} shoe body`).toEqual(Array<string>(5).fill(r.base));
+      expect([at(18, 60), at(18, 61)], `${m.id}/${o} shoe right rim`).toEqual([r.shade, r.shade]);
+      expect([at(15, 62), at(16, 62), at(17, 62), at(18, 62)], `${m.id}/${o} sole`).toEqual([r.shade, r.shade, r.shade, r.dark]);
+      // 두 신발 사이 틈은 검정으로 남는다(선택적 외곽선이 신발 색으로 녹이지 않는다)
+      expect([at(19, 61), at(20, 61)], `${m.id}/${o} shoe gap`).toEqual([BASE_PALETTE.K, BASE_PALETTE.K]);
+    }
+  });
+  it('the head sheen is a hand-placed band on the crown, in front and back views alike', () => {
+    for (const m of MEMBERS) {
+      const sheet = buildPlayerSheet(m.id), light = ramp(LOOKS[m.id]!.hairColor[0]).light;
+      // HEAD_SHEEN 3행은 그리드 x11~17 = 프레임 x15~21. 띠 밖(오른쪽 x22)과 정수리(y1)는 밝음이 아니다 — 머리 전체가 밝아지지 않는다.
+      expect(pixelAt(sheet, 0, 15, 3), `${m.id} sheen left`).toBe(light);
+      expect(pixelAt(sheet, 0, 21, 3), `${m.id} sheen right`).toBe(light);
+      expect(pixelAt(sheet, 0, 22, 3), `${m.id} beyond sheen`).not.toBe(light);
+      expect(pixelAt(sheet, 0, 17, 1), `${m.id} crown above sheen`).toBe(LOOKS[m.id]!.hairColor[0]);
+      expect(countColor(sheet, 0, light), `${m.id} sheen size`).toBeGreaterThanOrEqual(HEAD_SHEEN.reduce((n, [, , x0, x1]) => n + (x1 - x0 + 1), 0));
+    }
+    // 제나 필살기 2프레임은 뒷모습 — 뒤통수에도 같은 광택이 온다
+    const zena = buildPlayerSheet('zena'), light = ramp(LOOKS.zena!.hairColor[0]).light;
+    for (const x of [15, 21]) expect(pixelAt(zena, PLAYER_ANIMS.super.frames[1], x, 3), `zena back view sheen x${x}`).toBe(light);
+  });
+  it('held props drop a 1px contact shade onto the hand instead of sitting flat on it', () => {
+    // 리브 핸드마이크·미나미 붓은 손 위에 얹힌다: 소품 아랫변 바로 밑 피부가 그늘 톤이 된다.
+    const shades = (grid: string[]): number => grid.join('').split(variantChar('S', 'shade')).length - 1;
+    for (const m of ['liv', 'minami'] as const) {
+      const held = renderPose(LOOKS[m]!, 'training', POSES.attack1);
+      const bare = renderPose(LOOKS[m]!, 'training', { ...POSES.attack1, prop: 'none' });
+      expect(shades(held), `${m} prop contact`).toBeGreaterThan(shades(bare));
     }
   });
 });

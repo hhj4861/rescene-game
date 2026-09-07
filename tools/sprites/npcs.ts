@@ -1,9 +1,9 @@
 // 멤버가 아닌 NPC 외형: 멤버와 같은 32×64 템플릿에 머리·의상 팔레트·오버레이(그리드 좌표)만 바꾼다.
 import type { Grid } from '../pixel-art';
-import { fill, outlined, over, type Accessory, type HairStyle } from './templates';
+import { DETAIL_LINE, fill, outlined, over, type Accessory, type HairStyle } from './templates';
 
-/** 안경: 눈(12~14행) 둘레 사각 테 + 콧대(13행). */
-const GLASSES: Grid = fill('K', [[11, 11, 8, 13], [15, 15, 8, 13], [11, 15, 8, 8], [11, 15, 13, 13], [11, 11, 18, 23], [15, 15, 18, 23], [11, 15, 18, 18], [11, 15, 23, 23], [13, 13, 14, 17]]);
+/** 안경: 눈(12~14행) 둘레 사각 테 + 콧대(13행). 세부선 k 라 음영의 선택적 외곽선에서 검정을 지킨다. */
+const GLASSES: Grid = fill(DETAIL_LINE, [[11, 11, 8, 13], [15, 15, 8, 13], [11, 15, 8, 8], [11, 15, 13, 13], [11, 11, 18, 23], [15, 15, 18, 23], [11, 15, 18, 18], [11, 15, 23, 23], [13, 13, 14, 17]]);
 /** 야구모자(0~8행, 챙은 오른쪽 = 정면). */
 const CAP: Grid = over(
   outlined(fill('C', [[1, 1, 10, 21], [2, 2, 9, 22], [3, 3, 8, 23], [4, 5, 7, 24], [6, 8, 6, 25], [8, 9, 20, 30]])),

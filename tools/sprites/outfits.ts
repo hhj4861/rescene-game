@@ -3,6 +3,7 @@
 import type { Grid } from '../pixel-art';
 import type { Outfit } from '../../src/core/spriteFrames';
 import { BASE_PALETTE, fill, outlined, over, TORSO, TORSO_Y, type MemberLook } from './templates';
+import { variantChar } from './shading';
 
 export type BottomStyle = 'pants' | 'skirt' | 'shorts';
 
@@ -28,8 +29,8 @@ const POCKET: Grid = over(fill('t', [[37, 40, 12, 19]]), fill('K', [[37, 37, 12,
 const ZIPPER: Grid = over(fill('A', [[28, 40, 15, 16]]), fill('K', [[28, 28, 15, 16]]));
 /** 데뷔 무대: 목선 포인트 밴드 + 허리 벨트. */
 const DEBUT_TRIM: Grid = fill('A', [[27, 28, 10, 21], [41, 41, 10, 21]]);
-/** 데님 재킷: 어깨·옆판(가운데는 크롭탑이 보인다), 라펠 K 선. */
-const JACKET: Grid = over(outlined(fill('J', [[26, 41, 9, 12], [26, 41, 19, 22]])), fill('j', [[27, 41, 12, 12], [27, 41, 19, 19]]), fill('K', [[26, 26, 9, 22]]));
+/** 데님 재킷: 어깨·옆판(가운데는 크롭탑이 보인다), 라펠 K 선, 왼판 광택 1줄. */
+const JACKET: Grid = over(outlined(fill('J', [[26, 41, 9, 12], [26, 41, 19, 22]])), fill('j', [[27, 41, 12, 12], [27, 41, 19, 19]]), fill(variantChar('J', 'light'), [[28, 37, 11, 11]]), fill('K', [[26, 26, 9, 22]]));
 /** 프리티 걸: 목 리본(옐로) + 허리 리본. */
 const PRETTY_RIBBON: Grid = over(fill('A', [[27, 28, 13, 14], [27, 28, 17, 18], [28, 28, 15, 16], [41, 41, 10, 21]]), fill('K', [[27, 27, 15, 16]]));
 

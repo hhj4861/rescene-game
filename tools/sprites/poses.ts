@@ -2,8 +2,16 @@
 // 좌표는 40 폭 캔버스 기준(몸 그리드 x + BODY_X). 앞팔 어깨 (27,28) · 뒷팔 어깨 (11,28).
 import type { Grid } from '../pixel-art';
 import type { MemberId } from '../../src/systems/types';
-import { BODY_X, CANVAS_W, EYES, SPRITE_H, SPRITE_W, blank, fill, outlined, over, type EyeStyle, type MouthStyle } from './templates';
+import { BODY_X, CANVAS_W, DETAIL_LINE, EYES, SPRITE_H, SPRITE_W, blank, fill, outlined, over, type EyeStyle, type MouthStyle } from './templates';
+import { variantChar } from './shading';
 import type { BottomStyle } from './outfits';
+
+// 손 하이라이트용 톤 문자(음영 라이브러리가 팔레트에 램프 색을 매긴다). 미리 놓인 톤 문자는 규칙 음영이 건드리지 않는다.
+const O_LIGHT = variantChar('O', 'light');
+const O_SHADE = variantChar('O', 'shade');
+const O_DARK = variantChar('O', 'dark');
+const B_DARK = variantChar('B', 'dark');
+const L_SHADE = variantChar('L', 'shade');
 
 // ---------- 다리 ----------
 export type LegPose = 'stand' | 'strideA' | 'strideB' | 'tuck' | 'wide' | 'lunge' | 'kick';
@@ -19,6 +27,13 @@ const LEG_POSES: Record<LegPose, [LegColumn, LegColumn]> = {
 };
 export const LEGS_TOP = 46;
 const WAIST_Y = 42;
+
+/**
+ * 신발(안쪽 4열 × 3행)은 규칙 음영에서 빼고 손으로 칠한다 — 4×3 밖에 안 되는 덩어리에 형태 음영·접촉 그림자가
+ * 겹치면 네 톤이 얼룩진다. r 0=발등(왼쪽 위 광택) 1=중간 2=밑창(한 줄 그늘, 바깥쪽 모서리만 어둠), i 는 안쪽 1~4열.
+ */
+const shoeCell = (r: number, i: number): string =>
+  r === 2 ? (i === 4 ? O_DARK : O_SHADE) : i === 4 ? O_SHADE : r === 0 && i === 1 ? O_LIGHT : 'O';
 
 /** 다리 한 줄(6 폭: K + 4 + K)을 위에서 아래로 기울여 그린다. 스타일별 채움: 바지 B · 치마·쇼츠는 피부. */
 function legColumn(out: string[][], col: LegColumn, style: BottomStyle): void {
@@ -36,7 +51,7 @@ function legColumn(out: string[][], col: LegColumn, style: BottomStyle): void {
     for (let i = 0; i < 6; i++) {
       const tx = x + i;
       if (tx < 0 || tx >= SPRITE_W) continue;
-      out[y]![tx] = i === 0 || i === 5 ? 'K' : ch;
+      out[y]![tx] = i === 0 || i === 5 ? 'K' : ch === 'O' ? shoeCell(y - (bottom - 3), i) : ch;
     }
   }
 }
@@ -50,7 +65,9 @@ export function legsGrid(style: BottomStyle, pose: LegPose): Grid {
   const grid = out.map((row) => row.join(''));
   if (style === 'skirt') {
     // 허리에서 퍼지는 A라인 스커트(42~51행)
-    const skirt = over(outlined(fill('B', [[WAIST_Y, WAIST_Y + 1, 10, 21], [WAIST_Y + 2, WAIST_Y + 3, 9, 22], [WAIST_Y + 4, WAIST_Y + 5, 8, 23], [WAIST_Y + 6, WAIST_Y + 7, 7, 24], [WAIST_Y + 8, WAIST_Y + 8, 6, 25]])), fill('b', [[WAIST_Y + 8, WAIST_Y + 8, 6, 25]]));
+    // 접힘선 2줄(어둠 톤): 허리 아래에서 밑단 쪽으로 바깥으로 벌어져 스커트를 세 폭으로 나눈다(폭마다 규칙 음영의 밝음·그늘이 생긴다)
+    const pleats = fill(B_DARK, [[WAIST_Y + 2, WAIST_Y + 4, 13, 13], [WAIST_Y + 5, WAIST_Y + 7, 12, 12], [WAIST_Y + 2, WAIST_Y + 4, 18, 18], [WAIST_Y + 5, WAIST_Y + 7, 19, 19]]);
+    const skirt = over(outlined(fill('B', [[WAIST_Y, WAIST_Y + 1, 10, 21], [WAIST_Y + 2, WAIST_Y + 3, 9, 22], [WAIST_Y + 4, WAIST_Y + 5, 8, 23], [WAIST_Y + 6, WAIST_Y + 7, 7, 24], [WAIST_Y + 8, WAIST_Y + 8, 6, 25]])), pleats, fill('b', [[WAIST_Y + 8, WAIST_Y + 8, 6, 25]]));
     return over(grid, skirt);
   }
   const band = over(outlined(fill('B', [[WAIST_Y, WAIST_Y + 3, 10, 21]])), fill('b', [[WAIST_Y + 3, WAIST_Y + 3, 10, 21]]));
@@ -67,8 +84,12 @@ export const SHOULDER = { front: [27, 28] as [number, number], back: [11, 28] as
 
 const sgn = (n: number): number => (n > 0 ? 1 : n < 0 ? -1 : 0);
 
-/** 팔 레이어(40×64)와 손 왼쪽 위 좌표. 어깨 근처 3점은 U(소매 어깨), 나머지 L(소매/피부), 손은 S. */
-export function armLayer(spec: ArmSpec): { grid: Grid; hand: [number, number] } {
+/**
+ * 팔 레이어(40×64)와 손 왼쪽 위 좌표. 어깨 근처 3점은 U(소매 어깨), 나머지 L(소매/피부), 손은 S.
+ * 꺾이는 팔(경로 중간점)은 팔꿈치에 1px 주름 그늘. skinSleeve(반소매: L = 피부)면 외곽선을 세부선 k 로 그려
+ * 밝은 상의 위를 가로질러도 선택적 외곽선이 팔 윤곽을 지우지 않게 하고, 피부에는 주름을 넣지 않는다.
+ */
+export function armLayer(spec: ArmSpec, skinSleeve = false): { grid: Grid; hand: [number, number] } {
   const out: string[][] = blank(SPRITE_H, CANVAS_W).map((r) => [...r]);
   const stamp = (x: number, y: number, ch: string, w = 2, h = 2): void => {
     for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) {
@@ -87,6 +108,13 @@ export function armLayer(spec: ArmSpec): { grid: Grid; hand: [number, number] } 
       idx++;
     }
   }
+  if (!skinSleeve) for (let i = 1; i < pts.length - 1; i++) {
+    const [vx, vy] = pts[i]!;
+    // 팔꿈치 안쪽 1px: 다음 구간이 위로 꺾이면 아래쪽 칸, 아니면 위쪽 칸
+    const up = pts[i + 1]![1] < vy;
+    const cx = vx + 1, cy = up ? vy + 1 : vy;
+    if (out[cy]?.[cx] === 'L') out[cy]![cx] = L_SHADE;
+  }
   const [ex, ey] = pts[pts.length - 1]!;
   const [px, py] = pts.length > 1 ? pts[pts.length - 2]! : [ex, ey];
   const sx = sgn(ex - px), sy = sgn(ey - py);
@@ -99,7 +127,7 @@ export function armLayer(spec: ArmSpec): { grid: Grid; hand: [number, number] } 
     if (hand === 'thumb') stamp(sx >= 0 ? hx : hx + 2, hy - 3, 'S', 1, 3);
     if (hand === 'open') { stamp(hx - 1, hy, 'S', 1, 2); stamp(hx + 3, hy, 'S', 1, 2); stamp(hx, hy - 1, 'S', 3, 1); }
   }
-  return { grid: outlined(out.map((r) => r.join(''))), hand: [hx, hy] };
+  return { grid: outlined(out.map((r) => r.join('')), skinSleeve ? DETAIL_LINE : 'K'), hand: [hx, hy] };
 }
 
 // ---------- 포즈 명세 ----------
