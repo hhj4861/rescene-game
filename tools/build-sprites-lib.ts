@@ -4,7 +4,7 @@ import { NPCS } from '../src/data/npcs';
 import { ENEMIES } from '../src/data/enemies';
 import { MEMBER_IDS, type MemberId } from '../src/systems/types';
 import { blit, crop, encodePng, packSheet, pasteGrid, rasterize, type Grid, type Palette } from './pixel-art';
-import { ENEMY_SPRITES } from './sprites/enemies';
+import { ENEMY_SPRITES, type EnemySprite } from './sprites/enemies';
 import { CARD_FRAMES, CARD_H, CARD_PALETTE, CARD_W, CHEST_FRAMES, CHEST_H, CHEST_PALETTE, CHEST_W, HEART_FOODS, HEART_H, HEART_W, heartFrames } from './sprites/items';
 import { NPC_LOOKS } from './sprites/npcs';
 import { OBJECT_SPRITES } from './sprites/objects';
@@ -150,9 +150,90 @@ function sheetOf(grids: Grid[], palette: Palette, gw: number, gh: number, fw: nu
   return { ...sheet, png: encodePng(sheet.width, sheet.height, sheet.rgba) };
 }
 
+// ---------- 적 음영(A안) ----------
+/**
+ * 덩어리 재질(enemies.ts 헤더의 역할 규약): F/f 몸·그늘 · S/s 줄기 · T 정장·트로피 · D/d 책상 ·
+ * P/p 기둥·명패 · C 왕관 · H/I/J 머리색. 여기 없는 역할은 평면으로 남으므로 새 역할 문자를 만들면 이 표에 넣어야 한다.
+ */
+export const ENEMY_MATERIALS = ['F', 'f', 'S', 's', 'T', 'D', 'd', 'P', 'p', 'C', 'H', 'I', 'J'];
+/**
+ * 평면으로 지키는 역할: W 흰자·유리 · E 눈동자 · L/l 빛·희미(발광) · A/a 포인트(지직·반짝·숫자) · M/m 금속.
+ * - 눈·발광·이펙트에 램프 음영이 닿으면 24×24 잡몹에서 이목구비가 바로 뭉개진다.
+ * - 금속은 바늘·톱니·가시·지퍼·거울처럼 죄다 얇은 부속이다. 4px 링에 런마다 밝음·그늘이 갈리면 반짝임이 아니라 얼룩이 되고,
+ *   큰 몸 위에 얹힌 부속은 세로 런을 끊어 그 열만 그늘 길이가 달라진다(침묵 보스 몸통에 빗살 무늬가 생겼다).
+ * - 외곽선 K 도 특징이다. 특징은 런을 끊지 않으므로 명암이 몸 전체 폭으로 흐르고,
+ *   눈·입 같은 내부 검정선 바로 오른쪽에서 런이 새로 시작해 밝음 띠(흰 얼룩)가 찍히지 않는다.
+ * 덩어리로 쓰는 적만 아래 표에서 재질로 승격한다.
+ */
+export const ENEMY_FEATURES = ['K', 'W', 'E', 'L', 'l', 'A', 'a', 'M', 'm'];
+/**
+ * 같은 덩어리로 보는 역할 묶음(경계에서만 림·접촉 그림자가 생긴다).
+ * 명패(P)는 책상(D) 면에 붙어 있어 같은 덩어리로 둔다 — 나누면 명패 왼쪽이 그늘, 오른쪽이 밝음이 되어 광원이 뒤집힌다.
+ */
+const ENEMY_GROUPS: string[][] = [['F', 'f'], ['S', 's'], ['D', 'd', 'P', 'p'], ['A', 'a'], ['T'], ['C'], ['H'], ['I'], ['J']];
+
+/** 그늘 띠의 목표 두께(px). 비율이 아니라 두께로 잡는다 — 96px 보스에서 25%는 24px짜리 검은 판이 된다. */
+const SIDE_SHADE_PX = 9, BOTTOM_SHADE_PX = 7;
+
+interface EnemyShadeSpec {
+  /** 이 적에선 덩어리라 음영을 받는 역할(기본 특징 → 재질). */
+  solid?: string[];
+  /** 이 적에선 이펙트·발광이라 평면으로 두는 역할(기본 재질 → 특징). */
+  flat?: string[];
+  /** 정수리 광택을 얹을 머리 역할(그 적 안에서 그 역할이 머리 하나에만 쓰일 때만 — 광택 띠는 역할 전체 bbox로 자리를 잡는다). */
+  sheen?: string[];
+  /** 가로 런 오른쪽 그늘 비율. 기본은 폭에서 계산한다. */
+  sideShade?: number;
+  /** 세로 런 아래 그늘 비율. 기본은 높이에서 계산한다. */
+  bottomShade?: number;
+}
+
+/** 역할 문자가 적마다 다른 뜻으로 쓰이거나(승격·강등), 형태가 규칙과 안 맞는 곳만 손으로 잡는다. */
+const ENEMY_SHADE: Record<string, EnemyShadeSpec> = {
+  // 받침대(A/a)는 반짝임이 아니라 메트로놈이 딛고 선 나무 덩어리다.
+  enemy_offbeat_metronome: { solid: ['A', 'a'] },
+  // 달력 줄(D)은 1px 눈금이라 램프를 태우면 점선처럼 끊긴다.
+  enemy_schedule_bomb: { flat: ['D'] },
+  // 유령은 몸빛(#e6e6f0)이 거의 흰색이라 밝음 톤이 순백으로 튄다 — 아래 그늘까지 주면 치맛단 곡선에 흰·회색 계단이 생긴다.
+  enemy_chart_ghost: { bottomShade: 0 },
+  // 안개는 반투명이고 K 외곽선도 없다 — 형태 음영을 절반만 줘야 구름이 고체 덩어리로 굳지 않는다.
+  enemy_apathy_fog: { sideShade: 0.12, bottomShade: 0.1 },
+  // 무대 함정은 바닥에 깔린 판이라 25% 그라데이션이 이음매로 보인다 — 3px 베벨만.
+  enemy_stage_trap: { sideShade: 0.12, bottomShade: 0.15 },
+  // 심사위원: 머리 3종(H 단발·I 쪽·J 백발)은 각각 한 명에게만 쓰여 자동 광택 띠가 제 정수리에 온다.
+  boss_monthly_judges: { sheen: ['H', 'I', 'J'] },
+  // 어깨 장식(A)은 반짝임이 아니라 어깨에 박힌 금속 구다.
+  boss_trophy_guardian: { solid: ['A'] },
+};
+
+/**
+ * 적 음영 옵션(A안). 적은 실존 인물이 아니라 감정·장애물의 의인화라 캐릭터 프리셋(피부·머리 전제) 대신
+ * 역할 규약을 그대로 재질/특징으로 가른다. 캐릭터와 다른 점 셋:
+ * - 선택적 외곽선을 끈다. 적의 내부 검정선은 입·톱니·정장 깃처럼 형태를 만드는 선이라 재질 어둠색으로 녹이면 이목구비가 사라진다.
+ * - 자동 정수리 광택도 기본은 끈다. 몸 전체가 한 역할(F)이면 광택 띠가 몸통 한가운데에 깔린다(shading.ts 주의점 ②).
+ * - 그늘 띠를 비율이 아니라 두께로 잡는다. 잡몹 24~44px 은 기존 25%/20% 그대로, 보스 72~112px 만 얇아진다.
+ * 라이브러리의 rimOnly(피부용 1px 림)는 쓰지 않는다 — 적은 실루엣이 K 외곽선으로 둘러싸여 있어 1px 림이 그 검정선에 얹혀 사라진다.
+ */
+export function enemyShadeOptions(enemyId: string, art: EnemySprite): ShadeOptions {
+  const spec = ENEMY_SHADE[enemyId] ?? {};
+  const solid = spec.solid ?? [], flat = spec.flat ?? [];
+  const materials = [...ENEMY_MATERIALS.filter((r) => !flat.includes(r)), ...solid];
+  return {
+    materials,
+    groups: ENEMY_GROUPS.map((g) => g.filter((r) => materials.includes(r))).filter((g) => g.length > 0),
+    band: 1,
+    selectiveOutline: false,
+    features: [...ENEMY_FEATURES.filter((r) => !solid.includes(r)), ...flat],
+    sheen: spec.sheen ?? [],
+    sideShade: spec.sideShade ?? Math.min(0.25, SIDE_SHADE_PX / art.width),
+    bottomShade: spec.bottomShade ?? Math.min(0.2, BOTTOM_SHADE_PX / art.height),
+  };
+}
+
 /**
  * 시트는 템플릿 목록(ENEMY_SPRITES) 기준으로 만든다 — 데이터(ENEMIES)에 없는 적도 빌드된다.
  * 데이터에 같은 id가 있으면 크기 일치만 검증하고, 없으면 검증을 건너뛴다.
+ * 프레임마다 규칙 음영을 입히고 팔레트에 재질별 램프 색을 더한다(캐릭터와 같은 A안).
  */
 export function buildEnemySheet(enemyId: string): Sheet {
   const art = ENEMY_SPRITES[enemyId];
@@ -161,7 +242,9 @@ export function buildEnemySheet(enemyId: string): Sheet {
   if (def && (art.width !== def.width || art.height !== def.height)) throw new Error(`${enemyId}: template ${art.width}x${art.height} != data ${def.width}x${def.height}`);
   if (art.frames.length !== ENEMY_FRAME_COUNT) throw new Error(`${enemyId}: ${art.frames.length} frames, expected ${ENEMY_FRAME_COUNT}`);
   art.frames.forEach((g, i) => { if (g.length !== art.height) throw new Error(`${enemyId} frame ${i}: ${g.length} rows != ${art.height}`); });
-  return sheetOf(art.frames, art.palette, art.width, art.height, art.width, art.height);
+  const opts = enemyShadeOptions(enemyId, art);
+  const frames = art.frames.map((g) => shadeGrid(g, opts));
+  return sheetOf(frames, shadePalette(art.palette, opts.materials), art.width, art.height, art.width, art.height);
 }
 
 /** NPC: 멤버 NPC는 멤버 연습복 외형 그대로, 배경 NPC는 머리·팔레트·오버레이만 다른 같은 템플릿. 대기 2프레임. */
