@@ -75,7 +75,7 @@ const CHEEKS = unionMask(E(16, 37.5, 4, 4.5), E(47, 37.5, 4, 4.5));
 const SHOULDERS = clip(E(31.5, 66, 30, 14), (_x, y) => y >= 52);
 
 /** 머리(앞·뒤) 가장자리가 "얼굴 위"인지 판정하는 마스크 — 그 위의 검정선은 실루엣이 아니라 안쪽선이다. */
-const HEAD_AREA = unionMask(SKULL, JAW, EARS, NECK, CHEEKS);
+const HEAD_AREA = unionMask(SKULL, JAW, EARS, NECK);
 
 function faceGrid(variant: FaceVariant): Grid {
   const head = unionMask(SKULL, JAW, EARS, NECK, ...(variant === 'puff' ? [CHEEKS] : []));
