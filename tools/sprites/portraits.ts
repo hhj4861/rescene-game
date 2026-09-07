@@ -3,6 +3,7 @@ import { PORTRAIT_FRAME, PORTRAIT_FRAME_COUNT } from '../../src/core/spriteFrame
 import type { MemberId } from '../../src/systems/types';
 import { composeLayers, encodePng, packSheet, rasterize, type Grid } from '../pixel-art';
 import { ACCESSORY, BLUSH, BROWS, EYE_LEFT, EYE_RIGHT, EYES, FACE, HAIR_BACK, HAIR_FRONT, HANDS, MOUTH, PH, PW, SWEAT, isLighter, type Accessory, type BrowVariant, type EyeVariant, type FaceVariant, type HairStyle, type HandVariant, type MouthVariant } from './portraitParts';
+import { PORTRAIT_SHADE_OPTIONS, shadeGrid, shadePalette, type ShadeOptions } from './shading';
 import { BASE_PALETTE, LOOKS } from './templates';
 
 export type Signature = 'ui' | 'thumb' | 'peace' | 'grip' | 'pout';
@@ -113,15 +114,19 @@ export function composePortrait(member: MemberId, e: Expression): Grid {
   return composeLayers(layers, PW, PH);
 }
 
+/** 초상화 음영 옵션(라이브러리 프리셋 기반). */
+export const PORTRAIT_SHADING: ShadeOptions = { ...PORTRAIT_SHADE_OPTIONS };
+
+/** 표정 3장(기본·시그니처·피격)을 합성하고 음영을 입힌 역할 그리드. */
 export function portraitFrames(member: MemberId): Grid[] {
   const spec = PORTRAITS[member];
-  return [BASE_EXPRESSION, SIGNATURE_EXPRESSION[spec.signature], HURT_EXPRESSION].map((e) => composePortrait(member, e));
+  return [BASE_EXPRESSION, SIGNATURE_EXPRESSION[spec.signature], HURT_EXPRESSION].map((e) => shadeGrid(composePortrait(member, e), PORTRAIT_SHADING));
 }
 
 export interface PortraitSheet { width: number; height: number; rgba: Uint8Array; png: Uint8Array }
 
 export function buildPortraitSheet(member: MemberId): PortraitSheet {
-  const palette = portraitPalette(member);
+  const palette = shadePalette(portraitPalette(member), PORTRAIT_SHADING.materials);
   const frames = portraitFrames(member).map((g) => rasterize(g, palette, PW, PH));
   if (frames.length !== PORTRAIT_FRAME_COUNT) throw new Error(`portrait ${member}: ${frames.length} frames != ${PORTRAIT_FRAME_COUNT}`);
   const sheet = packSheet(frames, PORTRAIT_FRAME.width, PORTRAIT_FRAME.height);
