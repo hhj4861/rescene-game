@@ -240,7 +240,7 @@ export const PROPS: Record<Prop, PropSpec> = {
   micstand: { idle: { grid: MIC_STAND_IDLE, x: 35, y: 26 }, grounded: true, idleArm: [[27, 28], [33, 33]], grip: { grid: MIC_HELD, x: -1, y: -9 }, swing: { grid: MIC_SWING, x: 1, y: 0 } },
   handmic: { idle: { grid: HANDMIC, x: -1, y: -5 }, grip: { grid: HANDMIC, x: -1, y: -5 }, swing: { grid: HANDMIC_SWING, x: 2, y: -1 } },
   brush: { idle: { grid: BRUSH, x: 0, y: -8 }, grip: { grid: BRUSH, x: 0, y: -8 }, swing: { grid: BRUSH_SWING, x: 2, y: 0 } },
-  keyring: { idle: { grid: KEYRING, x: 27, y: 42 }, grounded: false, grip: { grid: KEYRING_HELD, x: 0, y: 3 }, swing: { grid: KEYRING_SWING, x: 2, y: 0 } },
+  keyring: { idle: { grid: KEYRING, x: 0, y: -1 }, grounded: false, grip: { grid: KEYRING_HELD, x: 0, y: 3 }, swing: { grid: KEYRING_SWING, x: 2, y: 0 } },
   none: {},
 };
 
