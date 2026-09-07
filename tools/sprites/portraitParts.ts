@@ -1,12 +1,17 @@
 // 초상화(64×64) 합성 부품. 얼굴·머리 덩어리는 마스크(shapes.ts)로 만들고, 눈·입·손·액세서리는 손으로 그린 역할 문자 그리드다.
-// 역할 문자: K 외곽선  S/s 피부·그늘  p 볼터치  H 앞머리  N 뒷머리  L 머리 윤기  T/t 상의·그늘
-//           I/i 눈동자·동공  W 하이라이트  D 입 안  R 혀·리본  G 금속(귀걸이·클립)  O 땀방울
+// 역할 문자: K 실루엣 외곽선  F 머리 안쪽선(머리 어둠)  f 머리결(머리 그늘)  S/s 피부·그늘  p/q 볼터치 바깥·안쪽
+//           H 앞머리  N 뒷머리  L 정수리 광택  T/t/u 상의·그늘·주름  I/i/j 눈동자·위 어둠·아래 밝음
+//           W 하이라이트  D 입 안  R/r 혀·리본·혀 광택  v 입술 광택  G 금속(귀걸이·클립)  O 땀방울
+//           E 얼굴 선(눈·눈썹) — K 와 같은 검정이지만 음영 규칙에서 제외해 눈 밑 얼룩(다크서클)을 막는다
 import { pasteGrid, type Grid } from '../pixel-art';
 import { ellipseMask, rectMask, shapeFromMask, subtractMask, unionMask, type Mask } from './shapes';
 import { PORTRAIT_FRAME } from '../../src/core/spriteFrames';
 
 export const PW = PORTRAIT_FRAME.width;
 export const PH = PORTRAIT_FRAME.height;
+
+/** 규칙 음영이 건드리지 않는 초상화 전용 디테일 역할(팔레트가 색을 직접 준다). 런을 끊지 않도록 features 로 넘긴다. */
+export const PORTRAIT_DETAIL_ROLES = ['E', 'F', 'f', 'j', 'q', 'u', 'v', 'r'] as const;
 
 export type HairStyle = 'long' | 'bob' | 'wavy' | 'short' | 'twin';
 /** squint = 피격 `><`, flat = 반눈(째려봄, 제나 "아뉘"). */
@@ -37,6 +42,22 @@ const clip = (mask: Mask, keep: (x: number, y: number) => boolean): Mask => mask
 /** 마스크가 참이고 현재 문자가 over 인 칸을 ch 로 칠한다(외곽선은 건드리지 않는다). */
 const paint = (grid: Grid, mask: Mask, ch: string, over: string): Grid =>
   grid.map((r, y) => [...r].map((c, x) => (mask[y]![x] && c === over ? ch : c)).join(''));
+/** 점 목록 중 현재 문자가 over 인 칸만 ch 로 칠한다(머리결 선). */
+const paintPoints = (grid: Grid, pts: readonly (readonly [number, number])[], ch: string, over: string): Grid => {
+  const out = grid.map((r) => [...r]);
+  for (const [x, y] of pts) if (out[y]?.[x] === over) out[y]![x] = ch;
+  return out.map((r) => r.join(''));
+};
+/** 제어점 하나짜리 2차 베지어 위의 정수 좌표들(머리결 곡선). */
+const curve = (x0: number, y0: number, cx: number, cy: number, x1: number, y1: number): [number, number][] => {
+  const n = Math.round(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * 2) + 1;
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, mt = 1 - t;
+    pts.push([Math.round(mt * mt * x0 + 2 * mt * t * cx + t * t * x1), Math.round(mt * mt * y0 + 2 * mt * t * cy + t * t * y1)]);
+  }
+  return pts;
+};
 const lum = (hex: string): number => {
   const n = parseInt(hex.slice(1), 16);
   return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
@@ -53,14 +74,19 @@ const CHEEKS = unionMask(E(16, 37.5, 4, 4.5), E(47, 37.5, 4, 4.5));
 /** 어깨: 52행부터 시작해 아래로 넓어지는 타원 윗부분. */
 const SHOULDERS = clip(E(31.5, 66, 30, 14), (_x, y) => y >= 52);
 
+/** 머리(앞·뒤) 가장자리가 "얼굴 위"인지 판정하는 마스크 — 그 위의 검정선은 실루엣이 아니라 안쪽선이다. */
+const HEAD_AREA = unionMask(SKULL, JAW, EARS, NECK, CHEEKS);
+
 function faceGrid(variant: FaceVariant): Grid {
   const head = unionMask(SKULL, JAW, EARS, NECK, ...(variant === 'puff' ? [CHEEKS] : []));
   let g = stack(shapeFromMask(SHOULDERS, 'T', 'K'), shapeFromMask(head, 'S', 'K'));
   g = paint(g, Rc(0, 52, PW, 4), 't', 'T');            // 어깨 위 그늘
+  g = pasteGrid(g, ['uu....', '.uu...', '..u...'], 17, 57);   // 어깨 주름(왼쪽)
+  g = pasteGrid(g, ['....uu', '...uu.', '...u..'], 41, 57);   // 어깨 주름(오른쪽)
   g = pasteGrid(g, ['ssssssssss', 'ssssssssss'], 27, 47); // 턱 아래 목 그늘
-  g = pasteGrid(g, ['s', 's', 's'], 13, 30);              // 귓바퀴
-  g = pasteGrid(g, ['s', 's', 's'], 50, 30);
-  g = pasteGrid(g, ['.s', 's.'], 31, 36);                 // 코
+  g = pasteGrid(g, ['s', 's', 's', 's'], 13, 29);         // 귀 안쪽 그늘
+  g = pasteGrid(g, ['s', 's', 's', 's'], 50, 29);
+  g = pasteGrid(g, ['.s', 'ss'], 31, 36);                 // 코(콧방울에 1px 그늘)
   return g;
 }
 export const FACE: Record<FaceVariant, Grid> = { normal: faceGrid('normal'), puff: faceGrid('puff') };
@@ -68,8 +94,15 @@ export const FACE: Record<FaceVariant, Grid> = { normal: faceGrid('normal'), puf
 // ---------- 머리 ----------
 /** 앞머리·뒷머리 공통 머리통(얼굴보다 2~3px 크다): 가로 11..52, 세로 3..43. */
 const CROWN = E(31.5, 23, 20.5, 20.5);
-/** 앞머리 윤기(정수리 호). */
-const SHEEN = clip(subtractMask(E(31.5, 24, 17.5, 17), E(31.5, 25.5, 16, 16)), (x, y) => y >= 6 && y <= 12 && x >= 18 && x <= 45);
+/** 정수리 광택 띠(호). 스타일마다 가르마를 피해 끊는다 — 띠가 앞머리 갈래를 무시하면 가발처럼 보인다. */
+const SHEEN_ARC = subtractMask(E(31.5, 24, 17.5, 17), E(31.5, 25.5, 16, 16));
+const SHEEN: Record<HairStyle, Mask> = {
+  long: clip(SHEEN_ARC, (x, y) => y >= 6 && y <= 12 && x >= 18 && x <= 45),
+  bob: clip(SHEEN_ARC, (x, y) => y >= 6 && y <= 12 && x >= 18 && x <= 45),
+  wavy: clip(SHEEN_ARC, (x, y) => y >= 6 && y <= 12 && x >= 24 && x <= 47),        // 옆으로 넘긴 쪽만
+  short: clip(SHEEN_ARC, (x, y) => y >= 6 && y <= 11 && x >= 20 && x <= 43),
+  twin: clip(SHEEN_ARC, (x, y) => y >= 6 && y <= 12 && x >= 17 && x <= 46 && Math.abs(x - 31.5) > 3.5), // 가운데 가르마에서 끊는다
+};
 const tri = (v: number, period: number, amp: number): number => {
   const t = ((v % period) + period) % period;
   const half = period / 2;
@@ -77,13 +110,24 @@ const tri = (v: number, period: number, amp: number): number => {
 };
 const inFace = (x: number): boolean => x >= 13 && x <= 50;
 
-/** 앞머리 아래 가장자리(x → 마지막 머리 행). 얼굴 밖은 머리통 전체. */
+/** 앞머리 아래 가장자리(x → 마지막 머리 행). 얼굴 밖은 머리통 전체.
+ *  1px 톱니(dither)를 쓰지 않는다 — 접촉 그림자 2px 이 톱니를 그대로 따라가 이마에 빗살무늬가 생긴다. 결은 머리결 선(f)으로 낸다. */
 const FRINGE: Record<HairStyle, (x: number) => number> = {
-  long: (x) => (inFace(x) ? 18 + (x % 6 < 3 ? 0 : 1) : PH),                       // 일자 앞머리
-  bob: (x) => (inFace(x) ? Math.round(20 - ((x - 31.5) / 17.5) ** 2 * 4) - (x % 5 === 0 ? 1 : 0) : PH), // 둥근 시스루 뱅
-  wavy: (x) => (inFace(x) ? Math.min(20, Math.round(12 + (x - 13) * 0.25)) + (x % 4 === 3 ? 1 : 0) : PH), // 옆으로 넘긴 앞머리
+  long: (x) => (inFace(x) ? 18 + (Math.abs(x - 31.5) > 13 ? 1 : 0) : PH),          // 일자 앞머리(옆만 한 칸 길게)
+  bob: (x) => (inFace(x) ? Math.round(20 - ((x - 31.5) / 17.5) ** 2 * 4) : PH),    // 둥근 시스루 뱅
+  wavy: (x) => (inFace(x) ? Math.min(20, Math.round(12 + (x - 13) * 0.25)) : PH),  // 옆으로 넘긴 앞머리
   short: (x) => (inFace(x) ? 16 + tri(x + 2, 8, 3) : PH),                          // 삐죽한 짧은 앞머리
-  twin: (x) => (inFace(x) ? Math.max(12, 19 - Math.max(0, 5 - Math.abs(x - 31.5)) * 1.6) | 0 : PH), // 가운데 가르마
+  twin: (x) => (inFace(x) ? Math.max(14, 19 - Math.max(0, 4 - Math.abs(x - 31.5)) * 1.4) | 0 : PH), // 가운데 가르마(얕게 — 깊으면 이마가 비어 보인다)
+};
+
+/** 머리결 선(f): 스타일별로 앞머리 흐름을 2~4줄만 긋는다. 가로로 눕지 않게(머리는 위에서 아래로 흐른다) 세로가 긴 곡선만 쓴다.
+ *  hairFront 에서 앞머리 아래 가장자리 2행은 잘라낸다 — 접촉 그림자 판정이 결 선(feature)을 그늘로 치지 않아 이마에 구멍이 생긴다. */
+const STRANDS: Record<HairStyle, [number, number][]> = {
+  long: [...curve(21, 11, 20, 14, 20, 17), ...curve(31, 11, 31, 14, 31, 18), ...curve(42, 11, 43, 14, 43, 17)],
+  bob: [...curve(21, 10, 20, 14, 22, 18), ...curve(31, 10, 31, 14, 31, 19), ...curve(42, 10, 43, 14, 41, 18)],
+  wavy: [...curve(19, 8, 20, 12, 24, 16), ...curve(28, 9, 30, 13, 34, 18), ...curve(38, 9, 41, 13, 44, 17)],
+  short: [...curve(19, 10, 20, 13, 19, 16), ...curve(27, 9, 27, 12, 26, 15), ...curve(36, 9, 37, 12, 37, 15), ...curve(45, 10, 44, 13, 45, 16)],
+  twin: [...curve(29, 11, 26, 15, 24, 19), ...curve(34, 11, 37, 15, 39, 19), ...curve(20, 12, 19, 15, 20, 18), ...curve(43, 12, 44, 15, 43, 18)],
 };
 
 /** 옆머리(얼굴 옆을 감싸는 앞쪽 가닥) 마스크. 위쪽 모서리 깎임이 앞머리 덩어리 안에 숨도록 12행부터 시작한다. */
@@ -112,15 +156,23 @@ const BACK_MASS: Record<HairStyle, Mask> = {
   twin: unionMask(CROWN, E(5.5, 42, 4.5, 20), E(58.5, 42, 4.5, 20), Rc(4, 18, 8, 6, 1), Rc(52, 18, 8, 6, 1)),
 };
 
+/** 얼굴 위에 놓인 검정 가장자리를 지운다 — 실루엣만 검정으로 남긴다(선택적 외곽선).
+ *  옆선은 머리 어둠색(F)으로 바꾸고, 아래쪽 가장자리는 덩어리(fill)에 합친다.
+ *  아래 가장자리를 F 로 두면 접촉 그림자 띠(2px)를 F 행이 먹어버려 이마 그림자가 1px 로 줄고 얼룩진다. */
+const innerEdge = (g: Grid, mask: Mask, fill: string): Grid =>
+  g.map((row, y) => [...row].map((c, x) => (c === 'K' && HEAD_AREA[y]![x] ? (mask[y + 1]?.[x] ? 'F' : fill) : c)).join(''));
+
 function hairFront(style: HairStyle): Grid {
   const fringe = FRINGE[style];
   const mask = unionMask(clip(CROWN, (x, y) => y <= fringe(x)), SIDE_LOCKS[style]);
-  let g = shapeFromMask(mask, 'H', 'K');
-  g = paint(g, SHEEN, 'L', 'H');
+  let g = innerEdge(shapeFromMask(mask, 'H', 'K'), mask, 'H');
+  g = paint(g, SHEEN[style], 'L', 'H');
+  g = paintPoints(g, STRANDS[style].filter(([x, y]) => y <= fringe(x) - 2), 'f', 'H');
   return g;
 }
 function hairBack(style: HairStyle): Grid {
-  return shapeFromMask(BACK_MASS[style], 'N', 'K');
+  const mask = BACK_MASS[style];
+  return innerEdge(shapeFromMask(mask, 'N', 'K'), mask, 'N');
 }
 export const HAIR_FRONT: Record<HairStyle, Grid> = {
   long: hairFront('long'), bob: hairFront('bob'), wavy: hairFront('wavy'), short: hairFront('short'), twin: hairFront('twin'),
@@ -132,60 +184,61 @@ export const HAIR_BACK: Record<HairStyle, Grid> = {
 // ---------- 눈 (왼눈 기준 8×9, 오른눈은 반전) ----------
 export const EYE_LEFT = { x: 20, y: 25 } as const;
 export const EYE_RIGHT = { x: 36, y: 25 } as const;
+// 눈동자 3단: 위 어둠(i) → 가운데 기본(I) → 아래 밝음(j), 하이라이트 W 는 왼쪽 위 + 오른쪽 아래.
 const EYE_OPEN: Grid = rows('eye.open', 8, [
-  '..KKKK..',
-  '.KKKKKK.',
-  'KKWWIIIK',
-  'KIWWIiIK',
-  'KIIIiiiK',
-  'KIIIiiiK',
-  'KIIIIIIK',
-  '.KIIIWK.',
-  '..KKKK..',
+  '..EEEE..',
+  '.EEEEEE.',
+  'EEWWiiiE',
+  'EiWWiiiE',
+  'EiIIIIiE',
+  'EIIIIIIE',
+  'EIjjjjIE',
+  '.EjjjWE.',
+  '..EEEE..',
 ]);
 const EYE_CLOSED: Grid = rows('eye.closed', 8, [
   '........',
   '........',
   '........',
-  '..KKKK..',
-  '.KK..KK.',
-  'KK....KK',
+  '..EEEE..',
+  '.EE..EE.',
+  'EE....EE',
   '........',
   '........',
   '........',
 ]);
 const EYE_SPARKLE: Grid = rows('eye.sparkle', 8, [
-  '..KKKK..',
-  '.KKKKKK.',
-  'KKWWIIIK',
-  'KIWWIWIK',
-  'KIIIWWWK',
-  'KIIIIWIK',
-  'KIIIIIIK',
-  '.KIWIIK.',
-  '..KKKK..',
+  '..EEEE..',
+  '.EEEEEE.',
+  'EEWWiiiE',
+  'EiWWIWIE',
+  'EiIIWWWE',
+  'EIIIIWIE',
+  'EIjjjjIE',
+  '.EjWjjE.',
+  '..EEEE..',
 ]);
 const EYE_SQUINT: Grid = rows('eye.squint', 8, [
   '........',
-  'KK......',
-  '.KK.....',
-  '..KK....',
-  '...KK...',
-  '..KK....',
-  '.KK.....',
-  'KK......',
+  'EE......',
+  '.EE.....',
+  '..EE....',
+  '...EE...',
+  '..EE....',
+  '.EE.....',
+  'EE......',
   '........',
 ]);
 const EYE_FLAT: Grid = rows('eye.flat', 8, [
   '........',
   '........',
   '........',
-  'KKKKKKKK',
-  'KWIIiIIK',
-  'KIIIiiIK',
-  'KIIIIIIK',
-  '.KIIIIK.',
-  '..KKKK..',
+  'EEEEEEEE',
+  'EWIiiiiE',
+  'EIIIiiIE',
+  'EIjjjjIE',
+  '.EjjjjE.',
+  '..EEEE..',
 ]);
 const pair = (left: Grid, right: Grid): Grid => stack(place(left, EYE_LEFT.x, EYE_LEFT.y), place(mirror(right), EYE_RIGHT.x, EYE_RIGHT.y));
 export const EYES: Record<EyeVariant, Grid> = {
@@ -198,34 +251,37 @@ export const EYES: Record<EyeVariant, Grid> = {
 };
 
 // ---------- 눈썹 (왼눈썹 기준 7×3, 앞머리 바로 아래 21~23행) ----------
-const BROW_NORMAL: Grid = rows('brow.normal', 7, ['.......', '..KKKK.', '.KK..KK']);
-const BROW_DOWN: Grid = rows('brow.down', 7, ['KK.....', '.KKKK..', '....KKK']);
-const BROW_WORRIED: Grid = rows('brow.worried', 7, ['.....KK', '..KKKK.', 'KKK....']);
+// 검정선이지만 역할은 E: 눈썹이 접촉 그림자를 드리우면 눈 위·눈초리에 얼룩(다크서클)이 생긴다.
+const BROW_NORMAL: Grid = rows('brow.normal', 7, ['.......', '..EEEE.', '.EE..EE']);
+const BROW_DOWN: Grid = rows('brow.down', 7, ['EE.....', '.EEEE..', '....EEE']);
+const BROW_WORRIED: Grid = rows('brow.worried', 7, ['.....EE', '..EEEE.', 'EEE....']);
 const brows = (g: Grid): Grid => stack(place(g, 19, 21), place(mirror(g), 38, 21));
 export const BROWS: Record<BrowVariant, Grid> = { normal: brows(BROW_NORMAL), down: brows(BROW_DOWN), worried: brows(BROW_WORRIED) };
 
 // ---------- 입 ----------
-const MOUTH_SMILE: Grid = rows('mouth.smile', 8, ['K......K', '.K....K.', '..KKKK..']);
+// 입술·혀 하이라이트는 1px 만(v 입술 광택 · r 혀 광택).
+const MOUTH_SMILE: Grid = rows('mouth.smile', 8, ['K......K', '.K....K.', '..KKKK..', '...vv...']);
 const MOUTH_OPEN: Grid = rows('mouth.open', 10, [
   '..KKKKKK..',
   '.KWWWWWWK.',
   'KDDDDDDDDK',
   'KDDDDDDDDK',
-  'KDRRRRRRDK',
+  'KDrrRRRRDK',
   '.KRRRRRRK.',
   '..KKKKKK..',
+  '...vvvv...',
 ]);
 const MOUTH_TONGUE: Grid = rows('mouth.tongue', 10, [
   'K........K',
   '.KK....KK.',
   '..KKKKKK..',
-  '...KRRRK..',
+  '...KrRRK..',
   '...KRRRK..',
   '....KKK...',
 ]);
-const MOUTH_POUT: Grid = rows('mouth.pout', 6, ['..KK..', '.KDDK.', '.KDDK.', '..KK..']);
-const MOUTH_PUFF: Grid = rows('mouth.puff', 6, ['KK....', '..KKK.', 'KK....']);
-const MOUTH_WAVE: Grid = rows('mouth.wave', 10, ['.KK....KK.', 'K..K..K..K', '....KK....']);
+const MOUTH_POUT: Grid = rows('mouth.pout', 6, ['..KK..', '.KvDK.', '.KDDK.', '..KK..']);
+const MOUTH_PUFF: Grid = rows('mouth.puff', 6, ['EE....', '..EEE.', 'EE....']);
+const MOUTH_WAVE: Grid = rows('mouth.wave', 10, ['.EE....EE.', 'E..E..E..E', '....EE....']);
 export const MOUTH: Record<MouthVariant, Grid> = {
   smile: place(MOUTH_SMILE, 28, 39),
   open: place(MOUTH_OPEN, 27, 37),
@@ -235,9 +291,10 @@ export const MOUTH: Record<MouthVariant, Grid> = {
   wave: place(MOUTH_WAVE, 27, 39),
 };
 
-// ---------- 볼터치 ----------
-const BLUSH_LEFT: Grid = rows('blush', 5, ['p.p.p', '.p.p.']);
-export const BLUSH: Grid = stack(place(BLUSH_LEFT, 18, 35), place(BLUSH_LEFT, 41, 35));
+// ---------- 볼터치(2톤: 바깥 p 점묘 · 안쪽 q 2×2) ----------
+const BLUSH_LEFT: Grid = rows('blush', 5, ['p.p.p', '.qq.p', 'p.p..']);
+// 눈 바로 아랫줄(34행)은 비워 둔다 — 그 줄에 색이 앉으면 다크서클처럼 읽힌다.
+export const BLUSH: Grid = stack(place(BLUSH_LEFT, 20, 35), place(mirror(BLUSH_LEFT), 39, 35));
 
 // ---------- 손 ----------
 /** 활짝 편 왼손(손바닥 정면, 엄지가 얼굴 쪽) 12×14. */

@@ -2,7 +2,8 @@
 import { PORTRAIT_FRAME, PORTRAIT_FRAME_COUNT } from '../../src/core/spriteFrames';
 import type { MemberId } from '../../src/systems/types';
 import { composeLayers, encodePng, packSheet, rasterize, type Grid } from '../pixel-art';
-import { ACCESSORY, BLUSH, BROWS, EYE_LEFT, EYE_RIGHT, EYES, FACE, HAIR_BACK, HAIR_FRONT, HANDS, MOUTH, PH, PW, SWEAT, isLighter, type Accessory, type BrowVariant, type EyeVariant, type FaceVariant, type HairStyle, type HandVariant, type MouthVariant } from './portraitParts';
+import { ACCESSORY, BLUSH, BROWS, EYE_LEFT, EYE_RIGHT, EYES, FACE, HAIR_BACK, HAIR_FRONT, HANDS, MOUTH, PH, PORTRAIT_DETAIL_ROLES, PW, SWEAT, isLighter, type Accessory, type BrowVariant, type EyeVariant, type FaceVariant, type HairStyle, type HandVariant, type MouthVariant } from './portraitParts';
+import { ramp } from './ramps';
 import { PORTRAIT_SHADE_OPTIONS, shadeGrid, shadePalette, type ShadeOptions } from './shading';
 import { BASE_PALETTE, LOOKS } from './templates';
 
@@ -57,6 +58,8 @@ export const HURT_EXPRESSION: Expression = expr({ eyes: 'squint', brows: 'worrie
 
 /** 테스트용: 두 눈을 모두 담는 영역(프레임 좌표). */
 export const EYE_REGION = { x: EYE_LEFT.x - 1, y: EYE_LEFT.y - 1, w: EYE_RIGHT.x + 9 - EYE_LEFT.x, h: 11 } as const;
+/** 테스트용: 눈 상자 바로 아래 행과 두 눈이 걸치는 가로 범위(다크서클 검사). */
+export const UNDER_EYE = { y: EYE_LEFT.y + 9, x0: EYE_LEFT.x, x1: EYE_RIGHT.x + 8 } as const;
 
 export const PORTRAITS_DIR = 'public/assets/portraits';
 export const portraitSheetFile = (member: MemberId): string => `${PORTRAITS_DIR}/portrait_${member}.png`;
@@ -74,23 +77,33 @@ const mix = (hex: string, t: number): string => {
   return rgbToHex(r + (to - r) * a, g + (to - g) * a, b + (to - b) * a);
 };
 
-/** 머리색에서 눈동자·동공·뒷머리·윤기 색을 끌어낸 멤버 팔레트. */
+/** 머리색에서 눈동자·동공·뒷머리·윤기 색을 끌어낸 멤버 팔레트. 디테일 역할(F·f·j·q·u·v·r)은 램프에서 뽑는다. */
 export function portraitPalette(member: MemberId): Record<string, string> {
   const spec = PORTRAITS[member];
   const [main, sub] = spec.hairColor;
   const shine = isLighter(sub, main);                 // 두 번째 톤이 밝으면 윤기, 어두우면 뒷머리 그늘
   const dark = shine ? main : sub;                    // 머리색 어두운 톤
   const iris = isLighter(dark, '#333333') ? dark : mix(dark, 0.28);
+  const hair = ramp(main);
+  const top = ramp(spec.accent);
   return {
     ...BASE_PALETTE,
     H: main,
     N: shine ? main : sub,
-    L: shine ? sub : mix(main, 0.22),
+    L: hair.light,                                    // 정수리 광택
+    F: hair.dark,                                     // 머리 안쪽선(실루엣만 검정)
+    f: hair.shade,                                    // 머리결
     T: spec.accent,
-    t: mix(spec.accent, -0.22),
+    t: top.shade,
+    u: top.dark,                                      // 어깨 주름
     I: iris,
     i: mix(iris, -0.45),
-    p: '#f7a1b1',
+    j: mix(iris, 0.34),                               // 눈동자 아래 밝은 단
+    s: ramp(BASE_PALETTE.S!).shade,                   // 피부 그늘(코·귀·목)
+    p: '#f0919f',
+    q: '#ffc2d1',                                     // 볼터치 안쪽
+    v: '#ffe1cf',                                     // 입술 광택
+    r: '#ff9db3',                                     // 혀 광택
     D: '#7a2b3d',
     G: '#f5c542',
   };
@@ -114,8 +127,18 @@ export function composePortrait(member: MemberId, e: Expression): Grid {
   return composeLayers(layers, PW, PH);
 }
 
-/** 초상화 음영 옵션(라이브러리 프리셋 기반). */
-export const PORTRAIT_SHADING: ShadeOptions = { ...PORTRAIT_SHADE_OPTIONS };
+/** 초상화 음영 옵션(라이브러리 프리셋 기반).
+ *  - 디테일 역할을 features 로 넘겨 음영 규칙이 색을 덮거나 런을 끊지 않게 한다.
+ *  - selectiveOutline 은 끈다: 64×64 에서는 눈·눈썹·입 테두리까지 아래쪽 재질(=피부) 어둠색으로 바뀌어 얼굴이 뭉개진다.
+ *    "실루엣만 검정, 내부선은 재질 어둠색"은 머리 부품이 직접(F) 그린다.
+ *  - sheen 도 끈다: 머리 덩어리 bbox 가 옆머리 끝(63행)까지라 광택 띠가 정수리가 아니라 앞머리 아래에 깔린다.
+ *    정수리 광택은 스타일별 SHEEN 마스크(L)가 낸다. */
+export const PORTRAIT_SHADING: ShadeOptions = {
+  ...PORTRAIT_SHADE_OPTIONS,
+  selectiveOutline: false,
+  sheen: [],
+  features: [...PORTRAIT_SHADE_OPTIONS.features, ...PORTRAIT_DETAIL_ROLES],
+};
 
 /** 표정 3장(기본·시그니처·피격)을 합성하고 음영을 입힌 역할 그리드. */
 export function portraitFrames(member: MemberId): Grid[] {
