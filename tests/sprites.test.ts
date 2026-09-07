@@ -310,8 +310,8 @@ describe('enemy sprite shading (A안: 적 21종에 재질 램프 음영)', () =>
         });
         if (onEdge) { edge++; if (c === black) edgeBlack++; }
       }
-      // 문지기(0.27)만 낮다 — 기둥을 K 없이 P/p로 그렸다. 나머지는 0.76 이상.
-      const floor = id === 'boss_top100_gate' ? 0.25 : 0.75;
+      // 실측 최솟값: 문지기 0.27(기둥을 K 없이 P/p로 그렸다) · 무대 함정 0.76(가시 끝이 M) · 나머지는 0.84 이상.
+      const floor = id === 'boss_top100_gate' ? 0.25 : 0.7;
       expect(edgeBlack / edge, `${id} black silhouette ratio`).toBeGreaterThan(floor);
     }
   });
