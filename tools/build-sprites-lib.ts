@@ -154,6 +154,8 @@ function sheetOf(grids: Grid[], palette: Palette, gw: number, gh: number, fw: nu
 /**
  * 덩어리 재질(enemies.ts 헤더의 역할 규약): F/f 몸·그늘 · S/s 줄기 · T 정장·트로피 · D/d 책상 ·
  * P/p 기둥·명패 · C 왕관 · H/I/J 머리색. 여기 없는 역할은 평면으로 남으므로 새 역할 문자를 만들면 이 표에 넣어야 한다.
+ * 문자의 뜻은 적마다 다를 수 있다(심사위원은 S가 줄기가 아니라 피부, W가 흰자가 아니라 셔츠다) —
+ * 음영에 필요한 건 "덩어리냐 아니냐"뿐이라 같은 칸에 둬도 되지만, 뜻이 갈리면 아래 ENEMY_SHADE 에서 적별로 잡는다.
  */
 export const ENEMY_MATERIALS = ['F', 'f', 'S', 's', 'T', 'D', 'd', 'P', 'p', 'C', 'H', 'I', 'J'];
 /**
@@ -198,7 +200,7 @@ const ENEMY_SHADE: Record<string, EnemyShadeSpec> = {
   enemy_chart_ghost: { bottomShade: 0 },
   // 안개는 반투명이고 K 외곽선도 없다 — 형태 음영을 절반만 줘야 구름이 고체 덩어리로 굳지 않는다.
   enemy_apathy_fog: { sideShade: 0.12, bottomShade: 0.1 },
-  // 무대 함정은 바닥에 깔린 판이라 25% 그라데이션이 이음매로 보인다 — 3px 베벨만.
+  // 무대 함정은 바닥에 깔린 판이라 25% 그라데이션이 이음매로 보인다 — 오른쪽 4px·아래 3px 베벨만.
   enemy_stage_trap: { sideShade: 0.12, bottomShade: 0.15 },
   // 심사위원: 머리 3종(H 단발·I 쪽·J 백발)은 각각 한 명에게만 쓰여 자동 광택 띠가 제 정수리에 온다.
   boss_monthly_judges: { sheen: ['H', 'I', 'J'] },
@@ -218,9 +220,13 @@ export function enemyShadeOptions(enemyId: string, art: EnemySprite): ShadeOptio
   const spec = ENEMY_SHADE[enemyId] ?? {};
   const solid = spec.solid ?? [], flat = spec.flat ?? [];
   const materials = [...ENEMY_MATERIALS.filter((r) => !flat.includes(r)), ...solid];
+  const groups = ENEMY_GROUPS.map((g) => g.filter((r) => materials.includes(r))).filter((g) => g.length > 0);
+  // 묶음에 없는 재질은 shadeGrid 안에서 그룹 번호가 undefined 가 되어 서로 다른 재질끼리 한 덩어리로 붙는다.
+  const ungrouped = materials.filter((r) => !groups.some((g) => g.includes(r)));
+  if (ungrouped.length) throw new Error(`${enemyId}: ENEMY_GROUPS is missing ${ungrouped.join('')}`);
   return {
     materials,
-    groups: ENEMY_GROUPS.map((g) => g.filter((r) => materials.includes(r))).filter((g) => g.length > 0),
+    groups,
     band: 1,
     selectiveOutline: false,
     features: [...ENEMY_FEATURES.filter((r) => !solid.includes(r)), ...flat],
