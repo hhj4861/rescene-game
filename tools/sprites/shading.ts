@@ -16,6 +16,8 @@ export interface ShadeOptions {
   features: string[];
   /** 형태 음영 없이 1px 림만 주는 재질(피부). */
   rimOnly?: string[];
+  /** 밝음 띠를 넣지 않는 재질. 좁은 런(턱·목)에서 밝음이 세로 줄무늬로 읽히는 것을 막는다. */
+  noLight?: string[];
   /** 정수리 광택 띠를 얹는 머리 역할. */
   sheen?: string[];
   /** 가로 런의 오른쪽 그늘 비율(기본 0.25). */
@@ -51,7 +53,7 @@ export function shadeGrid(grid: Grid, o: ShadeOptions): Grid {
   const at = (x: number, y: number): string => grid[y]?.[x] ?? '.';
   const groupOf = new Map<string, number>();
   o.groups.forEach((g, i) => g.forEach((r) => groupOf.set(r, i)));
-  const mats = new Set(o.materials), feats = new Set(o.features), rimOnly = new Set(o.rimOnly ?? []);
+  const mats = new Set(o.materials), feats = new Set(o.features), rimOnly = new Set(o.rimOnly ?? []), noLight = new Set(o.noLight ?? []);
   const isMat = (ch: string): boolean => mats.has(ch);
   const isFeat = (ch: string): boolean => feats.has(ch);
   const res = grid.map((r) => [...r]);
@@ -75,7 +77,7 @@ export function shadeGrid(grid: Grid, o: ShadeOptions): Grid {
       if (n >= 3) {
         const shadeN = rimOnly.has(ch) ? 1 : Math.ceil(n * side);
         for (let k = 0; k < shadeN; k++) tone(x1 - k, y, 'shade');
-        for (let k = 0; k < o.band && k < n - shadeN; k++) tone(x + k, y, 'light');
+        if (!noLight.has(ch)) for (let k = 0; k < o.band && k < n - shadeN; k++) tone(x + k, y, 'light');
       }
       x = x1 + 1;
     }

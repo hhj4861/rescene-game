@@ -137,6 +137,8 @@ export const PORTRAIT_SHADING: ShadeOptions = {
   ...PORTRAIT_SHADE_OPTIONS,
   selectiveOutline: false,
   sheen: [],
+  // 피부는 밝음 띠를 뺀다: 턱에서 목으로 이어지는 좁은 런에 밝음이 앉아 세로 줄무늬로 읽힌다(그늘·접촉 그림자는 유지).
+  noLight: ['S'],
   features: [...PORTRAIT_SHADE_OPTIONS.features, ...PORTRAIT_DETAIL_ROLES],
 };
 

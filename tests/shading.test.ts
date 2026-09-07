@@ -84,6 +84,12 @@ describe('shadeGrid', () => {
     expect(g[2]![2]).toBe(L('H'));
     expect(g[5]![1]).toBe('H');
   });
+  it('omits the light band for noLight roles but keeps their shade', () => {
+    const g = shadeGrid(['TTTTTT', 'TTTTTT', 'TTTTTT'], opts({ noLight: ['T'] }));
+    expect(g[0]).toBe(`TTTT${S('T')}${S('T')}`);
+    expect(g[1]).toBe(`TTTT${S('T')}${S('T')}`);
+    expect(shadeGrid(['TTTTTT', 'TTTTTT', 'TTTTTT'], opts())[0]).toBe(`${L('T')}TTT${S('T')}${S('T')}`);
+  });
   it('keeps transparent cells and non-material roles untouched', () => {
     const g = shadeGrid(['.A.', '.K.'], opts());
     expect(g).toEqual(['.A.', '.K.']);

@@ -292,7 +292,7 @@ export const MOUTH: Record<MouthVariant, Grid> = {
 };
 
 // ---------- 볼터치(2톤: 바깥 p 점묘 · 안쪽 q 2×2) ----------
-const BLUSH_LEFT: Grid = rows('blush', 5, ['p.p.p', '.qq.p', 'p.p..']);
+const BLUSH_LEFT: Grid = rows('blush', 5, ['.pp..', 'pqqp.', '.pp..']);
 // 눈 바로 아랫줄(34행)은 비워 둔다 — 그 줄에 색이 앉으면 다크서클처럼 읽힌다.
 export const BLUSH: Grid = stack(place(BLUSH_LEFT, 20, 35), place(mirror(BLUSH_LEFT), 39, 35));
 
