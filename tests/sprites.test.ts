@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { buildNpcSheet, buildPlayerSheet, playerSheetFile, renderPose } from '../tools/build-sprites-lib';
+import { buildEnemySheet, buildNpcSheet, buildPlayerSheet, ENEMY_FEATURES, ENEMY_MATERIALS, enemyShadeOptions, playerSheetFile, renderPose } from '../tools/build-sprites-lib';
+import { ENEMY_SPRITES, type EnemySprite } from '../tools/sprites/enemies';
 import { MEMBERS } from '../src/data/members';
-import { OUTFITS, PLAYER_ANIMS, PLAYER_BODY, PLAYER_FRAME, PLAYER_FRAME_COUNT } from '../src/core/spriteFrames';
+import { ENEMY_FRAME_COUNT, OUTFITS, PLAYER_ANIMS, PLAYER_BODY, PLAYER_FRAME, PLAYER_FRAME_COUNT } from '../src/core/spriteFrames';
 import { BASE_PALETTE, DETAIL_LINE, HAIR, HEAD_SHEEN, LOOKS } from '../tools/sprites/templates';
 import { armLayer, legsGrid, POSES, SHOULDER } from '../tools/sprites/poses';
 import { OUTFIT_PALETTES } from '../tools/sprites/outfits';
@@ -224,5 +225,102 @@ describe('sprite shading (A안: 형태 음영 + 접촉 그림자 + 정수리 광
       const bare = renderPose(LOOKS[m]!, 'training', { ...POSES.attack1, prop: 'none' });
       expect(shades(held), `${m} prop contact`).toBeGreaterThan(shades(bare));
     }
+  });
+});
+
+describe('enemy sprite shading (A안: 적 21종에 재질 램프 음영)', () => {
+  /** 프레임 i의 (x, y) 픽셀 색(#rrggbb). 적은 프레임 폭이 종마다 다르다. */
+  const enemyPixel = (sheet: Sheet, art: EnemySprite, i: number, x: number, y: number): string | null => {
+    const o = (y * sheet.width + i * art.width + x) * 4;
+    return sheet.rgba[o + 3]! > 0 ? '#' + [0, 1, 2].map((k) => sheet.rgba[o + k]!.toString(16).padStart(2, '0')).join('') : null;
+  };
+  /** 원본 그리드의 역할 문자와 칠해진 색을 짝지어 훑는다. */
+  const eachPixel = (id: string, fn: (role: string, colour: string | null, x: number, y: number, i: number) => void): void => {
+    const art = ENEMY_SPRITES[id]!;
+    const sheet = buildEnemySheet(id);
+    art.frames.forEach((grid, i) => {
+      for (let y = 0; y < art.height; y++) for (let x = 0; x < art.width; x++) {
+        const role = grid[y]![x]!;
+        if (role !== '.') fn(role, enemyPixel(sheet, art, i, x, y), x, y, i);
+      }
+    });
+  };
+  const ids = Object.keys(ENEMY_SPRITES);
+
+  it('covers every role character used by the 21 templates (a missing one would stay flat)', () => {
+    expect(ids.length).toBe(21);
+    const known = new Set([...ENEMY_MATERIALS, ...ENEMY_FEATURES]);
+    for (const id of ids) {
+      const art = ENEMY_SPRITES[id]!;
+      const used = new Set<string>();
+      for (const grid of art.frames) for (const row of grid) for (const ch of row) if (ch !== '.') used.add(ch);
+      expect([...used].filter((ch) => !known.has(ch)), `${id} unclassified roles`).toEqual([]);
+      expect([...used].filter((ch) => !art.palette[ch]), `${id} roles without a palette colour`).toEqual([]);
+      expect(art.frames.length, id).toBe(ENEMY_FRAME_COUNT);
+    }
+  });
+
+  it('every enemy body carries the ramp: a light rim on the left and a shade band on the right', () => {
+    for (const id of ids) {
+      const art = ENEMY_SPRITES[id]!;
+      const materials = enemyShadeOptions(id, art).materials;
+      const tones = { light: 0, base: 0, shade: 0, dark: 0, off: 0 };
+      eachPixel(id, (role, colour) => {
+        if (!materials.includes(role)) return;
+        const r = ramp(art.palette[role]!);
+        if (colour === r.light) tones.light++;
+        else if (colour === r.base) tones.base++;
+        else if (colour === r.shade) tones.shade++;
+        else if (colour === r.dark) tones.dark++;
+        else tones.off++;
+      });
+      expect(tones.light, `${id} light rim`).toBeGreaterThan(0);
+      expect(tones.shade, `${id} shade band`).toBeGreaterThan(0);
+      expect(tones.base, `${id} base kept`).toBeGreaterThan(tones.light + tones.shade);
+      // 재질 픽셀은 반드시 그 재질 램프의 4단 중 하나다(이웃 재질 색이 새어 들어오지 않는다)
+      expect(tones.off, `${id} colours outside its own ramp`).toBe(0);
+    }
+  });
+
+  it('keeps eyes, glows, effect pixels and the outline at their flat palette colour', () => {
+    for (const id of ids) {
+      const art = ENEMY_SPRITES[id]!;
+      const features = enemyShadeOptions(id, art).features;
+      const dirty: string[] = [];
+      eachPixel(id, (role, colour, x, y, i) => {
+        if (features.includes(role) && colour !== art.palette[role]!) dirty.push(`${role}@${i}:${x},${y}=${colour}`);
+      });
+      expect(dirty.slice(0, 5), `${id} shaded feature pixels`).toEqual([]);
+    }
+  });
+
+  it('keeps the silhouette outline black (선택적 외곽선을 꺼서 내부 검정선도 그대로다)', () => {
+    for (const id of ids) {
+      const art = ENEMY_SPRITES[id]!;
+      const black = art.palette.K;
+      if (!black) continue; // 무관심 안개는 외곽선 없이 옅은 테두리(f)만 쓴다
+      const sheet = buildEnemySheet(id);
+      let edge = 0, edgeBlack = 0;
+      for (let y = 0; y < art.height; y++) for (let x = 0; x < art.width; x++) {
+        const c = enemyPixel(sheet, art, 0, x, y);
+        if (!c) continue;
+        const onEdge = ([[0, -1], [0, 1], [-1, 0], [1, 0]] as [number, number][]).some(([dx, dy]) => {
+          const nx = x + dx, ny = y + dy;
+          return nx < 0 || ny < 0 || nx >= art.width || ny >= art.height || !enemyPixel(sheet, art, 0, nx, ny);
+        });
+        if (onEdge) { edge++; if (c === black) edgeBlack++; }
+      }
+      // 문지기(0.27)만 낮다 — 기둥을 K 없이 P/p로 그렸다. 나머지는 0.76 이상.
+      const floor = id === 'boss_top100_gate' ? 0.25 : 0.75;
+      expect(edgeBlack / edge, `${id} black silhouette ratio`).toBeGreaterThan(floor);
+    }
+  });
+
+  it('the guardian gets a contact shadow under its shoulder studs (규칙 (c) 접촉 그림자)', () => {
+    const art = ENEMY_SPRITES.boss_trophy_guardian!;
+    const dark = ramp(art.palette.F!).dark;
+    let n = 0;
+    eachPixel('boss_trophy_guardian', (role, colour) => { if (role === 'F' && colour === dark) n++; });
+    expect(n, 'guardian contact shadow pixels').toBeGreaterThan(0);
   });
 });
