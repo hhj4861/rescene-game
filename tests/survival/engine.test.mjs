@@ -1,0 +1,112 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { Game, newSeason, pairTeams, simulate, checkPlan, hash } from '../../server/survival/engine.mjs';
+import { Store } from '../../server/survival/store.mjs';
+import { members, defaultPlan } from '../../server/survival/catalog.mjs';
+
+// Explicit deterministic TEST DOUBLE. Never available through the production server/UI.
+export class FixtureRuntime {
+  constructor() { this.requests = []; this.fail = null; this.vote = true; }
+  async run(req) {
+    this.requests.push(req); const p = JSON.parse(req.prompt), agentId = req.agentId;
+    if (this.fail?.(req, p)) throw new Error('injected failure');
+    let data = { agentId, text: `fixture ${p.task}` };
+    if (['proposal', 'discussion'].includes(p.task)) data = { ...data, plan: p.plan, sourceRefs: [], memoryRefs: p.memory.map(m => m.memoryId) };
+    if (p.task === 'vote') data = { ...data, approve: this.vote, planHash: p.planHash };
+    if (p.task === 'performance') data = { ...data, focus: 'breath', intensity: 1 };
+    if (p.task === 'reflection') data = { ...data, eventRef: p.event.eventId, condition: '호흡 부담', action: '다음 라운드 호흡 연습', expectedEffect: '부담 감소' };
+    if (p.task === 'judge') data = { ...data, scores: p.evidence.map(e => ({ teamId: e.teamId, evidenceHash: e.evidenceHash, criteria: Array(5).fill(e.teamId === 'team-0' ? 19 : Math.round(e.quality / 5)), reason: 'test evidence' })) };
+    return { data, sessionId: req.sessionId || `${req.contextKey}:${agentId}`, provider: 'fixture', usage: { input_tokens: 500 }, durationMs: 1 };
+  }
+}
+export const fixture = () => { const runtime = new FixtureRuntime(); const store = new Store(mkdtempSync(join(tmpdir(), 'rescene-unit-'))); const game = new Game(store, runtime); game.create('test', 'claude'); return { game, runtime, store }; };
+let counter = 0;
+export const cmd = (g, action, payload) => g.command({ commandId: `test-command-${++counter}`, expectedRevision: g.state.revision, action, payload });
+export async function play(g) {
+  await cmd(g, 'open'); await cmd(g, 'discuss', { plan: defaultPlan(), message: '테스트 유저 의견' });
+  await cmd(g, 'vote', { approve: true }); await cmd(g, 'perform'); await cmd(g, 'reflect');
+}
+test('20 teams / 10 rounds / 110 performances / 55 duels, 30 calls per round', async () => {
+  const { game } = fixture(); let performances = 0, duels = 0;
+  for (let n = 1; n <= 10; n++) {
+    assert.equal(game.state.teams.filter(t => t.alive).length, 22 - n * 2);
+    await play(game); const r = game.state.rounds[n];
+    performances += r.evidence.length; duels += r.pairs.length; assert.equal(r.calls, 30);
+    for (const [a, b] of r.pairs) assert.ok(game.state.teams.find(t => t.id === a).alive || game.state.teams.find(t => t.id === b).alive);
+    await cmd(game, 'next');
+  }
+  assert.equal(performances, 110); assert.equal(duels, 55); assert.equal(game.state.phase, 'complete'); assert.equal(game.state.champion, 'team-0');
+});
+test('pairing has no duplicates or self-match for 100 seeds and every even team count', () => {
+  for (let seed = 0; seed < 100; seed++) for (let count = 2; count <= 20; count += 2) {
+    const teams = newSeason(String(seed)).teams.slice(0, count);
+    const pairs = pairTeams(teams, seed, 2); assert.equal(new Set(pairs.flat()).size, count);
+    assert.deepEqual(pairs, pairTeams(teams, seed, 2));
+  }
+});
+test('player absence and invalid allocation cannot become consent', async () => {
+  const { game } = fixture(); await cmd(game, 'open');
+  await assert.rejects(cmd(game, 'perform'), /현재 단계/);
+  await assert.rejects(cmd(game, 'discuss', { plan: { ...defaultPlan(), practice: [8, 8, 1, 1, 1] }, message: 'test' }), /12/);
+  await cmd(game, 'discuss', { plan: defaultPlan(), message: 'test' }); await assert.rejects(cmd(game, 'vote', {}), /찬반/);
+  assert.equal(game.state.rounds[1].userVote, null);
+});
+test('user no vote reserves rediscussion, never starts stage automatically', async () => {
+  const { game } = fixture(); await cmd(game, 'open'); await cmd(game, 'discuss', { plan: defaultPlan(), message: 'test' });
+  await cmd(game, 'vote', { approve: false }); assert.equal(game.state.phase, 'meeting');
+  await assert.rejects(cmd(game, 'perform'), /현재 단계/);
+  await cmd(game, 'discuss', { plan: defaultPlan(), message: '내 반대 이유를 다시 논의하자' }); await cmd(game, 'vote', { approve: false });
+  assert.equal(game.state.phase, 'agreed'); assert.equal(game.state.rounds[1].userVote, false);
+});
+test('duplicate command is idempotent and changed plan revokes votes', async () => {
+  const { game, runtime } = fixture(); const request = { commandId: 'duplicate-command', expectedRevision: 0, action: 'open' };
+  await game.command(request); const calls = runtime.requests.length; await game.command(request); assert.equal(runtime.requests.length, calls);
+  await assert.rejects(game.command({ ...request, action: 'next' }), /재사용/);
+  await cmd(game, 'discuss', { plan: defaultPlan(), message: 'test' }); await cmd(game, 'vote', { approve: true });
+  await cmd(game, 'discuss', { plan: { ...defaultPlan(), dance: 'power' }, message: '변경' });
+  assert.equal(game.state.rounds[1].votes.length, 0); await assert.rejects(cmd(game, 'perform'), /현재 단계/);
+});
+test('partial failure resumes only missing role; judge never sees private memories or prior scores', async () => {
+  const { game, runtime, store } = fixture(); let failed = false;
+  runtime.fail = (req, p) => { if (p.task === 'proposal' && req.agentId === 'liv' && !failed) { failed = true; return true; } };
+  await assert.rejects(cmd(game, 'open'), /injected/); const restored = new Game(store, runtime); await cmd(restored, 'open');
+  assert.equal(runtime.requests.filter(r => r.agentId === 'minami').length, 1); assert.equal(restored.state.rounds[1].calls, 6);
+  await cmd(restored, 'discuss', { plan: defaultPlan(), message: 'test' }); await cmd(restored, 'vote', { approve: true }); await cmd(restored, 'perform');
+  for (const request of runtime.requests.filter(r => r.agentId.startsWith('judge'))) { assert.equal(request.sessionId, null); const p = JSON.parse(request.prompt); assert.deepEqual(p.memory, []); assert.equal(p.discussion, undefined); }
+});
+test('missing judge output blocks results; reflection failure blocks next round', async () => {
+  const { game, runtime } = fixture(); await cmd(game, 'open'); await cmd(game, 'discuss', { plan: defaultPlan(), message: 'test' }); await cmd(game, 'vote', { approve: true });
+  runtime.fail = req => req.agentId === 'judge-5'; await assert.rejects(cmd(game, 'perform')); assert.equal(game.state.phase, 'judging'); assert.equal(game.state.rounds[1].ranking.length, 0);
+  runtime.fail = null; await cmd(game, 'perform'); runtime.fail = (req, p) => p.task === 'reflection' && req.agentId === 'minami'; await assert.rejects(cmd(game, 'reflect'));
+  await assert.rejects(cmd(game, 'next')); assert.equal(game.state.round, 1); assert.equal(game.state.members.minami.memories.length, 0);
+  runtime.fail = null; await cmd(game, 'reflect'); assert.equal(game.state.members.minami.memories.length, 1);
+});
+test('two rounds restore memory with attribution and plan changes affect actual evidence', async () => {
+  const { game, store, runtime } = fixture(); await play(game); await cmd(game, 'next');
+  const restored = new Game(store, runtime); await cmd(restored, 'open');
+  const proposals = runtime.requests.filter(r => JSON.parse(r.prompt).task === 'proposal').slice(-5);
+  for (const req of proposals) { const p = JSON.parse(req.prompt); assert.ok(p.memory.length); assert.ok(p.memory.every(m => m.memoryId.includes(req.agentId))); }
+  const s = restored.state, team = s.teams.find(t => t.id === 'team-0'), intents = members.map(() => ({ focus: 'breath', intensity: 1 }));
+  const a = simulate(s, team, defaultPlan(), intents), b = simulate(s, team, { ...defaultPlan(), music: 'spark', dance: 'power' }, intents);
+  assert.notEqual(a.evidenceHash, b.evidenceHash); assert.notDeepEqual(a.events.map(e => e.breath), b.events.map(e => e.breath));
+  assert.equal(hash(checkPlan(defaultPlan())), hash(defaultPlan()));
+});
+test('failed command receipts cannot be repurposed; only shared reflection can be pinned', async () => {
+  const { game } = fixture();
+  const command = { commandId: 'failed-command', expectedRevision: 0, action: 'perform' };
+  await assert.rejects(game.command(command)); await assert.rejects(game.command({ ...command, action: 'open' }), /재사용/);
+  await play(game); await assert.rejects(cmd(game, 'pin', { agentId: 'unknown' }), /공유된 회고/);
+  await cmd(game, 'pin', { agentId: 'minami' }); await cmd(game, 'pin', { agentId: 'minami' });
+  assert.equal(game.state.teamMemory.length, 1);
+});
+test('retry budget and wrong judging evidence fail closed', async () => {
+  const { game, runtime } = fixture();
+  runtime.fail = () => true; await assert.rejects(cmd(game, 'open')); await assert.rejects(cmd(game, 'open'));
+  const count = runtime.requests.length; await assert.rejects(cmd(game, 'open'), /예산/); assert.equal(runtime.requests.length, count); assert.equal(game.state.rounds[1].retries, 5);
+  const other = fixture(); await cmd(other.game, 'open'); await cmd(other.game, 'discuss', { plan: defaultPlan(), message: 'test' }); await cmd(other.game, 'vote', { approve: true });
+  const run = other.runtime.run.bind(other.runtime); other.runtime.run = async req => { const out = await run(req); if (req.agentId.startsWith('judge')) out.data.scores[0].evidenceHash = 'wrong'; return out; };
+  await assert.rejects(cmd(other.game, 'perform'), /증거 참조/); assert.equal(other.game.state.rounds[1].ranking.length, 0);
+});
