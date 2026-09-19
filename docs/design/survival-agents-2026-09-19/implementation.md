@@ -11,6 +11,8 @@ node --test tests/survival/*.test.mjs
 node tools/survival/verify-browser.mjs
 # 실제 모델 사용량이 발생하는 두 라운드 검증
 node tools/survival/verify-live.mjs --live
+# 실제 모델의 공개 자료 근거 구분 50문항
+node tools/survival/verify-persona.mjs --live
 ```
 
 브라우저 검증은 기존 package.json의 @playwright/test를 사용한다. 의존성이 다른 checkout에 설치돼 있으면 `SURVIVAL_DEPENDENCIES`로 그 경로를 지정한다. 서버 자체는 Node 표준 라이브러리만 사용한다. 저장 위치 기본값은 OS 임시 폴더의 `rescene-survival-local/season.json`이며 `SURVIVAL_DATA_DIR`로 영구 보관할 전용 디렉터리를 지정할 수 있다. 임시 폴더는 OS가 삭제할 수 있으므로 장기 보관용이 아니다. 포트는 `SURVIVAL_PORT`로 지정한다. 서버는 루프백에만 바인딩하고 Origin/Host/요청 토큰을 검증한다.
@@ -37,8 +39,9 @@ Codex는 사용자 config의 플러그인/MCP/앱 **이름만** 읽어 해당 �
 
 - [Hellokpop 직접 인터뷰, 2024-09-11](https://www.hellokpop.com/exclusive/exclusive-interview-rescene-first-ep-scenedrome/)
 - [17 Carat K-Pop 직접 인터뷰, 2025-03-03](https://17caratkpop.substack.com/p/rescene-is-a-breath-of-fresh-air)
+- [Hellokpop 데뷔 직접 인터뷰, 2024-06-14](https://www.hellokpop.com/interview/exclusive-interview-introducing-rescene/)
 
-멤버당 서로 다른 인터뷰 3건을 확보했으며, 근거질문10개와 인물 재현 품질 평가는 아직 완료하지 않았다. 유튜브 자막/블로그 대량 수집, 실제 인물 재현 검수, 자료 추가/철회 관리 화면은 후속 작업이다. UI에도 자료 부족을 명시한다. 이번 판은 실행 가능한 로컬 프로토타입이며 완성된 인물 학습 서비스가 아니다.
+멤버당 서로 다른 인터뷰 3건을 확보했으며, 근거 구분 질문 10개씩 총50개를 통과했다. 인물 재현 품질 평가는 완료하지 않았다. 유튜브 자막/블로그 대량 수집, 실제 인물 재현 검수, 자료 추가/철회 관리 화면은 후속 작업이다. UI에도 자료 부족을 명시한다. 이번 판은 실행 가능한 로컬 프로토타입이며 완성된 인물 학습 서비스가 아니다.
 
 ## 실측 기록
 
@@ -51,7 +54,7 @@ Codex는 사용자 config의 플러그인/MCP/앱 **이름만** 읽어 해당 �
 - 브라우저 fixture 전체 흐름은 성공했고 콘솔오류0, 390px 모바일 넘침없음. 모델 실험과 구분한다.
 
 - Claude 격리 초기화 스트림 실측: `tools: []`, `mcp_servers: []`, `result: success`. 실제 Claude 자식 호출을 취소하고 `children: 0` 및 종료를 확인했다.
-- [Hellokpop 데뷔 직접 인터뷰, 2024-06-14](https://www.hellokpop.com/interview/exclusive-interview-introducing-rescene/)에서 멤버별 세 번째 요약을 추가했다. 2라운드 실험은 변경 전 2건 프로필로 시작했으며, 추가 자료는 이후 새 문맥부터 적용한다.
+- Hellokpop 데뷔 인터뷰에서 멤버별 세 번째 요약을 추가했다. 초기 실패 실험은 변경 전 2건 프로필로 시작했으며, 최종 성공 실험은 3건 프로필을 사용했다.
 
 ## 검증 경계
 
@@ -62,3 +65,22 @@ Codex는 사용자 config의 플러그인/MCP/앱 **이름만** 읽어 해당 �
 Claude b8b410e 리뷰(20260919080134489-8569af): H1 초기 실험/최종 코드 구분, H2 Claude 캐시 토큰 포함, M1 심사 입력에서 사용자 direction 제거, M2 예약 재토론을 먼저 쓴 뒤 잔여 선택 토론 허용, M3 실패 투표 명시적 미투표 처리를 반영했다. 캐시 문맥 회전·재토론 경계·심사 주입·미투표 시험을 추가했다. 구조화된 게임 작업의 Claude effort는 low로 지정해 지연을 줄인다. 글로벌 훅/승인 설정은 유지한다. 게임 멤버의 실제 전용 cwd transcript에서는 전역 CLAUDE.md 경로·주입 표지가 발견되지 않았으나 전체 비공개 시스템 프롬프트의 부재를 증명한 것은 아니다.
 
 현재 미구현: 지속 피로 자원, 행동 가설 supported/contradicted 자동 판정, 24개 이상의 컨셉 풀(현재10개), 상세 상대 프로필 UI, 자료 검수/철회 UI, 통계적 인물 재현 평가. 새 시즌 생성 시 이전 시즌은 데이터 디렉터리 archive/<seasonId>.json에 보존하며 현재 화면에서 과거 시즌을 다시 여는 기능은 없다.
+
+## 최종 코드 검토 및 실행 위치
+
+Claude 리드의 `20260919080729748-aafe13` 응답에서 0d56176 코드 리뷰가 통과했다. 상대가 직접 16개 시험을 재실행했다. 이후 코드 변경은 런타임 전역 식별자의 ESLint 선언, 동일한 필드 제외 방식의 표현 정리, 종료 catch 설명이며 경기 동작/모델 프롬프트는 동일하다. 새 검증 도구 verify-persona.mjs는 제품 경로에 포함되지 않는다. 최종 코드에서 같은 16개 시험과 기존 프로젝트 ESLint 설정을 사용한 자체 변경 범위 린트가 통과했다.
+
+Codex의 cached_input_tokens는 input_tokens의 부분집합이라 중복 합산하지 않는다. Claude와 필드 의미가 다르다. [OpenAI Codex 원본 계산](https://github.com/openai/codex/blob/main/codex-rs/tui/src/token_usage.rs)의 non_cached_input = input_tokens - cached_input으로 확인했다.
+
+최종 Codex 제안 실측: gpt-6-astra, 17.3초, 세션 01a0b8ae-17a6-7bf0-a047-1eb107f417c0. 아이돌 무대의 잔광/flow/호흡 연결 계획과 woni-interview-1, woni-interview-3 인용을 구조화 출력했다. Codex는 연결·재개·제안 수준까지 검증했으며 두 라운드 전체 실주행은 Claude로 수행한다.
+
+사용자용 로컬 서버: http://127.0.0.1:4317/survival.html . 실행 코드 위치는 /private/tmp/rescene-survival-impl-20260919이고, 사용자 시즌 저장은 `/Users/admin/Library/Application Support/ResceneSurvival/season.json`으로 설정했다. 테스트 시즌과 분리되며 기존 게임 서버/기준 브랜치는 바꾸지 않았다. 실행 프로세스가 종료되면 위 명령으로 재기동하되 같은 SURVIVAL_DATA_DIR를 지정해야 이 저장을 이어간다.
+
+## 고정 버전 실제 검증 결과
+
+- 실행 버전: 0d56176 (경기/어댑터 동작 고정). `/var/folders/04/8rm5pwr52f12x6zmvdwsdcjr0000gn/T/rescene-live-REIMs3/season.json` 및 `verification.json`에 결과 보존. R1 40회(재토론1회), R2 30회, 합계70회, 실패 재시도0. 두 라운드 모두 합의·다섯 수행·다섯 심사·다섯 회고·learningCommitted 완료.
+- R1 합의6/6, R2 합의5/6. R1의 유닛안에 멤버5명 전원이 반대한 뒤 수정안을 채택해 진행했다. R2 제안은 5/5가 r1:<본인>:hypothesis를 인용했다. 시즌 모델은 claude-fable-5-1로 고정됐고, 캐시 입력을 포함한 한도 계산으로 다섯 멤버 모두 generation2 문맥으로 회전했다.
+- 실제 계획은 wave/groove/adlib, 연습[3,3,2,2,2]에서 glow/flow/none, 연습[2,3,2,3,2]로 바뀌었다. 게임 증거의 평균 완성도64→71, 순위14위→5위. 서로 다른 라운드의 관측이므로 그 차이만으로 학습 인과를 입증하지 않는다. 같은 시드에서 계획 변경이 호흡 지표를 바꾸는 인과는 별도 결정적 시험으로 확인했다.
+- 최종 보고 도구의 예전 고정 문자열 Two sources를 실제 호출 프롬프트에서 집계한 sourceRecordsPerMember로 수정하고, 모델 재호출 없이 저장된70회 결과로 보고서만 다시 생성했다. 각 멤버 실제 출처 수는3이다.
+- 실제 브라우저 검증: `/var/folders/04/8rm5pwr52f12x6zmvdwsdcjr0000gn/T/rescene-browser-live-ygBR9x`. 버튼→HTTP→독립Claude5호출→저장→화면→새로고침 통과, 세션ID5개 모두 다름, 브라우저오류0. screenshot live-desktop.png를 직접 확인했다. 테스트용 시즌이며 사용자용 저장과 분리돼 있다. 전체 무대/심사/회고 브라우저 동선은 fixture 검증이고 실제 두 라운드 모델 검증과 구분한다.
+- 근거 구분 검증: `rescene-grounding-AyoHi1/verification.json` (위와 같은 OS 임시 디렉터리). Claude 독립5세션에서 멤버당10문항, 총50/50 통과. 공개 발언과 허구의 게임 경험·수치·영구적 성격 추정·타인 발언을 구분하고 본인 sourceId만 인용하는지 확인했다. 최초 질문의 "2025년 무대 표현 방향"은 제나의 역할/관심사 요약보다 좁아 보수적인 미지원 답변이 나왔다. 질문을 "역할, 관심사 또는 표현 목표"로 명확히 한 v2 전체 세트를 다시 실행했다. 제품 프롬프트/자료는 이 재시험 때문에 변경하지 않았다. 이 결과는 자료 근거 구분이며 실제 말투·성격 재현 정확도나 통계적 모델 품질을 보증하지 않는다.

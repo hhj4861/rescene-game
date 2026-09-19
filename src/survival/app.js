@@ -1,3 +1,4 @@
+/* global document, fetch, clearTimeout, setTimeout, crypto, structuredClone, confirm, AudioContext, clearInterval, setInterval */
 const app = document.querySelector('#app');
 let state, catalog, token, polling, draft, draftRound, audio, replayTimer;
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

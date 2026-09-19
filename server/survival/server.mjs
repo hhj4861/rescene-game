@@ -1,3 +1,4 @@
+/* global process, URL, console, setTimeout */
 import { createServer } from 'node:http';
 import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -57,8 +58,8 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
       return send(202, { accepted: true });
     } catch (e) { return send(400, { error: e.message }); }
   });
-  server.on('close', () => { game.cancel(); if (lock) { try { unlinkSync(lockPath); } catch {} } });
-  server.on('error', () => { if (lock) { try { unlinkSync(lockPath); } catch {} } });
+  server.on('close', () => { game.cancel(); if (lock) { try { unlinkSync(lockPath); } catch { /* Lock may already have been removed by the error handler. */ } } });
+  server.on('error', () => { if (lock) { try { unlinkSync(lockPath); } catch { /* Lock may already have been removed by the error handler. */ } } });
   server.listen(port, '127.0.0.1');
   return { server, game };
 }

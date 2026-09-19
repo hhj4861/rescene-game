@@ -1,3 +1,4 @@
+/* global AbortController, Buffer, structuredClone */
 import { createHash, randomUUID } from 'node:crypto';
 import { members, judges, concepts, music, defaultPlan, sources, profileVersion } from './catalog.mjs';
 import { schemaFor, planSchema, validate } from './schemas.mjs';
@@ -92,7 +93,8 @@ export class Game {
   save() { this.store.save(this.state); }
   snapshot() {
     if (!this.state) return null;
-    const { calls, sessions, receipts, ...s } = structuredClone(this.state);
+    const s = structuredClone(this.state), calls = s.calls;
+    delete s.calls; delete s.sessions; delete s.receipts;
     // Only the player can see reflections. Never feed this snapshot to another agent.
     s.traces = Object.values(calls).map(({ agentId, kind, status, result, attempts }) => ({ agentId, kind, status, attempts,
       provider: result?.provider, model: result?.model, sessionId: result?.sessionId, durationMs: result?.durationMs }));
@@ -263,7 +265,7 @@ export class Game {
       const rotation = judges.findIndex(j => j.id === a.id);
       const sorted = [...r.evidence].sort((a, b) => a.teamId.localeCompare(b.teamId)).map(e => {
         // User prose remains in the locked plan/hash, never in judging instructions/data.
-        const { direction, ...plan } = e.plan; return { ...e, plan };
+        const plan = { ...e.plan }; delete plan.direction; return { ...e, plan };
       });
       return { concept: r.concept, rubric: 'simulation-v1-absolute-0-20', evidence: [...sorted.slice(rotation), ...sorted.slice(0, rotation)] };
     });

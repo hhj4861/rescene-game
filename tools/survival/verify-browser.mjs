@@ -1,3 +1,4 @@
+/* global process, document, innerWidth, console */
 import { createRequire } from 'node:module';
 import { resolve, join } from 'node:path';
 import { mkdtempSync } from 'node:fs';

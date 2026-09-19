@@ -1,3 +1,4 @@
+/* global process, setTimeout, clearTimeout */
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -88,7 +89,7 @@ export class LocalRuntime {
       let stdout = '', stderr = '', failure = null, killTimer;
       const child = this.spawn(command, args, { cwd, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
       this.children.add(child);
-      const kill = sig => { try { process.platform === 'win32' ? child.kill(sig) : process.kill(-child.pid, sig); } catch {} };
+      const kill = sig => { try { if (process.platform === 'win32') child.kill(sig); else process.kill(-child.pid, sig); } catch { /* Child has already exited. */ } };
       const stop = message => { if (failure) return; failure = new Error(message); kill('SIGTERM'); killTimer = setTimeout(() => kill('SIGKILL'), 1500); };
       const abort = () => stop('사용자가 호출을 취소했습니다');
       const timer = setTimeout(() => stop('모델 응답 시간 초과'), this.timeoutMs);

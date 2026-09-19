@@ -1,3 +1,4 @@
+/* global process, console, crypto */
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -45,7 +46,7 @@ try {
   const report = { passed: true, dir, rounds: 2, calls: calls.length,
     attempts: Object.values(game.state.rounds).reduce((n, r) => n + r.calls, 0),
     proposals: r2.proposals.map(p => ({ agentId: p.agentId, text: p.text, memoryRefs: p.memoryRefs, plan: p.plan })),
-    sourceQuality: 'Two direct interviews per member; wider persona evaluation pending',
+    sourceRecordsPerMember: Object.fromEntries(calls.filter(c => c.kind === 'proposal').map(c => [c.agentId, JSON.parse(c.prompt).source.length])),
     limitations: ['실제 사용자 대신 명시된 검증용 플레이어가 발언·투표', '기억 유무 대조군의 모델 품질 통계는 별도 검증 필요'] };
   writeFileSync(join(dir, 'verification.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report));
