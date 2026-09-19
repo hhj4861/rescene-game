@@ -22,7 +22,7 @@ try {
     const r = game.state.rounds[game.state.round];
     if (['announced', 'proposal'].includes(game.state.phase)) await cmd('open');
     if (['meeting', 'discussion'].includes(game.state.phase)) {
-      const proposal = r.proposals.find(p => p.memoryRefs?.length)?.plan || r.proposals[0]?.plan || defaultPlan();
+      const proposal = r.discussion[0]?.plan || r.proposals.find(p => p.memoryRefs?.length)?.plan || r.proposals[0]?.plan || defaultPlan();
       await cmd('discuss', { plan: proposal, message: '검증용 가상 플레이어의 발언: 모두의 의견을 듣고 호흡과 리듬을 안정적으로 맞추고 싶어. 지난 무대 경험이 있으면 구체적으로 반영하자. 이 계획을 검토해 줘.' });
     }
     if (['voted', 'voting'].includes(game.state.phase)) await cmd('vote', { approve: true });

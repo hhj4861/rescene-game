@@ -46,7 +46,7 @@ export class LocalRuntime {
       let args, requestedModel = pinnedModel;
       if (provider === 'claude') {
         args = ['-p', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}',
-          '--permission-mode', 'dontAsk', '--output-format', 'json', '--json-schema', JSON.stringify(schema),
+          '--permission-mode', 'dontAsk', '--effort', 'low', '--output-format', 'json', '--json-schema', JSON.stringify(schema),
           '--system-prompt', 'You are a game character response engine. No tools. Use only the supplied game data. Return the requested structured response. Do not act as a developer.'];
         if (sessionId) args.push('--resume', sessionId);
         if (pinnedModel) args.push('--model', pinnedModel);

@@ -48,7 +48,7 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
       if (path === '/api/new') return send(200, { state: game.create(input.seed, input.provider) });
       if (path === '/api/cancel') { game.cancel(); return send(200, { cancelling: true }); }
       if (!input || typeof input.commandId !== 'string' || !/^[a-zA-Z0-9-]{8,80}$/.test(input.commandId)
-        || !Number.isInteger(input.expectedRevision) || !['open', 'discuss', 'vote', 'perform', 'reflect', 'pin', 'next', 'watch'].includes(input.action)
+        || !Number.isInteger(input.expectedRevision) || !['open', 'discuss', 'vote', 'skipVote', 'perform', 'reflect', 'pin', 'next', 'watch'].includes(input.action)
         || (input.payload !== undefined && (!input.payload || typeof input.payload !== 'object' || Array.isArray(input.payload)))) return send(400, { error: '올바른 게임 명령이 필요합니다' });
       // Acknowledgement immediately; polling shows durable progress and failures.
       if (game.state?.busy) return send(409, { error: '이미 진행 중입니다' });

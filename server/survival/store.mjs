@@ -6,6 +6,11 @@ export class Store {
     try { return JSON.parse(readFileSync(this.path, 'utf8')); }
     catch (e) { if (e.code === 'ENOENT') return null; throw new Error(`저장 파일을 읽을 수 없습니다: ${e.message}`); }
   }
+  archive(state) {
+    if (!/^[0-9a-f-]{36}$/.test(state.id)) throw new Error('시즌 식별자 오류');
+    const directory = join(this.dir, 'archive'); mkdirSync(directory, { recursive: true, mode: 0o700 });
+    writeFileSync(join(directory, `${state.id}.json`), JSON.stringify(state), { mode: 0o600 });
+  }
   save(state) {
     const temp = `${this.path}.tmp`;
     writeFileSync(temp, JSON.stringify(state), { mode: 0o600 });

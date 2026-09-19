@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 // All numerical abilities and stage roles below are game fiction, not artist ratings.
 export const members = [
   { id: 'minami', name: '미나미', color: '#557cc0', role: '리듬과 새로운 시도' },
@@ -19,6 +20,7 @@ export const risks = ['none', 'adlib', 'danceBreak', 'unit'];
 const urls = [
   'https://www.hellokpop.com/exclusive/exclusive-interview-rescene-first-ep-scenedrome/',
   'https://17caratkpop.substack.com/p/rescene-is-a-breath-of-fresh-air',
+  'https://www.hellokpop.com/interview/exclusive-interview-introducing-rescene/',
 ];
 const observations = {
   minami: ['Pinball의 어려운 멜로디와 박자를 반복 연습하며 익숙해지는 과정이 즐거웠다고 설명했다.', '다양한 콘셉트를 시도하고 무대에서 여러 모습을 보여 주기를 좋아한다고 소개했다.'],
@@ -27,15 +29,23 @@ const observations = {
   liv: ['곡의 내용을 이해하고 느낌을 표현하는 것이 어려웠으며 멤버들의 음색이 조화될 때 즐거웠다고 말했다.', '음색을 통해 섬세하고 독특하게 감정을 표현하려 한다고 소개했다.'],
   may: ['네 곡 각각의 분위기와 포인트를 정하는 데 시간이 필요했다고 설명했다.', '밝은 미소와 긍정적인 무대 에너지를 전하려 한다고 소개했다.'],
 };
-export const sources = members.flatMap(m => observations[m.id].map((summary, i) => ({
+const debut = {
+  minami: '멤버마다 다른 음색을 서로 맞추면 한 곡에서도 다양한 분위기를 만들 수 있다고 말했다.',
+  woni: '연습할 때 곡에서 느낀 감정과 각자의 스타일을 함께 나눈다고 설명했다.',
+  zena: '다양한 표정을 활용해 무대를 풍성하게 만들고 싶다고 말했다.',
+  liv: '서로의 보컬 색을 살리고 조화시키며 팀의 고유한 소리를 만든다고 설명했다.',
+  may: '각자의 독특한 목소리로 하나의 감정을 공유하며 노래한다고 설명했다.',
+};
+export const sources = members.flatMap(m => [...observations[m.id], debut[m.id]].map((summary, i) => ({
   sourceId: `${m.id}-interview-${i + 1}`, memberId: m.id, speakerId: m.id,
-  url: urls[i], title: i ? '17 Carat K-Pop 직접 인터뷰' : 'Hellokpop SCENEDROME 직접 인터뷰',
-  publishedAt: i ? '2025-03-03' : '2024-09-11', retrievedAt: '2026-09-19',
+  url: urls[i], title: ['Hellokpop SCENEDROME 직접 인터뷰', '17 Carat K-Pop 직접 인터뷰', 'Hellokpop 데뷔 직접 인터뷰'][i],
+  publishedAt: ['2024-09-11', '2025-03-03', '2024-06-14'][i], retrievedAt: '2026-09-19',
   summary, evidenceType: 'direct-interview', verificationStatus: 'reviewed-text',
+  contentHash: createHash('sha256').update(summary).digest('hex'),
   usageBasis: '짧은 한국어 요약 및 원문 링크. 전문·음원 미복제.',
 })));
-export const profileVersion = 'interviews-v1-two-sources';
+export const profileVersion = 'interviews-v2-three-sources';
 export const defaultPlan = () => ({ music: 'glow', dance: 'flow', risk: 'none',
   leads: members.map(m => m.id), practice: [3, 3, 2, 2, 2], direction: '서로의 호흡을 들으며 한 장면을 완성하자.' });
 export const publicCatalog = { members, judges, concepts, music, dances, risks, sources, profileVersion,
-  personaStatus: '멤버별 인터뷰 2건을 확인한 실험판입니다. 영상·블로그 전체 학습 및 인물 재현 품질 검수는 미완료입니다.' };
+  personaStatus: '멤버별 인터뷰 3건의 짧은 요약을 확인한 실험판입니다. 영상·블로그 전체 학습 및 인물 재현 품질 검수는 미완료입니다.' };
