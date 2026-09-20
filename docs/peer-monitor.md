@@ -19,7 +19,7 @@
 node tools/peer-monitor/install.mjs /Users/admin/workSpace/rescene-game /Users/admin/workSpace/rescene-game-auto-actions
 ```
 
-공식 수신함 → 영속 순차 큐 → `codex-call.sh impl`(기존 workspace-write 샌드박스/훅) → 고정 검증 → 자기 파일만 커밋 → 별도 Codex 고정 커밋 검토 → 설정 upstream 정상 push → 공식 회신 순서다. 단순 확인 메시지는 검토 뒤 ack만 한다. 검증 명령은 모델이 돌려준 셸 문자열을 실행하지 않고 조정기에 정해진 시험만 사용한다. 코드 변경은 생존 시험 전체·ESLint·브라우저 fixture를 통과해야 한다. 문서만 변경하면 diff 검증과 독립 고정 커밋 검토를 한다.
+공식 수신함 → 영속 순차 큐 → `codex-call.sh impl`(기존 workspace-write 샌드박스/훅) → 고정 검증 → 자기 파일만 커밋 → 별도 Codex 고정 커밋 검토 → 설정 upstream 정상 push → 공식 회신 순서다. 단순 확인 메시지는 검토 뒤 ack만 한다. 검증 명령은 모델이 돌려준 셸 문자열을 실행하지 않고 조정기에 정해진 시험만 사용한다. 코드 변경은 생존 시험 전체·ESLint·브라우저 fixture를 통과해야 한다. 이 명령들도 Codex의 `:workspace`를 상속한 일회성 샌드박스로 실행한다. 로컬 시험 서버 binding만 허용하고 작업 공간 밖 쓰기는 금지한다. Chromium은 OS 샌드박스를 유지한 단일 프로세스로 실행한다. 전역 권한 설정 파일은 변경하지 않는다. 문서만 변경하면 diff 검증과 독립 고정 커밋 검토를 한다. 독립 검토에는 구현 전에 Git 객체로 고정한 원문 요청, 변경 전 architecture 문서, 결과 노트를 함께 전달한다. 구현자의 결과 노트만으로 원래 요구를 대체하지 않는다.
 
 전용 브랜치는 `worktree-codex-survival-implementation-20260919`, 소유 범위는 기존 `survival-implementation-20260919` claim의 게임 코드·시험·implementation 문서뿐이다. 공유 checkout, 자동조치기, 전역 설정, 인증, PR 머지, 배포는 자동조치 범위에 없다. 다른 세션은 이 전용 슬롯을 동시에 수정하지 않는다. 한 모델 작업은 최대 570초이며 큰 작업은 분할 제안이나 미완료 사유를 회신한다.
 
@@ -34,3 +34,5 @@ node tools/peer-monitor/install.mjs /Users/admin/workSpace/rescene-game /Users/a
 - macOS 알림 명령 제출 성공. 알림 화면 표시 여부는 미확인이다.
 - 실제 수신함 브라우저에서 두 테스트 회신과 B2 요청을 표시했고 콘솔 오류0, 외부 Origin 요청403을 확인했다.
 - LaunchAgent의 실행 상태를 확인하고 수신기만 SIGTERM 종료한 뒤 자동 재시작과 기존 수신 기록 보존을 확인했다. 설치된 서비스는 작업 완료 후에도 켜 둔다.
+
+검증용 일회성 권한 프로필의 필드는 [공식 Codex 설정 스키마](https://learn.chatgpt.com/docs/config-schema.json)와 설치 CLI 도움말로 확인했다.

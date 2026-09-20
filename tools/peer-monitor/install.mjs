@@ -25,7 +25,7 @@ if (oldConfig.actions?.enabled && existsSync(join(root, 'actions.json'))) {
 }
 if (existsSync(program)) writeFileSync(`${program}.previous`, readFileSync(program), { mode: 0o600 });
 writeFileSync(program, readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'monitor.mjs')), { mode: 0o600 });
-writeFileSync(join(root, 'actions.mjs'), readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'actions.mjs')), { mode: 0o600 });
+for (const file of ['actions.mjs', 'browser-bootstrap.mjs']) writeFileSync(join(root, file), readFileSync(join(dirname(fileURLToPath(import.meta.url)), file)), { mode: 0o600 });
 const codex = slot ? execFileSync('/usr/bin/which', ['codex'], { encoding: 'utf8' }).trim() : oldConfig.actions?.codex;
 const actions = slot ? { enabled: true, slot, codex, wrapper: join(homedir(), '.local/share/engine-exchange/tools/orch/codex-call.sh'), tracks: process.argv.slice(4) } : oldConfig.actions || { enabled: false };
 writeFileSync(configPath, JSON.stringify({ repo, node, orch, actions, dataDir: root, port: 4318, path: `${dirname(node)}:${codex ? dirname(codex) : '/usr/bin'}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin` }), { mode: 0o600 });
