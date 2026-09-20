@@ -25,6 +25,10 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
   const files = new Map([
     ['/', ['survival.html', 'text/html']], ['/survival.html', ['survival.html', 'text/html']],
     ['/src/survival/app.js', ['src/survival/app.js', 'text/javascript']],
+    ['/src/survival/arrangement.js', ['src/survival/arrangement.js', 'text/javascript']],
+    ['/src/survival/performance.js', ['src/survival/performance.js', 'text/javascript']],
+    ['/src/survival/game-view.js', ['src/survival/game-view.js', 'text/javascript']],
+    ['/src/survival/scene.js', ['src/survival/scene.js', 'text/javascript']],
     ['/src/survival/style.css', ['src/survival/style.css', 'text/css']],
   ]);
   const server = createServer(async (req, res) => {
