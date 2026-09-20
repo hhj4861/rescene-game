@@ -20,18 +20,20 @@ export class ActionQueue {
     this.persist();
   }
   persist() { save(this.path, this.state); }
+  eligible(message) {
+    return message?.from === 'claude-lead' && message.to === 'codex-lead' && ['ask', 'reply'].includes(message.kind) && typeof message.id === 'string' && /^[a-zA-Z0-9-]+$/.test(message.id) && typeof message.track === 'string' && message.track.startsWith('survival-') && (!this.config.actions.tracks?.length || this.config.actions.tracks.includes(message.track));
+  }
   async tick(messages) {
     if (!this.config.actions?.enabled) return;
     const pending = new Set(messages.map(m => m.id));
     for (const job of this.state.jobs) if (!pending.has(job.id) && job.status === 'awaitingAgent') { job.status = 'peerResolved'; job.resolvedAt = now(); }
     for (const message of messages) {
-      if (message.from !== 'claude-lead' || message.to !== 'codex-lead' || !['ask', 'reply'].includes(message.kind) || !/^[a-zA-Z0-9-]+$/.test(message.id) || !message.track?.startsWith('survival-')) continue;
-      if (this.config.actions.tracks?.length && !this.config.actions.tracks.includes(message.track)) continue;
+      if (!this.eligible(message)) continue;
       if (!this.state.jobs.some(j => j.id === message.id)) this.state.jobs.push({ id: message.id, message, status: 'pendingDelivery', detectedAt: now() });
     }
     this.persist();
     if (this.busy) return;
-    const job = this.state.jobs.find(j => j.status === 'pendingDelivery' && pending.has(j.id)); if (!job) return;
+    const job = this.state.jobs.find(j => j.status === 'pendingDelivery' && pending.has(j.id) && this.eligible(j.message)); if (!job) return;
     this.busy = true;
     try {
       Object.assign(job, { status: 'dispatching', threadId: this.config.actions.threadId }); this.persist();

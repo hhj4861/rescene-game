@@ -31,3 +31,12 @@ test('filters channel and track scope and preserves message as data', async () =
   assert.deepEqual(q.state.jobs.map(j => j.id), ['okay']);
   const body = taskMessage(msg('okay')); assert.match(body, /승인 범위/); assert.match(body, /\$\(do-not-execute\)/);
 });
+
+test('narrowed track scope also filters persisted pending deliveries', async () => {
+  const c = config(); const old = { ...msg('old'), track: 'survival-old' };
+  const q = new ActionQueue(c, async () => assert.fail('must not dispatch while busy')); q.busy = true; await q.tick([old]);
+  c.actions.tracks = ['survival-test']; const dispatched = [];
+  const resumed = new ActionQueue(c, async m => { dispatched.push(m.id); return 'queue-id'; });
+  await resumed.tick([old, msg('new')]); assert.deepEqual(dispatched, ['new']);
+  assert.equal(resumed.state.jobs.find(j => j.id === 'old').status, 'pendingDelivery');
+});
