@@ -19,7 +19,9 @@
 node tools/peer-monitor/install.mjs /Users/admin/workSpace/rescene-game /Users/admin/workSpace/rescene-game-auto-actions
 ```
 
-공식 수신함 → 영속 순차 큐 → `codex-call.sh impl`(기존 workspace-write 샌드박스/훅) → 고정 검증 → 자기 파일만 커밋 → 별도 Codex 고정 커밋 검토 → 설정 upstream 정상 push → 공식 회신 순서다. 단순 확인 메시지는 검토 뒤 ack만 한다. 검증 명령은 모델이 돌려준 셸 문자열을 실행하지 않고 조정기에 정해진 시험만 사용한다. 코드 변경은 생존 시험 전체·ESLint·브라우저 fixture를 통과해야 한다. 이 명령들도 Codex의 `:workspace`를 상속한 일회성 샌드박스로 실행한다. 로컬 시험 서버 binding만 허용하고 작업 공간 밖 쓰기는 금지한다. Chromium은 OS 샌드박스를 유지한 단일 프로세스로 실행한다. 전역 권한 설정 파일은 변경하지 않는다. 문서만 변경하면 diff 검증과 독립 고정 커밋 검토를 한다. 독립 검토에는 구현 전에 Git 객체로 고정한 원문 요청, 변경 전 architecture 문서, 결과 노트를 함께 전달한다. 구현자의 결과 노트만으로 원래 요구를 대체하지 않는다.
+공식 수신함 → 영속 순차 큐 → `codex-call.sh impl`(기존 workspace-write 샌드박스/훅) → 고정 검증 → 자기 파일만 커밋 → 별도 Codex 고정 커밋 검토 → 설정 upstream 정상 push → 공식 회신 순서다. 단순 확인 메시지는 검토 뒤 ack만 한다. 검증 명령은 모델이 돌려준 셸 문자열을 실행하지 않고 조정기에 정해진 시험만 사용한다. 코드 변경은 생존 시험 전체·ESLint·브라우저 fixture를 통과해야 한다. 이 명령들도 Codex의 `:workspace`를 상속한 일회성 샌드박스로 실행한다. 프록시를 실제 활성화하고 목적지는 127.0.0.1·localhost만 허용하며 로컬 시험 서버 binding을 켠다. 외부 네트워크와 작업 공간 밖 쓰기는 금지한다. Chromium은 OS 샌드박스를 유지한 단일 프로세스로 실행한다. 전역 권한 설정 파일은 변경하지 않는다. 문서만 변경하면 diff 검증과 독립 고정 커밋 검토를 한다. 독립 검토에는 구현 전에 Git 객체로 고정한 원문 요청, 변경 전 architecture 문서, 결과 노트를 함께 전달한다. 구현자의 결과 노트만으로 원래 요구를 대체하지 않는다.
+
+샌드박스 워커는 전역 완료 검증 DB에 쓸 수 없으므로 리드 조정기가 실제 `thread.started` ID를 읽고 공식 `gate.py track --session`으로 변경 전 등록을 대행한다. 워커는 등록 성공과 자신의 ID, 경로를 확인한 뒤 수정한다. 기존 claim 안의 추적 파일과 해당 결과 노트만 등록하며 새 경로가 필요하면 보류한다. 등록 실패를 무시하거나 완료 훅을 끄지 않는다. 미변경 등록은 공식 cancel-empty-track으로 검증 후 정리하고 push 뒤 reconcile한다.
 
 전용 브랜치는 `worktree-codex-survival-implementation-20260919`, 소유 범위는 기존 `survival-implementation-20260919` claim의 게임 코드·시험·implementation 문서뿐이다. 공유 checkout, 자동조치기, 전역 설정, 인증, PR 머지, 배포는 자동조치 범위에 없다. 다른 세션은 이 전용 슬롯을 동시에 수정하지 않는다. 한 모델 작업은 최대 570초이며 큰 작업은 분할 제안이나 미완료 사유를 회신한다.
 
