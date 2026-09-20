@@ -10,6 +10,37 @@ export const members = [
 export const judges = ['보컬 디렉터', '안무가', '음악 프로듀서', '무대 연출가', '공연 심사위원']
   .map((name, i) => ({ id: `judge-${i + 1}`, name, fictional: true }));
 export const concepts = ['네온 야경', '여름의 파도', '기억의 향기', '비밀 정원', '겨울 편지', '새벽 열차', '달빛 축제', '도시의 리듬', '꿈의 도서관', '새로운 세계'];
+// Recommendations guide discussion, never change the common judging weights.
+export const conceptCatalog = [
+  ['네온 야경', 110, 130, 'groove', '박자와 빛의 대비'],
+  ['여름의 파도', 105, 120, 'groove', '경쾌한 파트 전환'],
+  ['기억의 향기', 90, 105, 'flow', '음색과 감정의 연결'],
+  ['비밀 정원', 90, 115, 'flow', '섬세한 표현'],
+  ['겨울 편지', 85, 100, 'flow', '절제와 호흡'],
+  ['새벽 열차', 100, 120, 'groove', '점차 커지는 흐름'],
+  ['달빛 축제', 105, 130, 'groove', '서로 이어지는 에너지'],
+  ['도시의 리듬', 115, 135, 'power', '정확한 리듬'],
+  ['꿈의 도서관', 90, 105, 'flow', '장면을 전하는 표현'],
+  ['새로운 세계', 110, 135, 'power', '도입과 피날레의 대비'],
+  ['유리 바다', 90, 112, 'flow', '투명한 음색의 조화'],
+  ['우주 우체국', 105, 128, 'groove', '메시지를 잇는 파트'],
+  ['오렌지 노을', 95, 115, 'flow', '따뜻한 표현'],
+  ['흑백 영화', 90, 112, 'flow', '명확한 감정 대비'],
+  ['사막의 별', 100, 128, 'groove', '긴장과 여백'],
+  ['봄날의 약속', 95, 115, 'flow', '자연스러운 전환'],
+  ['번개 신호', 120, 135, 'power', '강한 동작 속 완성도'],
+  ['회전목마', 105, 120, 'groove', '반복되는 리듬의 변화'],
+  ['푸른 미로', 100, 125, 'groove', '파트 간 질문과 응답'],
+  ['자정의 라디오', 90, 105, 'flow', '음색과 호흡 균형'],
+  ['불꽃 행진', 120, 135, 'power', '끝까지 유지하는 에너지'],
+  ['비 오는 거리', 90, 112, 'flow', '작은 감정 변화'],
+  ['종이비행기', 105, 128, 'groove', '가벼운 움직임과 연결'],
+  ['별빛 운동장', 115, 135, 'power', '함께 만드는 피날레'],
+].map(([name, min, max, dance, hint], i) => ({ id: `concept-${i + 1}`, name,
+  bpmRange: [min, max], dance, hint, parts: '다섯 멤버가 각자 12초 리드 파트' }));
+export const habits = {
+  power: '고강도 선호', risk: '승부수 선호', steady: '안정적인 구성 선호',
+};
 export const music = [
   { id: 'glow', name: '잔광', bpm: 96, mood: '몽환적인 신스', demand: 1 },
   { id: 'wave', name: '물결', bpm: 112, mood: '경쾌한 디스코', demand: 2 },
@@ -46,6 +77,6 @@ export const sources = members.flatMap(m => [...observations[m.id], debut[m.id]]
 })));
 export const profileVersion = 'interviews-v2-three-sources';
 export const defaultPlan = () => ({ music: 'glow', dance: 'flow', risk: 'none',
-  leads: members.map(m => m.id), practice: [3, 3, 2, 2, 2], direction: '서로의 호흡을 들으며 한 장면을 완성하자.' });
-export const publicCatalog = { members, judges, concepts, music, dances, risks, sources, profileVersion,
+  leads: members.map(m => m.id), practice: [3, 3, 2, 2, 2], recovery: [0, 0, 0, 0, 0], direction: '서로의 호흡을 들으며 한 장면을 완성하자.' });
+export const publicCatalog = { members, judges, concepts, conceptCatalog, habits, music, dances, risks, sources, profileVersion,
   personaStatus: '멤버별 인터뷰 3건의 짧은 요약을 확인한 실험판입니다. 영상·블로그 전체 학습 및 인물 재현 품질 검수는 미완료입니다.' };

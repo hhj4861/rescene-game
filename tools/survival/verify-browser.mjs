@@ -18,16 +18,18 @@ const runtime = { async run(req) {
   if (['proposal', 'discussion'].includes(p.task)) data = { ...data, plan: defaultPlan(), sourceRefs: [], memoryRefs: [] };
   if (p.task === 'vote') data = { ...data, approve: true, planHash: p.planHash };
   if (p.task === 'performance') data = { ...data, focus: 'breath', intensity: 1 };
-  if (p.task === 'reflection') data = { ...data, eventRef: p.event.eventId, condition: '호흡', action: '호흡 연습', expectedEffect: '부담 감소' };
+  if (p.task === 'reflection') data = { ...data, eventRef: p.event.eventId, condition: '호흡', action: '호흡 연습', structuredAction: { focus: 'breath' }, expectedEffect: { metric: 'breath', direction: 'down' } };
   if (p.task === 'judge') data = { ...data, scores: p.evidence.map(e => ({ teamId: e.teamId, evidenceHash: e.evidenceHash, criteria: Array(5).fill(e.teamId === 'team-0' ? 19 : 10), reason: '브라우저 시험용 평가' })) };
   return { data, sessionId: `${agentId}-browser-fixture`, provider: 'fixture', usage: { input_tokens: 100 }, durationMs: 1 };
 } };
-const { server } = startServer({ port: 0, dataDir: dir, runtime }); await once(server, 'listening');
+const { server, game } = startServer({ port: 0, dataDir: dir, runtime }); await once(server, 'listening');
 const browser = await chromium.launch({ headless: true }); const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const errors = []; page.on('pageerror', e => errors.push(e.message));
 try {
   await page.goto(`http://127.0.0.1:${server.address().port}/survival.html`);
   await page.getByRole('button', { name: '팀 회의실 들어가기' }).click();
+  await page.locator('#opponent-card').waitFor();
+  await page.locator('#concept-hint').waitFor();
   await page.getByText('멤버 자료 관리', { exact: true }).click();
   await page.getByLabel('자료 제목', { exact: true }).fill('브라우저 등록 시험');
   await page.getByLabel('원문 HTTPS 링크').fill('https://example.com/interview');
@@ -72,8 +74,30 @@ try {
   await page.getByRole('button', { name: '다섯 멤버의 첫 제안 듣기' }).click();
   await page.getByRole('button', { name: '이 계획으로 의견 나누기' }).waitFor();
   for (const req of requests.slice(-5)) { assert.equal(req.sessionId, null); assert.deepEqual(JSON.parse(req.prompt).memory, []); assert.ok(!JSON.parse(req.prompt).source.some(s => s.sourceId === sourceId)); }
+  await page.getByLabel('미나미 회복 PP', { exact: true }).fill('1');
+  await page.getByLabel('팀원들에게 하고 싶은 말').fill('회복에 1PP를 쓰고 남은 포인트로 연습하자.');
+  await page.getByRole('button', { name: '이 계획으로 의견 나누기' }).click();
+  await page.getByRole('button', { name: '나는 찬성 · 투표 시작' }).click();
+  await page.getByRole('button', { name: '합의한 무대 시작' }).click();
+  await page.getByRole('button', { name: '함께 돌아보고 경험 저장' }).click();
+  await page.getByRole('button', { name: '다음 라운드로' }).waitFor();
+  assert.equal(game.state.rounds[2].plan.recovery[0], 1);
+  assert.equal(game.state.rounds[2].growth.minami.recovery, 1);
+  assert.equal(game.state.members.minami.hypotheses[0].observations[0].round, 2);
+  await page.locator('#growth-minami summary').click();
+  await page.locator('#growth-minami').getByText(/R2 시험됨/).waitFor();
+  const archivedId = game.state.id;
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '새 시즌 준비' }).click();
+  await page.getByText('Round 1 / 10', { exact: true }).waitFor();
+  const currentId = game.state.id, beforeHistoryCalls = requests.length;
+  assert.notEqual(currentId, archivedId);
+  await page.getByRole('button', { name: '시즌 이력 불러오기' }).click();
+  await page.locator(`[data-history="${archivedId}"]`).click();
+  await page.locator('#history-view').getByText(/R2 · .*우리 팀 1위/).waitFor();
+  assert.equal(game.state.id, currentId); assert.equal(requests.length, beforeHistoryCalls);
   await page.setViewportSize({ width: 390, height: 844 }); await page.screenshot({ path: join(dir, 'mobile.png'), fullPage: true });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ passed: true, mode: 'explicit-fixture', dir, flow: 'new → source submit/review → proposal → discussion → vote → stage → judges → reflection/growth → source withdraw → reload → round 2 clean recall', consoleErrors: errors }));
+  console.log(JSON.stringify({ passed: true, mode: 'explicit-fixture', dir, flow: 'new → concept/opponent → sources → meeting/vote → performance/reflection → reload → round 2 recovery and hypothesis observation → archive read-only', consoleErrors: errors }));
 } finally { await browser.close(); server.close(); await once(server, 'close'); }

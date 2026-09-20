@@ -18,7 +18,7 @@ export class FixtureRuntime {
     if (['proposal', 'discussion'].includes(p.task)) data = { ...data, plan: p.plan, sourceRefs: [], memoryRefs: p.memory.map(m => m.memoryId) };
     if (p.task === 'vote') data = { ...data, approve: this.vote, planHash: p.planHash };
     if (p.task === 'performance') data = { ...data, focus: 'breath', intensity: 1 };
-    if (p.task === 'reflection') data = { ...data, eventRef: p.event.eventId, condition: '호흡 부담', action: '다음 라운드 호흡 연습', expectedEffect: '부담 감소' };
+    if (p.task === 'reflection') data = { ...data, eventRef: p.event.eventId, condition: '호흡 부담', action: '다음 라운드 호흡 연습', structuredAction: { focus: 'breath' }, expectedEffect: { metric: 'breath', direction: 'down' } };
     if (p.task === 'judge') data = { ...data, scores: p.evidence.map(e => ({ teamId: e.teamId, evidenceHash: e.evidenceHash, criteria: Array(5).fill(e.teamId === 'team-0' ? 19 : Math.round(e.quality / 5)), reason: 'test evidence' })) };
     return { data, sessionId: req.sessionId || `${req.contextKey}:${agentId}`, provider: 'fixture', usage: { input_tokens: 500 }, durationMs: 1 };
   }

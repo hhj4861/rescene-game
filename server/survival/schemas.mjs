@@ -6,17 +6,29 @@ const arr = (items, minItems = 0, maxItems = 100) => ({ type: 'array', items, mi
 const obj = properties => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false });
 export const planSchema = obj({ music: en(music.map(m => m.id)), dance: en(dances), risk: en(risks),
   leads: arr(en(members.map(m => m.id)), 5, 5), practice: arr(integer(1, 8), 5, 5), direction: str });
-export function schemaFor(kind) {
+export const legacyPlanSchema = planSchema;
+export const stagePlanSchema = { ...planSchema, properties: { ...planSchema.properties, recovery: arr(integer(0, 8), 5, 5) } };
+const structuredPlanSchema = { ...stagePlanSchema, required: [...stagePlanSchema.required, 'recovery'] };
+export function schemaFor(kind, version = 2) {
+  const outputPlan = version >= 2 ? structuredPlanSchema : legacyPlanSchema;
   const base = { agentId: str, text: str };
-  if (kind === 'proposal' || kind === 'discussion') return obj({ ...base, plan: planSchema, sourceRefs: arr(str, 0, 3), memoryRefs: arr(str, 0, 10) });
+  if (kind === 'proposal' || kind === 'discussion') return obj({ ...base, plan: outputPlan, sourceRefs: arr(str, 0, 3), memoryRefs: arr(str, 0, 10) });
   if (kind === 'vote') return obj({ ...base, approve: { type: 'boolean' }, planHash: str });
   if (kind === 'performance') return obj({ ...base, focus: en(['breath', 'rhythm', 'expression']), intensity: integer(1, 3) });
-  if (kind === 'reflection') return obj({ ...base, eventRef: str, condition: str, action: str, expectedEffect: str });
+  if (kind === 'reflection') return obj({ ...base, eventRef: str, condition: str, action: str,
+    ...(version >= 2 ? {
+      structuredAction: { anyOf: [obj({ focus: en(['breath', 'rhythm', 'expression']) }), obj({ practiceDelta: integer(-2, 2) }), obj({ focus: en(['breath', 'rhythm', 'expression']), practiceDelta: integer(-2, 2) })] },
+      expectedEffect: obj({ metric: en(['breath', 'quality', 'beatErrorMs', 'expression']), direction: en(['up', 'down']) }),
+    } : { expectedEffect: str }) });
   if (kind === 'judge') return obj({ ...base, scores: arr(obj({ teamId: str, evidenceHash: str,
     criteria: arr(integer(0, 20), 5, 5), reason: str }), 2, 20) });
   throw new Error('지원하지 않는 에이전트 작업');
 }
 export function validate(schema, value, path = 'response') {
+  if (schema.anyOf) {
+    for (const variant of schema.anyOf) { try { return validate(variant, value, path); } catch { /* Try the next complete action shape. */ } }
+    throw new Error(`${path}: 허용된 행동 구조가 필요합니다`);
+  }
   if (schema.type === 'object') {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${path}: 객체가 필요합니다`);
     for (const key of schema.required) if (!(key in value)) throw new Error(`${path}.${key}: 필수 값 누락`);

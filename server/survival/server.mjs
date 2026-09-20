@@ -35,6 +35,8 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
     try {
       const path = new URL(req.url, `http://${host}`).pathname;
       if (req.method === 'GET' && path === '/api/state') return send(200, { state: game.snapshot(), catalog: publicCatalog, token });
+      if (req.method === 'GET' && path === '/api/history') return send(200, { seasons: store.history() });
+      if (req.method === 'GET' && path.startsWith('/api/history/')) return send(200, { season: store.historyItem(path.slice('/api/history/'.length)) });
       if (req.method === 'GET' && files.has(path)) {
         const [file, type] = files.get(path);
         res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8`, 'Cache-Control': 'no-store',

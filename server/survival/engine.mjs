@@ -1,13 +1,14 @@
 /* global AbortController, Buffer, structuredClone */
 import { createHash, randomUUID } from 'node:crypto';
-import { members, judges, concepts, music, defaultPlan, sources, profileVersion } from './catalog.mjs';
-import { schemaFor, planSchema, validate } from './schemas.mjs';
+import { members, judges, conceptCatalog, habits, music, defaultPlan, sources, profileVersion } from './catalog.mjs';
+import { schemaFor, stagePlanSchema, validate } from './schemas.mjs';
 import { initialSources, reviewedSources, sourceProfile, addSource, changeSource, usableMemory } from './sources.mjs';
 export const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const random = (seed, key) => parseInt(hash([seed, key]).slice(0, 8), 16) / 0x100000000;
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 export function checkPlan(plan) {
-  validate(planSchema, plan);
+  validate(stagePlanSchema, plan);
+  if (plan.recovery?.some((v, i) => v > plan.practice[i])) throw new Error('회복 PP는 해당 멤버의 연습 PP 안에서 배분하세요');
   if (new Set(plan.leads).size !== 5) throw new Error('다섯 멤버에게 한 파트씩 배정하세요');
   if (plan.practice.reduce((a, b) => a + b, 0) !== 12) throw new Error('연습 포인트 합계는 12여야 합니다');
   return plan;
@@ -27,19 +28,59 @@ export function pairTeams(teams, seed, round) {
   }
   return result;
 }
+function opponentProfile(id) {
+  const n = Number(id.split('-')[1]);
+  return n ? { tier: n <= 4 ? 'strong' : n <= 12 ? 'middle' : 'weak', habit: ['power', 'risk', 'steady'][(n - 1) % 3] } : {};
+}
+function opponentSkill(seed, id) {
+  const base = { strong: 67, middle: 59, weak: 51 }[opponentProfile(id).tier];
+  return base + Math.floor(random(seed, `${id}:skill`) * 7);
+}
+export function opponentCard(s, round = s.round) {
+  const r = s.rounds[round], pair = r.pairs.find(p => p.includes('team-0'));
+  const team = s.teams.find(t => t.id === pair?.find(id => id !== 'team-0'));
+  if (!team) return null;
+  const profile = { ...opponentProfile(team.id), ...team };
+  const previous = s.rounds[round - 1]?.ranking.find(t => t.teamId === team.id)?.total;
+  return { teamId: team.id, name: team.name, tier: profile.tier, habit: profile.habit,
+    hint: habits[profile.habit], previousScore: previous === undefined ? null : previous / 5 };
+}
+// Each eligible transition is an observation, never a causal experiment.
+export function observeHypotheses(s, memberId, event) {
+  const m = s.members[memberId], previous = s.rounds[s.round - 1]?.evidence.find(e => e.teamId === 'team-0')?.events.find(e => e.memberId === memberId);
+  for (const h of m.hypotheses) {
+    if (h.status === 'retired' || h.round >= s.round || h.observations?.some(o => o.round === s.round)) continue;
+    const action = h.structuredAction, effect = h.expectedEffect;
+    const hasFocus = action?.focus !== undefined, hasDelta = action?.practiceDelta !== undefined;
+    const tested = previous && (hasFocus || hasDelta) && (!hasFocus || action.focus === event.focus)
+      && (!hasDelta || action.practiceDelta === (event.allocatedPractice ?? event.practice) - (previous.allocatedPractice ?? previous.practice));
+    if (tested && effect && typeof effect === 'object' && Number.isFinite(event[effect.metric]) && Number.isFinite(previous[effect.metric])) {
+      const delta = event[effect.metric] - previous[effect.metric];
+      const outcome = delta === 0 ? 'unchanged' : (delta > 0) === (effect.direction === 'up') ? 'supported' : 'contradicted';
+      h.observations ||= [];
+      h.observations.push({ round: s.round, previousEventRef: previous.eventId, eventRef: event.eventId,
+        metric: effect.metric, before: previous[effect.metric], after: event[effect.metric], outcome });
+      h.supportedCount = h.observations.filter(o => o.outcome === 'supported').length;
+      h.status = outcome === 'unchanged' ? 'hypothesis' : outcome;
+      h.lastTestedRound = s.round;
+    } else if (s.round - (h.lastTestedRound ?? h.round) >= 3) h.status = 'retired';
+    else h.status = 'hypothesis';
+  }
+}
 export function newSeason(seed, provider = 'claude') {
   if (!['claude', 'codex'].includes(provider)) throw new Error('런타임을 선택하세요');
   const names = ['RESCENE', '루멘', '파동', '벨벳문', '블루아워', '프리즘', '오르빗', '플로라', '샤인온', '아리아', '모자이크', '스텔라', '오로라', '하모니', '소나', '미라주', '에코', '루트', '코멧', '누벨'];
   const sorted = names.map((name, i) => ({ id: `team-${i}`, name })).sort((a, b) => random(seed, a.id) - random(seed, b.id));
-  const state = { version: 1, id: randomUUID(), seed, provider, revision: 0, round: 1, phase: 'announced', busy: false,
-    concepts: [...concepts].sort((a, b) => random(seed, a) - random(seed, b)),
-    teams: sorted.map((t, order) => ({ ...t, order, alive: true, lastScore: 0, lastOpponent: null, skill: 53 + Math.floor(random(seed, t.id + ':skill') * 16) })),
-    members: Object.fromEntries(members.map(m => [m.id, { skill: 60, memories: [], hypotheses: [] }])),
+  const state = { version: 2, id: randomUUID(), seed, provider, revision: 0, round: 1, phase: 'announced', busy: false,
+    concepts: [...conceptCatalog].sort((a, b) => random(seed, a.id) - random(seed, b.id)).slice(0, 10).map(c => c.name),
+    conceptDetails: structuredClone(conceptCatalog),
+    teams: sorted.map((t, order) => ({ ...t, order, alive: true, lastScore: 0, lastOpponent: null, ...opponentProfile(t.id), skill: t.id === 'team-0' ? 60 : opponentSkill(seed, t.id) })),
+    members: Object.fromEntries(members.map(m => [m.id, { skill: 60, fatigue: 0, memories: [], hypotheses: [] }])),
     sourceLibrary: initialSources(), sessions: {}, calls: {}, rounds: {}, receipts: {}, history: [], teamMemory: [], model: null, error: null, champion: null };
   initRound(state); return state;
 }
 function initRound(s) {
-  s.rounds[s.round] = { concept: s.concepts[s.round - 1], pairs: pairTeams(s.teams.filter(t => t.alive), s.seed, s.round),
+  s.rounds[s.round] = { rulesVersion: 2, concept: s.concepts[s.round - 1], pairs: pairTeams(s.teams.filter(t => t.alive), s.seed, s.round),
     calls: 0, retries: 0, proposals: [], discussion: [], discussionCount: 0, userRediscussed: false,
     needsRediscussion: false, messages: [], plan: defaultPlan(), votes: [], userVote: null,
     evidence: [], judging: [], reflections: [], ranking: [], eliminated: [], learningCommitted: false };
@@ -50,22 +91,36 @@ export function simulate(s, team, plan, intents) {
   const events = plan.leads.map((id, i) => {
     const m = members.findIndex(m => m.id === id), intent = intents[m];
     const skill = team.id === 'team-0' ? s.members[id].skill : team.skill;
-    const practice = plan.practice[m];
-    const breath = clamp(16 + demand * 10 + intent.intensity * 5 - practice * 3 - (intent.focus === 'breath' ? 16 : 0), 0, 100);
+    const recovery = plan.recovery?.[m] || 0, practice = plan.practice[m] - recovery;
+    const fatigueBefore = team.id === 'team-0' ? (s.members[id].fatigue || 0) : 0;
+    const fatigueAtStart = Math.max(0, fatigueBefore - recovery * 12);
+    const fatigueGain = 4 + ['flow', 'groove', 'power'].indexOf(plan.dance) * 4 + (plan.risk === 'none' ? 0 : 5) + intent.intensity * 2;
+    const fatigueAfter = clamp(fatigueAtStart + fatigueGain, 0, 100);
+    const breath = clamp(16 + fatigueAtStart * .3 + demand * 10 + intent.intensity * 5 - practice * 3 - (intent.focus === 'breath' ? 16 : 0), 0, 100);
     const quality = clamp(Math.round(skill + practice * 2.5 - breath * .19 + (intent.focus === 'rhythm' ? 5 : 0) + random(s.seed, `${s.round}:${team.id}:${id}`) * 13), 0, 100);
     return { eventId: `r${s.round}:${team.id}:${id}`, memberId: id, second: i * 12, focus: intent.focus,
       quality, breath, beatErrorMs: Math.max(5, Math.round(120 - quality)), success: quality >= 58,
-      expression: clamp(quality + (intent.focus === 'expression' ? 12 : 0), 0, 100), practice };
+      expression: clamp(quality + (intent.focus === 'expression' ? 12 : 0), 0, 100), practice, allocatedPractice: plan.practice[m], recovery, fatigueBefore, fatigueAtStart, fatigueAfter };
   });
   const evidence = { teamId: team.id, round: s.round, planHash: hash(plan), plan, events,
     quality: Math.round(events.reduce((n, e) => n + e.quality, 0) / 5),
     type: 'simulation-only', durationSeconds: 60 };
   return { ...evidence, evidenceHash: hash(evidence) };
 }
-function opponentPlan(s, team) {
+export function opponentPlan(s, team) {
   const plan = defaultPlan();
   plan.music = music[Math.floor(random(s.seed, `${s.round}:${team.id}:song`) * 3)].id;
   plan.dance = ['flow', 'groove', 'power'][Math.floor(random(s.seed, `${s.round}:${team.id}:dance`) * 3)];
+  if (!s.rounds[s.round].rulesVersion) { delete plan.recovery; plan.direction = '컨셉에 맞춰 호흡과 표현의 균형을 잡는다.'; return plan; }
+  const concept = (s.conceptDetails || conceptCatalog).find(c => c.name === s.rounds[s.round].concept);
+  if (concept) {
+    const recommended = music.filter(m => m.bpm >= concept.bpmRange[0] && m.bpm <= concept.bpmRange[1]);
+    if (recommended.length) plan.music = recommended[Math.floor(random(s.seed, `${s.round}:${team.id}:concept`) * recommended.length)].id;
+  }
+  const habit = team.habit || opponentProfile(team.id).habit;
+  if (habit === 'power') plan.dance = 'power';
+  if (habit === 'risk') plan.risk = ['adlib', 'danceBreak', 'unit'][Math.floor(random(s.seed, `${s.round}:${team.id}:risk`) * 3)];
+  if (habit === 'steady') { plan.dance = 'flow'; plan.risk = 'none'; }
   plan.direction = '컨셉에 맞춰 호흡과 표현의 균형을 잡는다.';
   return plan;
 }
@@ -100,6 +155,8 @@ export class Game {
     // Only the player can see reflections. Never feed this snapshot to another agent.
     s.traces = Object.values(calls).map(({ agentId, kind, status, result, attempts }) => ({ agentId, kind, status, attempts,
       provider: result?.provider, model: result?.model, sessionId: result?.sessionId, durationMs: result?.durationMs }));
+    s.opponent = opponentCard(s);
+    s.conceptInfo = (s.conceptDetails || conceptCatalog).find(c => c.name === s.rounds[s.round].concept) || null;
     s.canManageSources = !s.busy && (['learned', 'spectated', 'complete'].includes(s.phase) || (s.phase === 'announced' && !s.rounds[s.round].calls));
     s.sourceImpact = Object.fromEntries(s.sourceLibrary.map(source => {
       const affected = m => usableMemory(m, s.sourceLibrary) && (!Array.isArray(m.sourceRefs) || m.sourceRefs.includes(source.sourceId));
@@ -110,6 +167,7 @@ export class Game {
       round: Number(round), concept: r.concept, ...(r.growth?.[m.id] || {}),
       event: r.evidence.find(e => e.teamId === 'team-0')?.events.find(e => e.memberId === m.id),
       reflection: r.reflections.find(v => v.agentId === m.id),
+      hypothesis: s.members[m.id].hypotheses.find(h => h.round === Number(round)),
       referencedBy: Object.entries(s.rounds).filter(([, next]) => next.proposals.some(p => p.agentId === m.id && p.memoryRefs?.some(ref => ref === `r${round}:${m.id}:hypothesis` || ref === `r${round}:${m.id}:experience`))).map(([n]) => Number(n)),
     }))]));
     return s;
@@ -150,7 +208,7 @@ export class Game {
     let record = s.calls[id];
     if (record?.status === 'done' || record?.status === 'skipped') return record.result.data;
     if (!record) {
-      record = s.calls[id] = { agentId: agent.id, kind, status: 'ready', attempts: 0, input };
+      record = s.calls[id] = { agentId: agent.id, kind, status: 'ready', attempts: 0, input, schema: schemaFor(kind, r.rulesVersion || 1) };
     }
     if (this.controller.signal.aborted) throw new Error('사용자가 호출을 취소했습니다');
     if (record.attempts >= 2 || (record.attempts > 0 && r.retries >= 5) || r.calls >= 55) throw new Error('라운드 호출 예산이 끝났습니다. 자동으로 결과를 만들지 않습니다.');
@@ -158,10 +216,10 @@ export class Game {
     record.attempts++; r.calls++; record.status = 'running'; this.save();
     const judge = kind === 'judge';
     r.sourceSnapshot ||= structuredClone(reviewedSources(s.sourceLibrary));
-    const profile = `${profileVersion}:${sourceProfile(r.sourceSnapshot)}`;
+    const profile = `${profileVersion}:${sourceProfile(r.sourceSnapshot)}${r.rulesVersion >= 2 ? ':rules2' : ''}`;
     let session = s.sessions[agent.id];
     if (judge || !session || session.profile !== profile || session.tokens > 24000) session = { id: null, tokens: 0, profile, generation: (session?.generation || 0) + 1 };
-    const candidates = judge ? [] : [...s.members[agent.id].memories.filter(m => usableMemory(m, s.sourceLibrary)).slice(-5), ...(s.teamMemory || []).filter(m => usableMemory(m, s.sourceLibrary)).slice(-3), ...s.members[agent.id].hypotheses.filter(m => m.status === 'hypothesis' && usableMemory(m, s.sourceLibrary)).slice(-2)];
+    const candidates = judge ? [] : [...s.members[agent.id].memories.filter(m => usableMemory(m, s.sourceLibrary)).slice(-5), ...(s.teamMemory || []).filter(m => usableMemory(m, s.sourceLibrary)).slice(-3), ...s.members[agent.id].hypotheses.filter(m => m.status !== 'retired' && usableMemory(m, s.sourceLibrary)).slice(-2)];
     const memory = [];
     for (const m of candidates) if (Buffer.byteLength(JSON.stringify([...memory, m])) <= 4000) memory.push(m);
     const source = judge ? [] : r.sourceSnapshot.filter(v => v.memberId === agent.id);
@@ -173,8 +231,8 @@ export class Game {
     try {
       const result = await this.runtime.run({ provider: s.provider, agentId: agent.id,
         contextKey: `${s.id}-${judge ? `judge-r${s.round}-${record.attempts}` : `g${session.generation}`}`,
-        sessionId: judge ? null : session.id, prompt: record.prompt, schema: schemaFor(kind), signal: this.controller.signal, model: s.model });
-      const d = result.data; validate(schemaFor(kind), d);
+        sessionId: judge ? null : session.id, prompt: record.prompt, schema: record.schema || schemaFor(kind, r.rulesVersion || 1), signal: this.controller.signal, model: s.model });
+      const d = result.data; validate(record.schema || schemaFor(kind, r.rulesVersion || 1), d);
       if (d.agentId !== agent.id) throw new Error('역할 ID 불일치');
       if (d.plan) checkPlan(d.plan);
       if (d.sourceRefs?.some(ref => !source.some(v => v.sourceId === ref))) throw new Error('자료 출처 참조 오류');
@@ -185,6 +243,7 @@ export class Game {
         if (d.scores.length !== evidence.length || new Set(d.scores.map(v => v.teamId)).size !== evidence.length) throw new Error('심사 팀 누락 또는 중복');
         if (d.scores.some(v => !evidence.some(e => e.teamId === v.teamId && e.evidenceHash === v.evidenceHash))) throw new Error('심사 증거 참조 불일치');
       }
+      if (kind === 'reflection' && d.structuredAction && !Object.keys(d.structuredAction).length) throw new Error('시험할 행동을 한 가지 이상 지정하세요');
       if (kind === 'reflection' && d.eventRef !== record.input.event.eventId) throw new Error('회고 사건 참조 불일치');
       if (result.model && s.model && result.model !== s.model) throw new Error('시즌 중 모델 변경을 거부했습니다');
       if (result.model) s.model = result.model;
@@ -199,7 +258,10 @@ export class Game {
   async act(action, p) {
     const s = this.state, r = s.rounds[s.round];
     const requirePhase = (...phases) => { if (!phases.includes(s.phase)) throw new Error(`현재 단계(${s.phase})에서 실행할 수 없습니다`); };
-    const memberInput = () => ({ concept: r.concept, round: s.round, catalog: { music, members: members.map(m => m.id) }, plan: r.plan });
+    const memberInput = () => ({ concept: r.concept, round: s.round, catalog: { music, members: members.map(m => m.id) }, plan: r.plan,
+      ...(r.rulesVersion >= 2 ? { conceptInfo: (s.conceptDetails || conceptCatalog).find(c => c.name === r.concept), opponent: opponentCard(s),
+        teamCondition: Object.fromEntries(members.map(m => [m.id, { skill: s.members[m.id].skill, fatigue: s.members[m.id].fatigue || 0 }])),
+        practiceRule: 'practice는 멤버별 총 PP, 합계12. recovery는 그중 회복에 쓸 PP(0~practice). 회복1PP는 피로12 감소, 남은 PP로 연습.' } : {}) });
     if (['addSource', 'reviewSource', 'withdrawSource'].includes(action)) {
       if (!(['learned', 'spectated', 'complete'].includes(s.phase) || (s.phase === 'announced' && !r.calls))) throw new Error('자료 변경은 첫 제안 전 또는 라운드 회고 완료 후에 가능합니다');
       if (action === 'addSource') s.sourceLibrary.push(addSource(s.sourceLibrary, p));
@@ -239,6 +301,8 @@ export class Game {
         s.phase = 'performance'; this.save();
         r.intents = await this.batch('performance', members, 'performance', a => ({ ...memberInput(), ownPart: r.plan.leads.indexOf(a.id), practice: r.plan.practice[members.findIndex(m => m.id === a.id)] }));
         r.evidence = s.teams.filter(t => t.alive).map(team => simulate(s, team, team.id === 'team-0' ? r.plan : opponentPlan(s, team), team.id === 'team-0' ? r.intents : members.map(() => ({ focus: 'rhythm', intensity: 2 }))));
+        // Evidence creation and fatigue write are saved together, before judge retries.
+        if (r.rulesVersion >= 2) for (const event of r.evidence.find(e => e.teamId === 'team-0').events) s.members[event.memberId].fatigue = event.fatigueAfter;
         s.phase = 'judging'; this.save();
       }
       await this.judge(); s.phase = 'result';
@@ -246,20 +310,22 @@ export class Game {
       requirePhase('result', 'reflection'); s.phase = 'reflection'; this.save();
       const evidence = r.evidence.find(e => e.teamId === 'team-0');
       r.reflections = await this.batch('reflection', members, 'reflection', a => ({ ...memberInput(), event: evidence.events.find(e => e.memberId === a.id),
-        scores: r.judging.map(j => j.scores.find(v => v.teamId === 'team-0')), instructionForOutput: '본인의 실제 eventRef를 그대로 인용하고 다음 무대에서 시험할 구체적인 행동 가설을 적으세요. 이번 회고는 팀에 공유됩니다.' }));
+        scores: r.judging.map(j => j.scores.find(v => v.teamId === 'team-0')), instructionForOutput: '본인의 실제 eventRef를 그대로 인용하고 다음 무대에서 시험할 구체적인 행동 가설을 적으세요. 이번 회고는 팀에 공유됩니다. 새 구조화 스키마에서는 structuredAction에 focus 또는 practiceDelta(-2~2)를 최소 하나 쓰고 expectedEffect의 metric/direction을 명시하세요. 둘 다 쓰면 둘 다 실행해야 시험됩니다. 관찰은 인과관계 증명이 아닙니다.' }));
       if (!r.learningCommitted) {
         r.growth = {};
         for (const a of members) {
           const reflection = r.reflections.find(v => v.agentId === a.id), m = s.members[a.id];
           // All round sources may have influenced shared discussion, so provenance is conservative.
           const sourceRefs = (r.sourceSnapshot || sources).map(v => v.sourceId);
-          const memory = { memoryId: `r${s.round}:${a.id}:experience`, round: s.round, sourceRefs, eventRefs: [reflection.eventRef], visibility: 'team', text: reflection.text, action: reflection.action };
+          const event = evidence.events.find(e => e.memberId === a.id);
+          if (r.rulesVersion >= 2) observeHypotheses(s, a.id, event);
+          const memory = { memoryId: `r${s.round}:${a.id}:experience`, round: s.round, sourceRefs, eventRefs: [reflection.eventRef], visibility: 'team', text: reflection.text, action: reflection.action, ...(reflection.structuredAction ? { structuredAction: reflection.structuredAction } : {}) };
           m.memories.push(memory); m.memories = m.memories.slice(-30);
           m.hypotheses.push({ ...memory, memoryId: `r${s.round}:${a.id}:hypothesis`, condition: reflection.condition, expectedEffect: reflection.expectedEffect, status: 'hypothesis' });
-          m.hypotheses = m.hypotheses.slice(-10).map(v => ({ ...v, status: s.round - v.round >= 3 ? 'retired' : v.status }));
+          m.hypotheses = m.hypotheses.slice(-10);
           const before = m.skill;
-          m.skill = Math.min(85, m.skill + Math.max(.25, (85 - m.skill) * r.plan.practice[members.findIndex(v => v.id === a.id)] / 100));
-          r.growth[a.id] = { before, after: m.skill, practice: r.plan.practice[members.findIndex(v => v.id === a.id)] };
+          m.skill = Math.min(85, m.skill + Math.max(0, (85 - m.skill) * event.practice / 100));
+          r.growth[a.id] = { before, after: m.skill, practice: event.practice, recovery: event.recovery || 0, fatigueBefore: event.fatigueBefore || 0, fatigueAfter: m.fatigue || 0 };
         }
         r.learningCommitted = true;
       }
