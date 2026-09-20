@@ -35,3 +35,13 @@ Codex 단독 구현, Claude 기존 공식 채널 읽기 전용 리뷰. 별도 wo
 - fixture 증적: `/var/folders/04/8rm5pwr52f12x6zmvdwsdcjr0000gn/T/rescene-browser-8NhOuG/` (`desktop.png`, `mobile.png`, `mobile-schedule.png`, `concert.png`, `completed-song.wav`). 콘솔 pageerror 0. 화면을 직접 열어 시각 검수했다.
 - 실패 후 보완: detached 공연 패널 연결 순서를 수정했고, 모달 안에서도 진행/취소/오류와 실패 투표 건너뛰기에 접근하도록 보존했다.
 - 실제 모델 호출은 이번 UI 검증에서 하지 않았다. 기존 사용자 시즌을 새로 만들거나 시험 데이터로 덮어쓰지 않는다.
+
+## 실제 로컬 적용
+
+검증된 구현 `0e953ab`을 전용 원격 브랜치에 푸시한 뒤 기존 서버가 유휴 상태(result, busy=false)이며 저장 revision이 변하지 않았는지 두 번 확인했다. 기존 서버 PID 49473을 정상 종료하고 동일한 저장 폴더로 새 worktree 서버 PID 11434를 시작했다. 주소는 계속 `http://127.0.0.1:4317/survival.html`이다.
+
+- 사용자 시즌 **1라운드 result / revision 5** 유지. 재시작 전후 `season.json` SHA256 모두 `48b53a8cfd636f12b57a52a1e0cba95ea7349a6bcf1ddee676b884fc41c58904`.
+- 실제 사용자 합의안(glow)으로 브라우저 재생 시간 진행, 일시정지, 36초 파트 이동, WAV 다운로드 확인. 재생 전후 시즌 ID/revision 동일, 콘솔 pageerror 0, 추가 모델 호출 없음.
+- 실제 결과 증적: `/private/tmp/rescene-survival-live-stage.png`, `/private/tmp/rescene-survival-live-town.png`, `/private/tmp/rescene-current-stage.wav`.
+- 실행 로그: `/private/tmp/rescene-survival-raising-server.log`. 저장 폴더는 기존 `~/Library/Application Support/ResceneSurvival/` 유지.
+- 작업 브랜치와 로컬 실행에 적용됐으며 PR 머지·외부 배포는 하지 않았다. Claude 공식 채널에 설계/추가 범위를 발송했지만 현재 실질 리뷰 회신은 없다.
