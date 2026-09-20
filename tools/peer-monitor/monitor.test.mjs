@@ -25,3 +25,10 @@ test('rejects unrelated channel data and never executes message detail', () => {
   const detail = '$(touch /tmp/should-not-execute) <script>alert(1)</script>';
   assert.equal(receive({ received: [] }, [{ ...message('x'), detail }]).state.pending[0].detail, detail);
 });
+
+test('notification failure is retried without duplicating received messages', async () => {
+  const config = { dataDir: mkdtempSync(join(tmpdir(), 'peer-notify-retry-')), repo: '/test' }; let attempts = 0;
+  const r = new Receiver(config, async () => [message('one')], async () => { if (++attempts === 1) throw Error('notification offline'); });
+  await r.tick(); assert.equal(r.state.notificationPending, 1);
+  await r.tick(); assert.equal(attempts, 2); assert.equal(r.state.notificationPending, 0); assert.equal(r.state.received.length, 1);
+});
