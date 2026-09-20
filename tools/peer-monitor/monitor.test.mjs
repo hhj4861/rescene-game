@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { receive, Receiver } from './monitor.mjs';
+import { receive, Receiver, dashboardScript } from './monitor.mjs';
 const message = id => ({ id, from: 'claude-lead', to: 'codex-lead', kind: 'ask', detail: '테스트 내용' });
 test('detects pending messages without acknowledging and deduplicates across restart', async () => {
   const config = { dataDir: mkdtempSync(join(tmpdir(), 'peer-receiver-test-')), repo: '/test' }; let alerts = 0, inbox = [message('one')];
@@ -32,3 +32,5 @@ test('notification failure is retried without duplicating received messages', as
   await r.tick(); assert.equal(r.state.notificationPending, 1);
   await r.tick(); assert.equal(attempts, 2); assert.equal(r.state.notificationPending, 0); assert.equal(r.state.received.length, 1);
 });
+
+test('dashboard action-status script parses with line breaks', () => { assert.doesNotThrow(() => new Function(dashboardScript)); });
