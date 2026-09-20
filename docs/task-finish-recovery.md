@@ -23,7 +23,12 @@
 
 ## 적용 기록
 
-설치 및 공식 reconcile 결과 확인 전이다. 실제 검증 후 이 절을 갱신한다.
+- 수정기 커밋 `5a74305`를 `origin/fix/tool-failure-evidence-20260920`에 정상 push했다.
+- 기존 설치 SHA-256 `37b15a60afe263cfb882124181b8881956dcbb16773d695724f929ba973e3ed7`을 확인한 뒤 전역 `~/.codex/hooks/task-finish/gate.py`에 적용했다. 설치 후 SHA-256은 `a049f52ed95d94e96edc5965780efe11724078ac31400f296c03c37bc3ace49f`다.
+- 백업: `~/.codex/hooks/task-finish/backups/projected-20260920T130245266912Z/gate.py`. 보호 설정 네 파일의 해시 불변을 확인했다.
+- 공식 `reconcile`이 `exec-819752fb-26c6-4ae3-aaa1-75becaf4d35b`를 failed, `exec-091db84e-1158-424c-8e07-387867a0fb75`를 not_started로 수집했다. 두 기록 모두 pending에서 사라졌고 원본 증거 해시·선행 종료 ID는 finished 기록에 보존됐다.
+- 조회 시 hold=null, 소유 미확인 경로=[], 본인 루트 변경=[]였다. 조회 명령 자체는 실행 중이므로 해당 호출 하나만 순간적으로 pending에 보이며 실제 도구 반환은 exit_code 0으로 확인했다. 정상 Stop의 최종 판정은 별도다.
+- 설치된 코드 기준 새 시험 15개를 재실행해 모두 통과했다. 실제 데이터베이스나 세션 로그를 직접 편집하지 않았다.
 
 ## 게임 현재 상태
 
