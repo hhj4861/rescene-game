@@ -9,7 +9,8 @@ const input = resolve(process.argv[2] || '.');
 // Resolve a linked checkout to its permanent main checkout.
 const common = execFileSync('/usr/bin/git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: input, encoding: 'utf8' }).trim();
 const repo = dirname(common);
-const slot = process.argv[3] ? resolve(process.argv[3]) : null;
+const threadId = process.argv[3] === '--session' ? process.argv[4] : null;
+if (process.argv[3] && (!threadId || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(threadId))) throw Error('사용법: install.mjs <repo> --session <실제 Codex thread UUID> [허용 track ...]');
 const root = join(homedir(), 'Library/Application Support/RescenePeerReceiver');
 const label = 'local.rescene.claude-receiver', plist = join(homedir(), 'Library/LaunchAgents', `${label}.plist`);
 const node = process.execPath, orch = join(homedir(), '.claude/skills/orch-flow/scripts/orch.mjs');
@@ -19,15 +20,11 @@ execFileSync(node, [orch, 'peer-inbox', '--for', 'codex-lead', '--json'], { cwd:
 mkdirSync(root, { recursive: true, mode: 0o700 }); mkdirSync(dirname(plist), { recursive: true });
 const program = join(root, 'monitor.mjs'), configPath = join(root, 'config.json');
 const oldConfig = existsSync(configPath) ? JSON.parse(readFileSync(configPath, 'utf8')) : {};
-if (oldConfig.actions?.enabled && existsSync(join(root, 'actions.json'))) {
-  const state = JSON.parse(readFileSync(join(root, 'actions.json'), 'utf8'));
-  if (state.jobs.some(j => ['running', 'validating', 'committing', 'reviewing', 'pushing'].includes(j.status))) throw Error('자동조치 실행 중: 종료 후 설치하세요');
-}
 if (existsSync(program)) writeFileSync(`${program}.previous`, readFileSync(program), { mode: 0o600 });
 writeFileSync(program, readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'monitor.mjs')), { mode: 0o600 });
-for (const file of ['actions.mjs', 'browser-bootstrap.mjs']) writeFileSync(join(root, file), readFileSync(join(dirname(fileURLToPath(import.meta.url)), file)), { mode: 0o600 });
-const codex = slot ? execFileSync('/usr/bin/which', ['codex'], { encoding: 'utf8' }).trim() : oldConfig.actions?.codex;
-const actions = slot ? { enabled: true, slot, codex, gate: join(homedir(), '.codex/hooks/task-finish/gate.py'), wrapper: join(homedir(), '.local/share/engine-exchange/tools/orch/codex-call.sh'), tracks: process.argv.slice(4) } : oldConfig.actions || { enabled: false };
+for (const file of ['actions.mjs']) writeFileSync(join(root, file), readFileSync(join(dirname(fileURLToPath(import.meta.url)), file)), { mode: 0o600 });
+const codex = threadId ? execFileSync('/usr/bin/which', ['codex'], { encoding: 'utf8' }).trim() : oldConfig.actions?.codex;
+const actions = threadId ? { enabled: true, mode: 'session-queue', threadId, codex, tracks: process.argv.slice(5) } : oldConfig.actions?.mode === 'session-queue' ? oldConfig.actions : { enabled: false };
 writeFileSync(configPath, JSON.stringify({ repo, node, orch, actions, dataDir: root, port: 4318, path: `${dirname(node)}:${codex ? dirname(codex) : '/usr/bin'}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin` }), { mode: 0o600 });
 const args = [node, program, configPath].map(s => `<string>${xml(s)}</string>`).join('');
 writeFileSync(plist, `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>Label</key><string>${label}</string><key>ProgramArguments</key><array>${args}</array><key>WorkingDirectory</key><string>${xml(repo)}</string><key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>10</integer><key>StandardOutPath</key><string>${xml(join(root, 'receiver.log'))}</string><key>StandardErrorPath</key><string>${xml(join(root, 'receiver-error.log'))}</string><key>ProcessType</key><string>Background</string></dict></plist>`, { mode: 0o600 });

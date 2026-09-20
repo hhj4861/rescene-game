@@ -3,42 +3,31 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { ActionQueue, allowed, validateReport } from './actions.mjs';
-const config = () => ({ dataDir: mkdtempSync(join(tmpdir(), 'peer-actions-')), actions: { enabled: true } });
+import { ActionQueue, taskMessage } from './actions.mjs';
+const config = () => ({ dataDir: mkdtempSync(join(tmpdir(), 'peer-relay-')), actions: { enabled: true, threadId: 'actual-thread' } });
 const msg = id => ({ id, from: 'claude-lead', to: 'codex-lead', kind: 'ask', track: 'survival-test', detail: '$(do-not-execute)' });
-test('serial actions, durable deduplication, and actual delivery follow execution', async () => {
-  const c = config(), order = []; let release;
-  const q = new ActionQueue(c, async job => { order.push(`start-${job.id}`); if (job.id === 'one') await new Promise(r => { release = r; }); return { outcome: 'checked' }; }, async job => { order.push(`reply-${job.id}`); });
-  const first = q.tick([msg('one')]); await q.tick([msg('one'), msg('two')]);
-  assert.deepEqual(order, ['start-one']); release(); await first; await q.tick([]);
-  assert.deepEqual(order, ['start-one', 'reply-one', 'start-two', 'reply-two']);
-  const restarted = new ActionQueue(c, async () => assert.fail('duplicate'), async () => assert.fail('duplicate reply'));
-  await restarted.tick([msg('one'), msg('two')]); assert.equal(restarted.state.jobs.length, 2);
+test('queues once across polls and restart, without claiming action completion', async () => {
+  const c = config(); let count = 0; const dispatch = async () => { count++; return 'queue-id'; };
+  const q = new ActionQueue(c, dispatch); await q.tick([msg('one')]); await q.tick([msg('one')]);
+  const next = new ActionQueue(c, dispatch); await next.tick([msg('one')]);
+  assert.equal(count, 1); assert.equal(next.state.jobs[0].status, 'awaitingAgent');
+  await next.tick([]); assert.equal(next.state.jobs[0].status, 'peerResolved');
 });
-test('failed work is preserved, reported as blocked, and stops dependent work', async () => {
-  const q = new ActionQueue(config(), async () => { throw Error('permission denied'); }, async j => assert.equal(j.status, 'blocked'));
-  await q.tick([msg('one'), msg('two')]); await q.tick([]);
-  assert.equal(q.state.jobs[0].error, 'permission denied'); assert.equal(q.state.jobs[1].status, 'queued');
+test('serializes dispatch while accepting newly received messages', async () => {
+  let release; const order = [];
+  const q = new ActionQueue(config(), async m => { order.push(m.id); if (m.id === 'one') await new Promise(r => { release = r; }); return `queue-${m.id}`; });
+  const first = q.tick([msg('one')]); await q.tick([msg('one'), msg('two')]); assert.deepEqual(order, ['one']);
+  release(); await first; await q.tick([msg('one'), msg('two')]); assert.deepEqual(order, ['one', 'two']);
 });
-test('delivery failure retries delivery without reexecuting work', async () => {
-  let runs = 0, sends = 0;
-  const q = new ActionQueue(config(), async () => { runs++; return { commit: 'fixed' }; }, async () => { if (++sends === 1) throw Error('offline'); });
-  await q.tick([msg('one')]); assert.equal(q.state.jobs[0].status, 'ready');
-  await q.tick([msg('one')]); assert.equal(runs, 1); assert.equal(sends, 2); assert.equal(q.state.jobs[0].status, 'done');
+test('uncertain delivery is preserved and never blindly retried', async () => {
+  let count = 0; const c = config(); const q = new ActionQueue(c, async () => { count++; throw Error('CLI disconnected'); });
+  await q.tick([msg('one')]); await q.tick([msg('one')]); assert.equal(count, 1); assert.equal(q.state.jobs[0].status, 'deliveryUncertain');
+  writeFileSync(q.path, JSON.stringify({ jobs: [{ id: 'two', status: 'dispatching' }] }));
+  const next = new ActionQueue(c, async () => assert.fail('replay')); await next.tick([msg('two')]); assert.equal(next.state.jobs[0].status, 'deliveryUncertain');
 });
-test('restart during mutation blocks instead of replaying', async () => {
-  const c = config(); writeFileSync(join(c.dataDir, 'actions.json'), JSON.stringify({ sequence: 1, jobs: [{ id: 'one', status: 'pushing', message: msg('one') }] }));
-  const q = new ActionQueue(c, async () => assert.fail('must not replay'), async () => {});
-  await q.tick([]); assert.equal(q.state.jobs[0].status, 'blocked'); assert.match(q.state.jobs[0].error, /재시작/);
-});
-test('scope filters and report checks reject unrelated, unsafe, and incomplete work', async () => {
-  const c = config(); c.actions.tracks = ['survival-test'];
-  const q = new ActionQueue(c, async () => ({}), async () => {});
+test('filters channel and track scope and preserves message as data', async () => {
+  const c = config(); c.actions.tracks = ['survival-test']; const q = new ActionQueue(c, async () => 'queue-id');
   await q.tick([{ ...msg('a'), from: 'unknown' }, { ...msg('b'), track: 'survival-other' }, msg('../x'), msg('okay')]);
   assert.deepEqual(q.state.jobs.map(j => j.id), ['okay']);
-  assert.equal(allowed('server/survival/../outside.mjs'), false);
-  assert.equal(allowed('tools/peer-monitor/actions.mjs'), false);
-  const report = { thread_id: 'real', files: ['server/survival/engine.mjs'], blocked: [], contract_objection: [] };
-  validateReport(report); assert.throws(() => validateReport({ ...report, blocked: ['not done'] }));
-  assert.throws(() => validateReport({ ...report, files: ['.git/config'] }));
+  const body = taskMessage(msg('okay')); assert.match(body, /승인 범위/); assert.match(body, /\$\(do-not-execute\)/);
 });
