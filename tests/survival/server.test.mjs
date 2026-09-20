@@ -15,6 +15,12 @@ test('HTTP protects loopback game actions from cross-origin and stale requests',
     res = await fetch(base + '/api/new', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Survival-Token': bootstrap.token, Origin: 'https://evil.example' }, body: '{}' }); assert.equal(res.status, 403);
     res = await fetch(base + '/api/new', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Survival-Token': bootstrap.token }, body: JSON.stringify({ seed: 'test', provider: 'claude' }) }); assert.equal(res.status, 200);
     res = await fetch(base + '/api/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Survival-Token': bootstrap.token }, body: JSON.stringify({ commandId: 'stale-command', expectedRevision: 99, action: 'open' }) }); assert.equal(res.status, 409);
+    const headers = { 'Content-Type': 'application/json', 'X-Survival-Token': bootstrap.token };
+    res = await fetch(base + '/api/command', { method: 'POST', headers, body: JSON.stringify({ commandId: 'withdraw-http', expectedRevision: 0, action: 'withdrawSource', payload: { sourceId: 'minami-interview-1', reason: 'HTTP 시험' } }) }); assert.equal(res.status, 202);
+    const updated = await (await fetch(base + '/api/state')).json();
+    assert.equal(updated.state.sourceLibrary.find(s => s.sourceId === 'minami-interview-1').verificationStatus, 'withdrawn');
+    assert.equal(updated.state.canManageSources, true);
+    res = await fetch(base + '/api/command', { method: 'POST', headers, body: JSON.stringify({ commandId: 'stale-source', expectedRevision: 0, action: 'withdrawSource', payload: { sourceId: 'woni-interview-1', reason: 'old revision' } }) }); assert.equal(res.status, 409);
     assert.equal((await fetch(base + '/../../etc/passwd')).status, 404);
   } finally { server.close(); await once(server, 'close'); }
 });

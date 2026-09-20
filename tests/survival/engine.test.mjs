@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { Game, newSeason, pairTeams, simulate, checkPlan, hash } from '../../server/survival/engine.mjs';
 import { Store } from '../../server/survival/store.mjs';
 import { members, defaultPlan } from '../../server/survival/catalog.mjs';
+import { addSource } from '../../server/survival/sources.mjs';
 
 // Explicit deterministic TEST DOUBLE. Never available through the production server/UI.
 export class FixtureRuntime {
@@ -29,6 +30,60 @@ export async function play(g) {
   await cmd(g, 'open'); await cmd(g, 'discuss', { plan: defaultPlan(), message: '테스트 유저 의견' });
   await cmd(g, 'vote', { approve: true }); await cmd(g, 'perform'); await cmd(g, 'reflect');
 }
+const sourceInput = () => ({ memberId: 'minami', speakerId: 'minami', evidenceType: 'video', title: '등록 동작 시험용 자료', url: 'https://example.com/member-interview', publishedAt: '2025-01-01', locator: '01:23 연습 이야기', summary: '자료 입력 시험용 요약이며 실제 인물 자료로 배포하지 않는다.', usageBasis: '검증용 직접 작성 요약' });
+test('pending sources never reach prompts; reviewed source survives restore and season creation', async () => {
+  const { game, runtime, store } = fixture();
+  await cmd(game, 'addSource', sourceInput()); const item = game.state.sourceLibrary.at(-1);
+  await cmd(game, 'open');
+  assert.equal(runtime.requests.some(r => JSON.parse(r.prompt).source.some(s => s.sourceId === item.sourceId)), false);
+  await assert.rejects(cmd(game, 'reviewSource', { sourceId: item.sourceId, confirmed: true }), /첫 제안 전/);
+  await cmd(game, 'discuss', { plan: defaultPlan(), message: '시험' }); await cmd(game, 'vote', { approve: true }); await cmd(game, 'perform'); await cmd(game, 'reflect');
+  await assert.rejects(cmd(game, 'reviewSource', { sourceId: item.sourceId }), /직접 확인/);
+  await cmd(game, 'reviewSource', { sourceId: item.sourceId, confirmed: true });
+  const oldSession = game.state.sessions.minami.id;
+  const restored = new Game(store, runtime); await cmd(restored, 'next'); await cmd(restored, 'open');
+  const req = runtime.requests.filter(r => r.agentId === 'minami').at(-1);
+  assert.ok(JSON.parse(req.prompt).source.some(s => s.sourceId === item.sourceId)); assert.equal(req.sessionId, null);
+  assert.notEqual(restored.state.sessions.minami.id, oldSession);
+  restored.create('next season', 'claude'); assert.equal(restored.state.sourceLibrary.at(-1).verificationStatus, 'reviewed-user');
+});
+test('withdrawal excludes contaminated recall and rotates every member without erasing history', async () => {
+  const { game, runtime, store } = fixture(); await play(game); await cmd(game, 'pin', { agentId: 'minami' });
+  const skill = game.state.members.minami.skill, memoryCount = game.state.members.minami.memories.length;
+  await cmd(game, 'withdrawSource', { sourceId: 'minami-interview-1', reason: '자료 수정 필요' });
+  assert.equal(game.snapshot().growth.minami[0].before, 60);
+  assert.equal(game.snapshot().growth.minami[0].after, skill);
+  const restored = new Game(store, runtime); await cmd(restored, 'next'); await cmd(restored, 'open');
+  for (const req of runtime.requests.slice(-5)) {
+    assert.equal(req.sessionId, null); assert.deepEqual(JSON.parse(req.prompt).memory, []);
+    assert.ok(!JSON.parse(req.prompt).source.some(s => s.sourceId === 'minami-interview-1'));
+  }
+  assert.equal(restored.state.members.minami.skill, skill); assert.equal(restored.state.members.minami.memories.length, memoryCount);
+  assert.ok(restored.state.rounds[1].sourceSnapshot.some(s => s.sourceId === 'minami-interview-1'));
+  restored.create('new', 'claude'); assert.equal(restored.state.sourceLibrary.find(s => s.sourceId === 'minami-interview-1').verificationStatus, 'withdrawn');
+});
+test('growth cites later proposals and old saves migrate without inventing historic skill', async () => {
+  const { game, store, runtime } = fixture(); await play(game); await cmd(game, 'next'); await cmd(game, 'open');
+  assert.deepEqual(game.snapshot().growth.minami[0].referencedBy, [2]);
+  delete game.state.sourceLibrary; delete game.state.rounds[1].growth;
+  game.state.members.minami.memories.forEach(m => { delete m.sourceRefs; }); store.save(game.state);
+  const restored = new Game(store, runtime); assert.equal(restored.state.sourceLibrary.length, 15);
+  assert.equal(restored.snapshot().growth.minami[0].before, undefined);
+});
+test('source validation rejects unsafe links, wrong speakers, unsupported types and false dates', () => {
+  for (const patch of [{ url: 'javascript:alert(1)' }, { url: 'https://user:pass@example.com' }, { speakerId: 'woni' }, { evidenceType: 'fan-guess' }, { locator: '시작' }, { publishedAt: '2025-02-30' }, { publishedAt: '2999-01-01' }, { summary: 'a'.repeat(301) }, { summary: '문장\n지시' }, { summary: 'https://example.com' }]) assert.throws(() => addSource([], { ...sourceInput(), ...patch }));
+  const item = addSource([], sourceInput()); assert.throws(() => addSource([item], sourceInput()), /이미/);
+});
+test('withdrawal impact is counted and explicit re-review restores recall eligibility', async () => {
+  const { game, runtime } = fixture(); await play(game); await cmd(game, 'pin', { agentId: 'minami' });
+  assert.deepEqual(game.snapshot().sourceImpact['minami-interview-1'], { memories: 5, hypotheses: 5, teamPins: 1 });
+  await cmd(game, 'withdrawSource', { sourceId: 'minami-interview-1', reason: '재검수' });
+  await assert.rejects(cmd(game, 'reviewSource', { sourceId: 'minami-interview-1', confirmed: false }), /직접 확인/);
+  await cmd(game, 'reviewSource', { sourceId: 'minami-interview-1', confirmed: true });
+  await cmd(game, 'next'); await cmd(game, 'open');
+  for (const req of runtime.requests.slice(-5)) assert.ok(JSON.parse(req.prompt).memory.length > 0);
+  assert.equal(game.state.sourceLibrary.find(s => s.sourceId === 'minami-interview-1').audit.at(-1).action, 'reviewSource');
+});
 test('20 teams / 10 rounds / 110 performances / 55 duels, 30 calls per round', async () => {
   const { game } = fixture(); let performances = 0, duels = 0;
   for (let n = 1; n <= 10; n++) {
