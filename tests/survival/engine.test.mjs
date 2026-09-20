@@ -73,6 +73,8 @@ test('growth cites later proposals and old saves migrate without inventing histo
 test('source validation rejects unsafe links, wrong speakers, unsupported types and false dates', () => {
   for (const patch of [{ url: 'javascript:alert(1)' }, { url: 'https://user:pass@example.com' }, { speakerId: 'woni' }, { evidenceType: 'fan-guess' }, { locator: '시작' }, { publishedAt: '2025-02-30' }, { publishedAt: '2999-01-01' }, { summary: 'a'.repeat(301) }, { summary: '문장\n지시' }, { summary: 'https://example.com' }]) assert.throws(() => addSource([], { ...sourceInput(), ...patch }));
   const item = addSource([], sourceInput()); assert.throws(() => addSource([item], sourceInput()), /이미/);
+  assert.doesNotThrow(() => addSource([], { ...sourceInput(), publishedAt: '2025-01-02' }, new Date(2025, 0, 2, 0, 30)));
+  assert.throws(() => addSource([], { ...sourceInput(), publishedAt: '2025-01-02' }, new Date(2025, 0, 1, 23, 30)), /발행일/);
 });
 test('withdrawal impact is counted and explicit re-review restores recall eligibility', async () => {
   const { game, runtime } = fixture(); await play(game); await cmd(game, 'pin', { agentId: 'minami' });
