@@ -29,14 +29,16 @@ try {
   await page.goto(`http://127.0.0.1:${server.address().port}/survival.html`);
   const room = async id => {
     if (await page.locator('#game-window').evaluate(el => el.open)) await page.getByRole('button', { name: '마을로 돌아가기' }).click();
+    if(await page.locator('.stage-back').isVisible())await page.locator('.stage-back').click();
     await page.locator(id === 'settings' ? '.game-header [data-open="settings"]' : `.place-menu [data-open="${id}"]`).click();
   };
-  const town = async () => { if (await page.locator('#game-window').evaluate(el=>el.open)) await page.getByRole('button', { name: '마을로 돌아가기' }).click(); };
+  const town = async () => { if(await page.locator('.stage-back').isVisible())await page.locator('.stage-back').click(); if (await page.locator('#game-window').evaluate(el=>el.open)) await page.getByRole('button', { name: '마을로 돌아가기' }).click(); };
   await page.screenshot({ path: join(dir, 'welcome.png'), fullPage: true });
-  await page.getByRole('button', { name: '새로운 이야기 시작', exact: true }).click();
+  await page.getByRole('button', { name: '함께 시작하기', exact: true }).click();
   await page.getByRole('button', { name: '팀 회의실 들어가기' }).click();
   await page.locator('.chapter-label').filter({ hasText: 'Round 1 / 10' }).waitFor();
   await room('meeting');
+  await page.locator('.planning-brief [data-open="votes"]').click();
   await page.locator('#opponent-card').waitFor();
   await page.locator('#concept-hint').waitFor();
   await room('settings');
@@ -65,6 +67,7 @@ try {
   await pp.fill('8');
   assert.equal(await page.locator('#discuss').isDisabled(), true);
   await pp.fill('3');
+  if(!await page.locator('.plan-detail').evaluate(el=>el.open))await page.locator('.plan-detail summary').click();
   await page.getByLabel('팀원들에게 하고 싶은 말').fill('브라우저 시험: 후렴에서 호흡을 지키자.');
   await town(); await room('schedule');
   assert.equal(await page.getByLabel('팀원들에게 하고 싶은 말').inputValue(), '브라우저 시험: 후렴에서 호흡을 지키자.');
@@ -74,7 +77,8 @@ try {
   await page.getByRole('button', { name: '함께 돌아보고 경험 저장' }).click();
   await page.getByRole('button', { name: '다음 라운드로' }).waitFor();
   await room('journal');
-  await page.locator('#growth-minami summary').click();
+  await page.getByRole('button',{name:'성장 기록 전체'}).click();
+  if(!await page.locator('#growth-minami').evaluate(el=>el.open))await page.locator('#growth-minami summary').click();
   await page.locator('#growth-minami').getByText('숙련 60.00 → 60.75 · 연습 3점', { exact: true }).waitFor();
   await room('settings');
   await page.getByText('멤버 자료 관리', { exact: true }).click();
@@ -98,7 +102,7 @@ try {
   assert.equal(await page.locator('.concert').getAttribute('data-part'), '2');
   await page.screenshot({ path: join(dir, 'concert.png'), fullPage: true });
   const downloadEvent = page.waitForEvent('download');
-  await page.getByRole('button', { name: '완성곡 WAV 저장' }).click();
+  await page.getByRole('button', { name: 'WAV 저장' }).click();
   const download = await downloadEvent;
   await download.saveAs(join(dir, 'completed-song.wav'));
   const { readFileSync } = await import('node:fs');
@@ -107,7 +111,7 @@ try {
   assert.equal(wav.length, 44 + 60 * 22050 * 4);
   assert.equal(requests.length, beforePlaybackCalls);
   await town();
-  await page.locator('.map-party [data-member="woni"]').click();
+  await page.locator('.reflection-members [data-member="woni"]').click();
   await page.locator('#speaker-name').filter({ hasText: '원이' }).waitFor();
   await page.screenshot({ path: join(dir, 'desktop.png'), fullPage: true });
   await page.reload(); await page.getByRole('button', { name: '다음 라운드로' }).click();
@@ -117,7 +121,9 @@ try {
   await page.locator('#discuss').waitFor({ state: 'attached' });
   await room('schedule');
   for (const req of requests.slice(-5)) { assert.equal(req.sessionId, null); assert.deepEqual(JSON.parse(req.prompt).memory, []); assert.ok(!JSON.parse(req.prompt).source.some(s => s.sourceId === sourceId)); }
+  await page.getByLabel('미나미 연습 PP',{exact:true}).fill('2');
   await page.getByLabel('미나미 회복 PP', { exact: true }).fill('1');
+  if(!await page.locator('.plan-detail').evaluate(el=>el.open))await page.locator('.plan-detail summary').click();
   await page.getByLabel('팀원들에게 하고 싶은 말').fill('회복에 1PP를 쓰고 남은 포인트로 연습하자.');
   await page.getByRole('button', { name: '이 계획으로 의견 나누기' }).click();
   await page.getByRole('button', { name: '나는 찬성 · 투표 시작' }).click();
@@ -128,7 +134,8 @@ try {
   assert.equal(game.state.rounds[2].growth.minami.recovery, 1);
   assert.equal(game.state.members.minami.hypotheses[0].observations[0].round, 2);
   await room('journal');
-  await page.locator('#growth-minami summary').click();
+  await page.getByRole('button',{name:'성장 기록 전체'}).click();
+  if(!await page.locator('#growth-minami').evaluate(el=>el.open))await page.locator('#growth-minami summary').click();
   await page.locator('#growth-minami').getByText(/R2 시험됨/).waitFor();
   const archivedId = game.state.id;
   await room('settings');
@@ -138,6 +145,7 @@ try {
   const currentId = game.state.id, beforeHistoryCalls = requests.length;
   assert.notEqual(currentId, archivedId);
   await room('journal');
+  await page.getByRole('button',{name:'성장 기록 전체'}).click();
   await page.getByRole('button', { name: '시즌 이력 불러오기' }).click();
   await page.locator(`[data-history="${archivedId}"]`).click();
   await page.locator('#history-view').getByText(/R2 · .*우리 팀 1위/).waitFor();
@@ -145,7 +153,7 @@ try {
   await town();
   await page.setViewportSize({ width: 390, height: 844 }); await page.screenshot({ path: join(dir, 'mobile.png'), fullPage: true });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-  await page.locator('.map-place[data-open="dorm"]').click();
+  await page.locator('.place-menu [data-open="dorm"]').click();
   await page.getByRole('button', { name: '일정표에서 휴식 배분하기' }).click();
   await page.locator('#schedule-cells').waitFor();
   await page.screenshot({ path: join(dir, 'mobile-schedule.png'), fullPage: true });

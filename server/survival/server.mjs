@@ -24,6 +24,9 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
   const token = randomBytes(24).toString('hex');
   const files = new Map([
     ['/', ['survival.html', 'text/html']], ['/survival.html', ['survival.html', 'text/html']],
+    ['/src/survival/art.js', ['src/survival/art.js', 'text/javascript']],
+    ['/src/survival/design.css', ['src/survival/design.css', 'text/css']],
+    ...['01-arrival','02-planning','03-performance','04-reflection','05-finale'].map(name => [`/assets/survival/${name}.png`, [`public/assets/survival/${name}.png`, 'image/png']]),
     ['/src/survival/app.js', ['src/survival/app.js', 'text/javascript']],
     ['/src/survival/arrangement.js', ['src/survival/arrangement.js', 'text/javascript']],
     ['/src/survival/performance.js', ['src/survival/performance.js', 'text/javascript']],
