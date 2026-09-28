@@ -8,10 +8,12 @@ import { randomBytes } from 'node:crypto';
 import { Store } from './store.mjs';
 import { Game } from './engine.mjs';
 import { LocalRuntime } from './runtime.mjs';
+import { loadLiteLLMConfig } from './litellm.mjs';
 import { publicCatalog } from './catalog.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-survival-local'), runtime, lock = true } = {}) {
   const store = new Store(dataDir), lockPath = join(dataDir, 'server.lock');
+  const gameRuntime = runtime || new LocalRuntime(join(dataDir, 'runtime'), { litellm: loadLiteLLMConfig(join(dataDir, 'litellm.json')) });
   if (lock) {
     try {
       const owner = Number(readFileSync(lockPath, 'utf8'));
@@ -20,7 +22,7 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
     } catch (e) { if (e.code !== 'ENOENT') throw e; }
     writeFileSync(lockPath, String(process.pid), { flag: 'wx', mode: 0o600 });
   }
-  const game = new Game(store, runtime || new LocalRuntime(join(dataDir, 'runtime')));
+  const game = new Game(store, gameRuntime);
   const token = randomBytes(24).toString('hex');
   const files = new Map([
     ['/', ['survival.html', 'text/html']], ['/survival.html', ['survival.html', 'text/html']],
@@ -41,7 +43,8 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
     if (req.headers.origin && ![`http://${host}`, `http://localhost:${server.address().port}`].includes(req.headers.origin)) return send(403, { error: '다른 사이트에서의 요청은 허용하지 않습니다' });
     try {
       const path = new URL(req.url, `http://${host}`).pathname;
-      if (req.method === 'GET' && path === '/api/state') return send(200, { state: game.snapshot(), catalog: publicCatalog, token });
+      if (req.method === 'GET' && path === '/api/state') return send(200, { state: game.snapshot(), catalog: publicCatalog, token,
+        runtime: gameRuntime.describe?.() || { defaultProvider: 'claude', litellm: { configured: false } } });
       if (req.method === 'GET' && path === '/api/history') return send(200, { seasons: store.history() });
       if (req.method === 'GET' && path.startsWith('/api/history/')) return send(200, { season: store.historyItem(path.slice('/api/history/'.length)) });
       if (req.method === 'GET' && files.has(path)) {

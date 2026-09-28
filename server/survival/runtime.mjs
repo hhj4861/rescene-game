@@ -4,13 +4,21 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { validate } from './schemas.mjs';
+import { LiteLLMRuntime, loadLiteLLMConfig } from './litellm.mjs';
 
-// One pool across providers. No inherited shell, API-key copying, or permission bypass.
+// One pool across providers. No inherited shell, personal credential import, or permission bypass.
 export class LocalRuntime {
-  constructor(dir, { timeoutMs = 120000, spawnImpl = spawn } = {}) {
+  constructor(dir, { timeoutMs = 120000, spawnImpl = spawn, litellm = loadLiteLLMConfig(), fetchImpl, allowLocalhost = false } = {}) {
     this.dir = dir; this.timeoutMs = timeoutMs; this.spawn = spawnImpl;
     this.active = 0; this.queue = []; this.children = new Set();
+    this.gateway = litellm ? new LiteLLMRuntime(litellm, { timeoutMs, fetchImpl, allowLocalhost }) : null;
     mkdirSync(dir, { recursive: true, mode: 0o700 });
+  }
+  describe() { return { defaultProvider: this.gateway ? 'litellm' : 'claude', litellm: { configured: Boolean(this.gateway), model: this.gateway?.model || null } }; }
+  seasonConfig(provider) {
+    if (provider !== 'litellm') return {};
+    if (!this.gateway) throw new Error('LiteLLM 게임 연결이 설정되지 않았습니다');
+    return { routeModel: this.gateway.model };
   }
   async acquire(signal) {
     if (signal?.aborted) throw new Error('사용자가 호출을 취소했습니다');
@@ -34,9 +42,13 @@ export class LocalRuntime {
     }
     return { args, model: names.model };
   }
-  async run({ provider, agentId, contextKey, sessionId, prompt, schema, signal, model: pinnedModel }) {
+  async run({ provider, agentId, contextKey, sessionId, prompt, schema, signal, model: pinnedModel, routeModel, deploymentId }) {
     await this.acquire(signal);
     try {
+      if (provider === 'litellm') {
+        if (!this.gateway) throw new Error('LiteLLM 게임 연결이 설정되지 않았습니다');
+        return await this.gateway.run({ agentId, contextKey, sessionId, prompt, schema, signal, model: pinnedModel, routeModel, deploymentId });
+      }
       if (!['claude', 'codex'].includes(provider)) throw new Error('지원하지 않는 런타임');
       if (!/^[a-z0-9-]+$/.test(agentId) || !/^[a-z0-9-]+$/.test(contextKey)) throw new Error('잘못된 문맥 식별자');
       if (sessionId && !/^[0-9a-f-]{36}$/.test(sessionId)) throw new Error('잘못된 세션 ID');
