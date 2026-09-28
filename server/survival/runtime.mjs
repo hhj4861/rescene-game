@@ -14,7 +14,7 @@ export class LocalRuntime {
     this.gateway = litellm ? new LiteLLMRuntime(litellm, { timeoutMs, fetchImpl, allowLocalhost }) : null;
     mkdirSync(dir, { recursive: true, mode: 0o700 });
   }
-  describe() { return { defaultProvider: this.gateway ? 'litellm' : 'claude', litellm: { configured: Boolean(this.gateway), model: this.gateway?.model || null } }; }
+  describe() { return { defaultProvider: 'litellm', litellm: { configured: Boolean(this.gateway), model: this.gateway?.model || null } }; }
   seasonConfig(provider) {
     if (provider !== 'litellm') return {};
     if (!this.gateway) throw new Error('LiteLLM 게임 연결이 설정되지 않았습니다');

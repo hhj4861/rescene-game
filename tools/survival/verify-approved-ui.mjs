@@ -10,7 +10,7 @@ import { defaultPlan } from '../../server/survival/catalog.mjs';
 const require=createRequire(resolve(process.env.SURVIVAL_DEPENDENCIES||'.','package.json'));
 const {chromium,webkit}=require('@playwright/test');
 const dir=mkdtempSync(join(tmpdir(),'rescene-approved-ui-'));
-const provider=process.env.SURVIVAL_VERIFY_PROVIDER||'claude';
+const provider='litellm';
 const calls=[];let game;
 const runtime={describe(){return {defaultProvider:provider,litellm:{configured:provider==='litellm',model:'explicit-fixture'}};},async run(req){
   const p=JSON.parse(req.prompt),agentId=req.agentId;
@@ -48,8 +48,8 @@ try{
   assert.equal(calls.length,0);
   await page.locator('#begin-story').click();
   if(provider==='litellm'){
-    assert.equal(await page.locator('#provider').getAttribute('type'),'hidden');
-    assert.equal(await page.locator('#provider').inputValue(),'litellm');
+    assert.equal(await page.locator('#provider').count(),0);
+    assert.equal(await page.locator('#start select').count(),0);
     await page.getByText('기본 AI로 함께 시작해요.',{exact:true}).waitFor();
   }
   await page.getByRole('button',{name:'팀 회의실 들어가기'}).click();

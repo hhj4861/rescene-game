@@ -53,7 +53,7 @@ const runtime = (g, path = dir(), options = {}) => new LocalRuntime(path, { lite
 let sequence = 0;
 const cmd = (g, action, payload) => g.command({ commandId: `litellm-test-${++sequence}`, expectedRevision: g.state.revision, action, payload });
 
-test('configuration rejects insecure URLs; optional absent config preserves CLI', () => {
+test('configuration rejects insecure URLs; absent config never switches the default to CLI', () => {
   assert.equal(loadLiteLLMConfig(join(dir(), 'missing.json'), {}), null);
   const file = join(dir(), 'private.json'); writeFileSync(file, '{broken secret');
   assert.throws(() => loadLiteLLMConfig(file, {}), /비공개 설정/);
@@ -61,7 +61,7 @@ test('configuration rejects insecure URLs; optional absent config preserves CLI'
   for (const baseUrl of ['http://example.com', 'https://user:secret@example.com', 'https://example.com?key=secret', 'https://example.com/#secret'])
     assert.throws(() => new LiteLLMRuntime({ baseUrl, model: 'game', apiKey: secret }), /설정/);
   const r = new LocalRuntime(dir(), { litellm: null });
-  assert.equal(r.describe().defaultProvider, 'claude');
+  assert.equal(r.describe().defaultProvider, 'litellm');
   assert.throws(() => r.seasonConfig('litellm'), /설정되지/);
 });
 
@@ -162,6 +162,6 @@ test('bootstrap and saves never expose credentials; missing config cannot replac
   assert.equal((await fetch(base + '/litellm.json')).status, 404);
   const saved = readFileSync(game.store.path, 'utf8');
   const noKey = new Game(game.store, new LocalRuntime(dir(), { litellm: null }));
-  assert.throws(() => noKey.create('cannot replace', 'litellm'), /설정되지/);
+  assert.throws(() => noKey.create('cannot replace'), /설정되지/);
   assert.equal(readFileSync(game.store.path, 'utf8'), saved);
 });

@@ -44,7 +44,7 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
     try {
       const path = new URL(req.url, `http://${host}`).pathname;
       if (req.method === 'GET' && path === '/api/state') return send(200, { state: game.snapshot(), catalog: publicCatalog, token,
-        runtime: gameRuntime.describe?.() || { defaultProvider: 'claude', litellm: { configured: false } } });
+        runtime: gameRuntime.describe?.() || { defaultProvider: 'litellm', litellm: { configured: false } } });
       if (req.method === 'GET' && path === '/api/history') return send(200, { seasons: store.history() });
       if (req.method === 'GET' && path.startsWith('/api/history/')) return send(200, { season: store.historyItem(path.slice('/api/history/'.length)) });
       if (req.method === 'GET' && files.has(path)) {

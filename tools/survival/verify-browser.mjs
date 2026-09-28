@@ -12,7 +12,7 @@ const require = createRequire(resolve(process.env.SURVIVAL_DEPENDENCIES || '.', 
 const { chromium } = require('@playwright/test');
 const dir = mkdtempSync(join(tmpdir(), 'rescene-browser-'));
 const requests = [];
-const runtime = { async run(req) {
+const runtime = { describe() { return { defaultProvider: 'litellm', litellm: { configured: true, model: 'explicit-fixture' } }; }, async run(req) {
   requests.push(req);
   const p = JSON.parse(req.prompt), agentId = req.agentId; let data = { agentId, text: '브라우저 시험용 응답: 호흡을 지킬 수 있는 무대를 함께 만들자.' };
   if (['proposal', 'discussion'].includes(p.task)) data = { ...data, plan: defaultPlan(), sourceRefs: [], memoryRefs: [] };
