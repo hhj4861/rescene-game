@@ -1,0 +1,32 @@
+/* The same playable panels and original dolls share one persistent 3D world. */
+.live-world,.concert-world{position:absolute;inset:0;overflow:hidden;background:#c3dedf}
+.live-world canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.live-world canvas:active{cursor:grabbing}.live-world canvas:focus-visible{outline:3px solid #a3651f;outline-offset:-4px}
+.world-loading{position:absolute;inset:20% 10% auto;background:#f4eddfed;padding:20px;line-height:1.7;text-align:center;border-radius:8px}
+.world-controls{position:absolute;bottom:18px;right:18px;display:flex;gap:6px}.world-controls button{background:#f4eddfeb;color:#344c5d;border:1px solid #aaa995;border-radius:24px;font-size:12px;padding:8px 13px;min-height:38px}
+#scene-sheet{pointer-events:none}#scene-sheet>*{pointer-events:auto}
+[data-scene=planning] #scene-sheet,[data-scene=reflection] #scene-sheet{pointer-events:auto}
+[data-scene=arrival] .world-painting{right:30%}
+.doll-portrait{display:block;position:relative;overflow:hidden;isolation:isolate;background:transparent;line-height:0}
+.doll-portrait img{display:block;width:100%;height:100%;object-fit:cover;object-position:center top}
+.doll-portrait.portrait-large img{object-fit:contain;object-position:center bottom}
+.arrival-members .doll-portrait{height:90px;aspect-ratio:1}.arrival-members .doll-portrait img{height:145%;object-fit:cover}
+.vote-portraits .doll-portrait{height:43px;width:40px;margin:auto}.vote-portraits .doll-portrait img,.plan-member .doll-portrait img{height:145%}
+.plan-member .doll-portrait{height:100%}.reflection-members .doll-portrait{height:88px}.rest-members .doll-portrait{height:95px}
+.story-box #dialogue-portrait{width:235px;height:235px}.story-box{grid-template-columns:235px minmax(0,1fr) minmax(260px,34%)}
+.concert-world{z-index:0}.song-label,.stage-back,.concert-caption,.live-part{z-index:2}.stage-glow{pointer-events:none}
+.concert-caption{left:calc(50% - 120px);top:auto;bottom:18px;width:240px}.live-part{top:23%}
+[data-scene=finale] .finale-title h1{position:static;width:auto;height:auto;clip-path:none;overflow:visible;font-size:36px;margin:10px 0}
+@media(max-width:1100px){.story-box{grid-template-columns:180px minmax(0,1fr) minmax(210px,30%)}.story-box #dialogue-portrait{width:180px;height:210px}.arrival-members .doll-portrait{height:65px}.arrival-paper{padding:20px 15px}.arrival-paper>p{font-size:16px}}
+@media(max-width:760px){
+  [data-scene=arrival] .world-painting{right:0}.world-controls{bottom:12px;right:12px}.world-controls button{font-size:11px;padding:7px 10px}
+  .story-box{grid-template-columns:90px minmax(0,1fr)}.story-box #dialogue-portrait{width:105px;height:140px}
+  .arrival-members .doll-portrait{height:76px}.reflection-members .doll-portrait{height:63px}.rest-members .doll-portrait{height:65px}
+  .concert-caption{bottom:12px;top:auto;left:calc(50% - 100px);width:200px}.live-part{top:30%}
+}
+
+@media(max-width:760px){
+  [data-scene=planning] .world-painting,[data-scene=reflection] .world-painting{height:300px!important}
+  [data-scene=planning] #scene-sheet,[data-scene=reflection] #scene-sheet{margin-top:300px}
+  .arrival-paper{margin-top:330px}
+}

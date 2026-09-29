@@ -41,9 +41,11 @@ const room=async id=>{
   if(await page.locator('.stage-back').isVisible())await page.locator('.stage-back').click();
   await page.locator(`.place-menu [data-open="${id}"]`).click();
 };
-const capture=async name=>{await page.screenshot({path:join(dir,name+'.png'),fullPage:true});};
+const capture=async name=>{await page.waitForFunction(()=>document.querySelector('.live-world canvas')?.dataset.ready==='true');await page.screenshot({path:join(dir,name+'.png'),fullPage:true});};
 try{
-  await page.goto(base);await page.locator('#begin-story').waitFor();
+  await page.goto(base+'/survival-3d.html');await page.locator('#begin-story').waitFor();
+  await page.waitForFunction(()=>document.querySelector('.live-world canvas')?.dataset.ready==='true');
+  assert.equal(await page.locator('.live-world canvas').getAttribute('data-members'),'5');
   await capture('01-arrival');
   assert.equal(calls.length,0);
   await page.locator('#begin-story').click();
@@ -89,6 +91,8 @@ try{
       await page.locator('#pause-performance').click();
       await page.locator('[data-seek="24"]').click();
       assert.equal(await page.locator('.concert').getAttribute('data-part'),'2');
+      await page.waitForFunction(()=>document.querySelector('.live-world canvas')?.dataset.part==='2');
+      assert.equal(await page.locator('.live-world canvas').getAttribute('data-center'),game.state.rounds[1].plan.leads[2]);
       await capture('03-performance');
       const event=page.waitForEvent('download');await page.locator('#download-song').click();
       const dl=await event;await dl.saveAs(join(dir,'performance.wav'));

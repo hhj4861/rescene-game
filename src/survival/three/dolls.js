@@ -16,7 +16,7 @@ export async function loadDollArt(){
     if(excess>42&&g>95){rgba[i+3]=Math.round(255*(1-Math.min(1,(excess-42)/55)));rgba[i+1]=Math.min(g,Math.max(r,b)+18);}
   }
   ctx.putImageData(data,0,0);
-  return Array.from({length:5},(_,col)=>[1,2].map(row=>{
+  return Array.from({length:5},(_,col)=>[1,2,0].map(row=>{
     const rows=[0,.365,.665,1],x0=Math.round(col*canvas.width/5),x1=Math.round((col+1)*canvas.width/5);
     const y0=Math.round(rows[row]*canvas.height),y1=Math.round(rows[row+1]*canvas.height);
     // Trim only the blank margins, then keep one common pixel scale across poses.

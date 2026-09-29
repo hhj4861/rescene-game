@@ -1,0 +1,45 @@
+{
+  "season": {
+    "passed": true,
+    "mode": "explicit-fixture",
+    "rounds": 10,
+    "calls": 300,
+    "errors": [],
+    "httpErrors": [],
+    "dir": "/var/folders/04/8rm5pwr52f12x6zmvdwsdcjr0000gn/T/rescene-approved-ui-hAg5fp"
+  },
+  "integration": {
+    "passed": true,
+    "mode": "explicit-fixture",
+    "calls": 41,
+    "errors": [],
+    "checks": [
+      "playable-3d-entry",
+      "null-poll-keeps-draft",
+      "single-season-submit",
+      "failed-member-only-retry",
+      "one-webgl-context-across-phases",
+      "character-selection-reads-own-response",
+      "user-no-blocks-performance",
+      "rediscussion",
+      "audio-part-synchronization",
+      "reflection-save",
+      "reload-preserves-save",
+      "next-round",
+      "mobile-controls",
+      "gpu-failure-keeps-game-controls"
+    ]
+  },
+  "unitTests": {
+    "passed": 45,
+    "failed": 0
+  },
+  "localSmoke": {
+    "port": 4321,
+    "aiConfigured": true,
+    "hasSeason": false,
+    "startEnabled": true,
+    "members": 5,
+    "posts": 0
+  }
+}

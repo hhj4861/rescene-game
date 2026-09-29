@@ -1,30 +1,3 @@
 <!doctype html>
-<html lang="ko">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f6f1e5"><title>첫 만남 · RESCENE</title><link rel="stylesheet" href="/src/survival/three/meeting.css"></head>
-<body>
-  <header class="masthead"><a href="/survival.html" aria-label="기존 게임으로 돌아가기">RESCENE <span>— 우리 여섯의 계절</span></a><span class="chapter">프롤로그 <i></i> 첫 만남</span></header>
-  <main>
-    <aside class="rail" aria-label="현재 장소"><span class="rail-line"></span><span class="place-icon" aria-hidden="true">⌂</span><strong>바닷가<br>회의실</strong><span class="rail-caption">작은 바다가<br>큰 꿈을 키우는 곳.</span><a href="/survival.html">게임으로 돌아가기</a></aside>
-    <section class="stage" aria-label="첫 만남 3D 장면">
-      <canvas id="world" tabindex="0" aria-label="바닷가 회의실. 드래그 또는 좌우 방향키로 둘러보고, 멤버를 선택해 인사하세요."></canvas>
-      <div class="scene-title"><span>바닷바람이 들어오는 오후</span><h1>우리의 첫 만남</h1></div>
-      <aside class="objective"><span class="pin" aria-hidden="true"></span><strong>비워 둔 한 자리</strong><p>다섯 멤버와 인사를 나눠요.</p><div class="progress"><span id="greet-count">0 / 5</span><span>함께할 계절의 시작</span></div></aside>
-      <div class="camera-tools" role="group" aria-label="카메라 시점"><button data-view="table" aria-pressed="true">함께 앉기</button><button data-view="room" aria-pressed="false">공간 둘러보기</button><button id="reset-view" aria-label="카메라 시점 초기화">↺</button></div>
-      <div class="scene-hint" id="scene-hint">드래그로 둘러보기 <span>·</span> 멤버를 누르면 가까이</div>
-      <div class="load-state" id="load-state" role="status"><span class="loading-flower">✳</span><p>바닷가 회의실을 준비하고 있어요.</p></div>
-    </section>
-    <section class="conversation" aria-label="멤버와 인사">
-      <div class="members" role="group" aria-label="인사할 멤버">
-        <button data-member="0" aria-pressed="true"><span class="member-dot woni"></span>원이<span class="greet-mark" aria-label="인사 완료"></span></button>
-        <button data-member="1" aria-pressed="false"><span class="member-dot liv"></span>리브<span class="greet-mark" aria-label="인사 완료"></span></button>
-        <button data-member="2" aria-pressed="false"><span class="member-dot minami"></span>미나미<span class="greet-mark" aria-label="인사 완료"></span></button>
-        <button data-member="3" aria-pressed="false"><span class="member-dot may"></span>메이<span class="greet-mark" aria-label="인사 완료"></span></button>
-        <button data-member="4" aria-pressed="false"><span class="member-dot zena"></span>제나<span class="greet-mark" aria-label="인사 완료"></span></button>
-      </div>
-      <div class="dialogue" aria-live="polite" aria-atomic="true"><span id="speaker">원이</span><p id="line">마지막 한 사람, 기다리고 있었어.</p><small id="subline">저기, 비어 있는 자리가 네 자리야.</small></div>
-      <button class="greet-button" id="greet">반갑게 인사하기 <span aria-hidden="true">↗</span></button>
-    </section>
-  </main>
-  <footer><span>첫 만남 · 움직임 프로토타입</span><span>우리 동네에서 함께했던 다섯 멤버</span><button id="motion" aria-pressed="false">동작 멈추기</button></footer>
-  <script type="module" src="/src/survival/three/meeting.js"></script>
-</body></html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>RESCENE · 우리 여섯의 계절</title><link rel="stylesheet" href="/src/survival/design.css"><link rel="stylesheet" href="/src/survival/three/game-world.css"></head>
+<body><div id="app"><p role="status">우리의 계절을 불러오고 있어요.</p></div><script type="module" src="/src/survival/app.js"></script></body></html>

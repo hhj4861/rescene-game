@@ -1,7 +1,7 @@
 /* global document, AudioContext, Blob, URL, requestAnimationFrame, cancelAnimationFrame, matchMedia */
 import { composePerformance, renderPcm, encodeWav, stageFrame } from './arrangement.js';
 import { escapeHtml as esc } from './scene.js';
-import { artwork } from './art.js';
+import {setPerformanceFrame} from './three/game-world.js';
 let disposeCurrent = () => {};
 export function stopPerformance() { disposeCurrent(); disposeCurrent=()=>{}; }
 export function mountPerformance(panel, { round, members, seed }) {
@@ -9,7 +9,7 @@ export function mountPerformance(panel, { round, members, seed }) {
   if (!evidence) return;
   const score=composePerformance(round.plan,evidence,seed), memberName=id=>members.find(m=>m.id===id)?.name || id;
   panel.innerHTML=`<div class="concert-player"><div class="concert" aria-label="다섯 멤버의 합의안 기반 공연">
-  ${artwork('03-performance','0 60 1672 700')}
+  <div class="concert-world"></div>
   <div class="song-label"><h2>${esc(round.concept)}</h2><p>${esc({glow:'잔광',wave:'물결',spark:'불꽃'}[score.music])}</p></div>
   <button class="stage-back" data-open="journal">마을로</button><div class="stage-glow"></div>
   <span class="live-part" aria-hidden="true">지금의 파트</span><div class="concert-caption" id="concert-caption"></div></div>
@@ -25,9 +25,9 @@ export function mountPerformance(panel, { round, members, seed }) {
   q('#volume').oninput=()=>{if(gain)gain.gain.value=Number(q('#volume').value);};
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const draw=second=>{
-    const frame=stageFrame(score,second,reduced);
+    const frame=stageFrame(score,second,reduced);setPerformanceFrame(frame);
     q('.concert').dataset.part=String(frame.part);
-    const positions = { woni:20, minami:35, liv:51, may:67, zena:83 };
+    const positions = Object.fromEntries(frame.dancers.map(d=>[d.id,d.x]));
     q('.live-part').style.left=`calc(${positions[frame.memberId] || 50}% - 36px)`;
     q('.live-part').textContent=memberName(frame.memberId);
     q('#concert-caption').textContent=`지금의 파트 · ${memberName(frame.memberId)}`;

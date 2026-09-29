@@ -35,7 +35,7 @@ try{
         else errors.push(m.text());
       });
       page.on('request',r=>{if(r.url().includes('/api/'))apiRequests.push(r.url());if(!r.url().startsWith(url)&&!r.url().startsWith('blob:'+url+'/'))external.push(r.url());});
-      const response=await page.goto(`${url}/survival-3d.html`);
+      const response=await page.goto(`${url}/survival-3d-preview.html`);
       assert.equal(response.status(),200);assert.match(response.headers()['content-security-policy'],/script-src 'self'/);
       await page.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='true');
       await page.waitForFunction(()=>Number(document.querySelector('canvas').dataset.frames)>=30);
@@ -117,7 +117,7 @@ try{
       // Reduced motion takes effect on first load, with keyboard-accessible greeting controls.
       const reduced=await browser.newPage({reducedMotion:'reduce',viewport:{width:390,height:844},hasTouch:true});
       reduced.setDefaultTimeout(20000);
-      await reduced.goto(`${url}/survival-3d.html`);await reduced.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='true');
+      await reduced.goto(`${url}/survival-3d-preview.html`);await reduced.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='true');
       assert.equal(await reduced.locator('#motion').getAttribute('aria-pressed'),'true');
       await reduced.locator('[data-member="1"]').tap();assert.equal(await reduced.locator('#speaker').innerText(),'리브');
       await reduced.locator('[data-member="2"]').focus();await reduced.keyboard.press('Enter');
@@ -137,15 +137,15 @@ try{
       });
       const missing=await browser.newPage();
       await missing.route('**/rescene-motion-v2.webp',route=>route.fulfill({status:404,body:'not found'}));
-      await missing.goto(`${url}/survival-3d.html`);await missing.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='error');
+      await missing.goto(`${url}/survival-3d-preview.html`);await missing.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='error');
       assert.match(await missing.locator('#load-state').innerText(),/캐릭터 이미지/);assert.equal(await missing.locator('#greet').isDisabled(),true);await missing.close();
-      await unavailable.goto(`${url}/survival-3d.html`);await unavailable.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='error');
+      await unavailable.goto(`${url}/survival-3d-preview.html`);await unavailable.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='error');
       assert.equal(await unavailable.getByRole('button',{name:'다시 열기'}).isVisible(),true);
       assert.equal(await unavailable.locator('#greet').isDisabled(),true);await unavailable.close();
       results.push({browser:name,render,dolls,applicationErrors:errors,captureDiagnostics,checks:['five-original-dolls','alpha-aware-picking','chroma-key-preserves-art','greeting-pose-and-return','animated-card-preservation','missing-art-error','real-webgl','five-greetings','mesh-picking','camera-presets','drag','keyboard','pause','mobile','touch-selection','reduced-motion','webgl-fallback',...(name==='chromium'?['context-loss']:[]),'no-network-model-call']});
     }finally{await browser.close();}
   }
-  for(const path of ['/survival.html','/survival-3d.html'])assert.ok(!(await fetch(url+path)).headers.get('content-security-policy').includes('blob:'));
+  for(const path of ['/survival.html','/survival-3d-preview.html'])assert.ok(!(await fetch(url+path)).headers.get('content-security-policy').includes('blob:'));
   assert.deepEqual(Buffer.from(await (await fetch(url+'/assets/dolls/rescene-motion-v2.webp')).arrayBuffer()),readFileSync('public/assets/dolls/rescene-motion-v2.webp'));
   for(const path of ['/vendor/vrm/avatar-loader.js','/assets/survival-3d/characters/woni-base.vrm'])assert.equal((await fetch(url+path)).status,404);
   assert.equal(calls,0);assert.equal(readFileSync(game.store.path,'utf8'),saveBefore);

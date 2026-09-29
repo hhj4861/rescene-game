@@ -1,7 +1,7 @@
 import { mountGame, captureGameFocus } from './game-view.js';
 /* global document, fetch, clearTimeout, setTimeout, crypto, structuredClone, confirm, AudioContext, FormData */
 const app = document.querySelector('#app');
-let state, catalog, token, polling, draft, draftRound, audio;
+let state, catalog, token, polling, draft, draftRound, audio, receivedState=false;
 let runtimeInfo = { defaultProvider: 'litellm', litellm: { configured: false } };
 let sourceDraft = {}, openedDetails = new Set();
 let archives = [], archiveView = null;
@@ -15,7 +15,8 @@ async function refresh(force = false) {
   try {
     const response = await fetch('/api/state'); if (!response.ok) throw new Error('게임 서버에 연결할 수 없습니다');
     const data = await response.json(); token = data.token; catalog = data.catalog; runtimeInfo = data.runtime || runtimeInfo;
-    const changed = force || !state || JSON.stringify(data.state) !== JSON.stringify(state);
+    const changed = force || !receivedState || JSON.stringify(data.state) !== JSON.stringify(state);
+    receivedState = true;
     state = data.state;
     if (changed) render();
     clearTimeout(polling); polling = setTimeout(refresh, state?.busy ? 1200 : 5000);
@@ -109,7 +110,7 @@ function render() {
   const heading = `<header><div class="brand">RESCENE<span>우리 여섯의 무대</span></div><span class="note">로컬 에이전트 서바이벌</span></header>`;
   if (!state) {
     app.innerHTML = `${heading}<main class="welcome"><section class="room"><h1>무대가 시작되기 전,<br>우리의 이야기가 먼저.</h1><p class="intro">나와 미나미, 원이, 제나, 리브, 메이.<br>서로 다른 여섯 의견으로 하나의 무대를 만들어요.</p>${team()}<p>20개 팀, 10개의 컨셉. 함께 고르고, 부딪히고, 다음 무대에서 성장합니다.</p></section><form id="start"><div class="field"><p id="ai-status">${runtimeInfo.litellm.configured ? '기본 AI로 함께 시작해요.' : '기본 AI 연결을 준비하고 있어요.'}</p></div><div class="field"><label for="seed">시즌 이름</label><input id="seed" value="우리의 첫 무대" maxlength="80"></div><button ${runtimeInfo.litellm.configured ? '' : 'disabled'} aria-describedby="ai-status">팀 회의실 들어가기</button><p class="note">${runtimeInfo.litellm.configured ? '계정 연결 없이 기본 AI를 사용합니다. 한 시즌 동안 같은 모델을 사용하며, 한 라운드 기본 30회·최대 55회가 게임 전용 사용량에 반영됩니다.' : '연결이 준비되면 시작할 수 있어요. 개인 AI 계정을 연결할 필요는 없습니다.'} 버튼을 누른 뒤 첫 제안은 별도로 시작합니다.</p></form><p id="error" class="inline-error" role="alert"></p>${historyRoom()}<p class="footer">공개 인터뷰를 참고한 비공식 팬 게임. 에이전트의 의견과 사건은 창작입니다.</p></main>`;
-    document.querySelector('#start').onsubmit = async e => { e.preventDefault(); try { await post('/api/new', { seed: document.querySelector('#seed').value }); refresh(true); } catch (e) { showError(e.message); } }; bindHistory(); mountGame({ app, state, catalog }); return;
+    document.querySelector('#start').onsubmit = async e => { e.preventDefault(); const button=e.currentTarget.querySelector('button'); if(button.disabled)return; button.disabled=true; try { await post('/api/new', { seed: document.querySelector('#seed').value }); await refresh(true); } catch (e) { button.disabled=false; showError(e.message); } }; bindHistory(); mountGame({ app, state, catalog }); return;
   }
   const r = state.rounds[state.round], can = !state.busy;
   const progress = state.traces.filter(t => t.status === 'running').map(t => name(t.agentId)).join(', ');

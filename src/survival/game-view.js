@@ -1,7 +1,8 @@
 /* global document, Event */
+import {mountGameWorld,selectWorldMember,hydrateDollPortraits} from './three/game-world.js';
 import { mountPerformance, stopPerformance } from './performance.js';
 import { escapeHtml as esc } from './scene.js';
-import { artwork, portrait, memberOrder, sceneFor, resultSummary, placeIcon, finaleBackdrop } from './art.js';
+import { artwork, portrait, memberOrder, sceneFor, resultSummary, placeIcon } from './art.js';
 let selectedMember = 'woni', activeRoom = null, previousPhase, previousSeason, previousScene;
 let dialogueIndex = 0, focusSnapshot;
 const names = { dorm:'숙소', schedule:'연습실', meeting:'회의실', stage:'공연장', journal:'기록실', settings:'수첩과 설정', start:'함께 시작하기', details:'우리의 성장 기록', votes:'팀 회의 기록', results:'심사와 전체 순위' };
@@ -39,7 +40,7 @@ export function mountGame({ app, state, catalog, draft }) {
   };
   const members = memberOrder.map(id => catalog.members.find(m => m.id === id));
   const step = !state || ['announced','proposal'].includes(state.phase) ? 0 : ['meeting','discussion','voted','voting','agreed'].includes(state.phase) ? 1 : ['performance','judging'].includes(state.phase) ? 2 : 3;
-  app.innerHTML = `<main class="game-frame approved-frame">
+  app.innerHTML = `<main class="game-frame approved-frame" data-phase="${state?.phase||'arrival'}">
     <header class="game-header"><div class="game-brand">RESCENE <span>— 우리 여섯의 계절</span></div>
       <nav class="game-progress" aria-label="라운드 진행">${['컨셉 확인','상의와 연습','공연','회고'].map((s,i)=>`<span class="${i===step?'active':''}" ${i===step?'aria-current="step"':''}><b>${i+1}</b>${s}</span>`).join('')}</nav>
       <span class="chapter-label">${state?`Round ${state.round} / 10`:'프롤로그'}</span>
@@ -65,10 +66,6 @@ export function mountGame({ app, state, catalog, draft }) {
     q('.finale-actions')?.remove();
     currentScene = scene;
     q('.game-frame').dataset.scene = scene;
-    q('.world-painting').innerHTML = scene === 'arrival' ? artwork('01-arrival','155 60 1517 662') :
-      scene === 'planning' ? artwork('02-planning','155 60 797 715') :
-      scene === 'reflection' ? artwork('04-reflection','145 60 810 694') :
-      scene === 'finale' ? finaleBackdrop() : '';
     const sheet = q('#scene-sheet');
     sheet.innerHTML = ''; sheet.scrollTop=0;
     q('#story-actions').append(primary);
@@ -104,7 +101,8 @@ export function mountGame({ app, state, catalog, draft }) {
     }
     q('.place-menu').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(
       scene==='planning'&&b.dataset.open===(activeRoom==='schedule'?'schedule':'meeting') || scene==='performance'&&b.dataset.open==='stage' || scene==='reflection'&&b.dataset.open==='journal' || scene==='finale'&&b.dataset.open==='stage')));
-    paintMember();
+    mountGameWorld(scene==='performance'&&performancePanel?performancePanel.querySelector('.concert-world'):q('.world-painting'),{scene,selectedMember,onSelect:id=>{selectedMember=id;dialogueIndex=0;paintMember();}});
+    paintMember();hydrateDollPortraits(app);
   };
   const openModal = (id,trigger) => {
     performancePanel?.pausePerformance?.(); returnFocus=trigger || returnFocus;
@@ -116,7 +114,7 @@ export function mountGame({ app, state, catalog, draft }) {
     body.append(panels[id]);
     q('#window-title').textContent=names[id];
     q('#window-notice').append(status); q('#window-actions').append(primary);
-    activeRoom=id; if(!modal.open)modal.showModal();
+    activeRoom=id; if(!modal.open)modal.showModal();hydrateDollPortraits(app);
   };
   const closeRoom=()=>{activeRoom=null;modal.close();q('#game-status').append(status);(q('.reflection-primary')||q('#story-actions')).append(primary);returnFocus?.focus({preventScroll:true});};
   const navigate=(id,trigger)=>{
@@ -133,7 +131,7 @@ export function mountGame({ app, state, catalog, draft }) {
   app._gameNavigate=e=>{
     const b=e.target.closest('[data-open],[data-member],#begin-story');
     if(!b||b.disabled)return;
-    if(b.dataset.member){selectedMember=b.dataset.member;dialogueIndex=0;paintMember();}
+    if(b.dataset.member){selectedMember=b.dataset.member;dialogueIndex=0;selectWorldMember(selectedMember,true);paintMember();}
     else navigate(b.id==='begin-story'?'start':b.dataset.open,b);
   };
   app.addEventListener('click',app._gameNavigate);
@@ -142,7 +140,7 @@ export function mountGame({ app, state, catalog, draft }) {
     const lines=r?[...r.reflections.map(p=>({...p,origin:'무대 회고'})),...r.discussion.map(p=>({...p,origin:'팀 토론'})).reverse(),...r.proposals.map(p=>({...p,origin:'첫 제안'}))].filter(p=>p.agentId===m.id):[];
     dialogueIndex=Math.min(dialogueIndex,Math.max(0,lines.length-1));
     const line=lines[dialogueIndex];
-    q('#dialogue-portrait').innerHTML=portrait(m.id,true);
+    q('#dialogue-portrait').innerHTML=portrait(m.id,true);selectWorldMember(m.id);hydrateDollPortraits(q('#dialogue-portrait'));
     q('#speaker-name').textContent=line?m.name:'진행 안내';
     q('#speech-origin').textContent=line?line.origin:`${m.name} 선택 중`;
     q('#speech-text').textContent=line?.text || (!state?'마지막 한 사람, 기다리고 있었어요. 함께 첫 무대를 준비해 볼까요?':'멤버의 의견을 듣고 함께 무대를 준비해요. 일정과 대화는 현재 라운드에 저장됩니다.');
