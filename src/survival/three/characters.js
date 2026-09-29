@@ -1,7 +1,7 @@
 import { group, ball, box, cylinder, curve, link, material } from './primitives.js';
 import { createArm, poseArm } from './character-rig.js';
 import { characterPose } from './character-motion.js';
-import { sculptFace, sculptEyes, sculptHair, garment } from './character-surfaces.js';
+import { sculptFace, sculptEyes, sculptHair, garment, softenFaceProportions } from './character-surfaces.js';
 
 export const members = [
   { id:'woni', name:'원이', color:'#859474', hair:'#49372f', style:'bob', outfit:'hoodie', x:-2.02,z:-.28,yaw:.34, greeting:'마지막 한 사람, 기다리고 있었어.', detail:'저기, 비어 있는 자리가 네 자리야.', reply:'좋아. 이제 정말 여섯이 모였네!', after:'네가 하고 싶은 이야기도 천천히 들려줘.' },
@@ -11,11 +11,11 @@ export const members = [
   { id:'zena', name:'제나', color:'#a895b7', hair:'#302b35', style:'bangs', outfit:'knit', x:2.02,z:-.28,yaw:-.34, greeting:'기다리는 동안 창밖을 보고 있었어.', detail:'저 멀리 보이는 등대, 같이 보러 가자.', reply:'약속이야. 연습 끝나고 같이 가자!', after:'함께라면 낯선 곳도 금방 익숙해질 거야.' },
 ];
 const faces=[
-  {skin:'#efc6b0',width:.98,length:.97,eyeSpace:.094,eyeHeight:1,eyeTilt:.015,brow:'#674735'},
-  {skin:'#edc8b6',width:.92,length:1.03,eyeSpace:.092,eyeHeight:.91,eyeTilt:.075,brow:'#423432',earring:true},
-  {skin:'#f1c9b4',width:.96,length:.98,eyeSpace:.092,eyeHeight:1.02,eyeTilt:.025,brow:'#755344'},
-  {skin:'#edc3ac',width:1,length:1.01,eyeSpace:.096,eyeHeight:.95,eyeTilt:.01,brow:'#846148',earring:true},
-  {skin:'#efcbb9',width:.95,length:.96,eyeSpace:.094,eyeHeight:1.04,eyeTilt:.025,brow:'#43363a'},
+  {skin:'#f0cdbf',width:.99,length:.94,eyeSpace:.096,eyeHeight:1,eyeTilt:.025,iris:'#73604a',brow:'#674735'},
+  {skin:'#efd0c3',width:.95,length:1.02,eyeSpace:.094,eyeHeight:.87,eyeTilt:.08,iris:'#544335',lipWidth:.048,brow:'#423432',earring:true},
+  {skin:'#f3d0c1',width:1.01,length:.96,eyeSpace:.097,eyeHeight:1.04,eyeTilt:.035,iris:'#816443',lipWidth:.049,brow:'#755344'},
+  {skin:'#ecc8b9',width:.98,length:.99,eyeSpace:.097,eyeHeight:.96,eyeTilt:.02,iris:'#82704f',brow:'#846148',earring:true},
+  {skin:'#f0d0c5',width:.97,length:.95,eyeSpace:.096,eyeHeight:1.06,eyeTilt:.055,iris:'#564634',lipWidth:.045,brow:'#43363a'},
 ];
 
 function chair(parent,x,z,yaw=0) {
@@ -80,7 +80,7 @@ export function createMember(parent,member,index){
   const upper=group(root,[0,.86,0]);upper.userData.articulated=true;
   outfit(upper,member,cloth);cylinder(upper,.067,.082,.20,skin,[0,.92,0]);
   const head=group(upper,[0,1.16,0]);head.scale.set(.93,.93,.93);head.userData.articulated=true;
-  const expression=sculptFace(head,design);const eyes=sculptEyes(head,design);sculptHair(head,member);
+  const expression=sculptFace(head,design);const eyes=sculptEyes(head,design);softenFaceProportions(head);sculptHair(head,member);
   const arms=[-1,1].map(side=>createArm(upper,side,member,skin,hand));
   const character={root,upper,head,eyes,expression,arms,index,baseYaw:member.yaw,greetingAt:null};
   updateMember(character,0,0);return character;

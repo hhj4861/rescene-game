@@ -55,10 +55,18 @@ try{
         const rest=arm.sleeve.getVertexPosition(vertex,new T.Vector3());
         c.greetingAt=0;updateMember(c,1.1,0);root.updateMatrixWorld(true);
         const raised=arm.sleeve.getVertexPosition(vertex,new T.Vector3());
-        return {skins:skins.length,morphs:morphs.length,preserved:retained.every(g=>!discarded.has(g)),deformation:rest.distanceTo(raised),smile:c.expression[0].morphTargetInfluences[0]};
+        const face=c.expression[0].geometry,uv=face.attributes.uv,seam=new Map();let faceSeamMax=0;
+        for(let i=0;i<uv.count;i++){
+          if(uv.getX(i)===0)seam.set(uv.getY(i),i);
+          if(uv.getX(i)===1){
+            const other=seam.get(uv.getY(i));
+            for(const normal of [face.attributes.normal,...face.morphAttributes.normal])faceSeamMax=Math.max(faceSeamMax,new T.Vector3().fromBufferAttribute(normal,i).distanceTo(new T.Vector3().fromBufferAttribute(normal,other)));
+          }
+        }
+        return {skins:skins.length,morphs:morphs.length,preserved:retained.every(g=>!discarded.has(g)),deformation:rest.distanceTo(raised),smile:c.expression[0].morphTargetInfluences[0],faceSeamMax};
       });
       assert.equal(rig.skins,2);assert.equal(rig.morphs,3);assert.equal(rig.preserved,true);
-      assert.ok(rig.deformation>.3);assert.ok(rig.smile>.9);
+      assert.ok(rig.deformation>.3);assert.ok(rig.smile>.9);assert.ok(rig.faceSeamMax<1e-6,'Face seam normals must match during a smile');
       console.log(`${name}: rendered, testing camera`);
       const initialCamera=await page.locator('canvas').getAttribute('data-camera');
       await page.getByRole('button',{name:'공간 둘러보기',exact:true}).click();
@@ -125,7 +133,7 @@ try{
       await unavailable.goto(`${url}/survival-3d.html`);await unavailable.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='error');
       assert.equal(await unavailable.getByRole('button',{name:'다시 열기'}).isVisible(),true);
       assert.equal(await unavailable.locator('#greet').isDisabled(),true);await unavailable.close();
-      results.push({browser:name,render,rig,applicationErrors:errors,captureDiagnostics,checks:['skinned-arm-deformation','morph-smile','animated-mesh-preservation','real-webgl','five-greetings','mesh-picking','camera-presets','drag','keyboard','pause','mobile','touch-selection','reduced-motion','webgl-fallback',...(name==='chromium'?['context-loss']:[]),'no-network-model-call']});
+      results.push({browser:name,render,rig,applicationErrors:errors,captureDiagnostics,checks:['face-seam-lighting','skinned-arm-deformation','morph-smile','animated-mesh-preservation','real-webgl','five-greetings','mesh-picking','camera-presets','drag','keyboard','pause','mobile','touch-selection','reduced-motion','webgl-fallback',...(name==='chromium'?['context-loss']:[]),'no-network-model-call']});
     }finally{await browser.close();}
   }
   assert.equal(calls,0);assert.equal(readFileSync(game.store.path,'utf8'),saveBefore);

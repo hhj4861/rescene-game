@@ -88,6 +88,13 @@ try{
       assets.push({id:member.id,name:member.name,bytes:bytes.length,skinMeshes:skins.length,morphMeshes:morphs.length,animations:loaded.animations.map(a=>a.name),base64:btoa(str)});
     }
     renderer.render(scene,camera);
+    window.renderPortraits=()=>{
+      renderer.setSize(1500,560);renderer.setScissorTest(true);camera.aspect=300/560;camera.updateProjectionMatrix();
+      for(let i=0;i<5;i++){
+        const x=(i-2)*1.35;camera.position.set(x,2.06,2.3);camera.lookAt(x,2.02,0);
+        renderer.setViewport(i*300,0,300,560);renderer.setScissor(i*300,0,300,560);renderer.render(scene,camera);
+      }
+    };
     window.addEventListener('pagehide',()=>renderer.dispose());
     return assets;
   });
@@ -97,5 +104,8 @@ try{
   for(const {base64,...asset} of result){const bytes=Buffer.from(base64,'base64');writeFileSync(join(output,`${asset.id}.glb`),bytes);manifest.models.push({...asset,file:`${asset.id}.glb`,sha256:createHash('sha256').update(bytes).digest('hex'),roundTripVerified:true});}
   writeFileSync(join(output,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   await page.screenshot({path:join(proof,'greeting.png')});
+  const appearance=resolve('docs/design/3d-member-appearance');mkdirSync(appearance,{recursive:true});
+  await page.evaluate(()=>window.renderPortraits());
+  await page.locator('canvas').screenshot({path:join(appearance,'after.png')});
   console.log(JSON.stringify({passed:true,output,models:manifest.models},null,2));
 }finally{await browser.close();server.close();await once(server,'close');}

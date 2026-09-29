@@ -7,7 +7,7 @@
     {
       "id": "woni",
       "name": "원이",
-      "bytes": 6108016,
+      "bytes": 7480040,
       "skinMeshes": 2,
       "morphMeshes": 3,
       "animations": [
@@ -15,13 +15,13 @@
         "greeting"
       ],
       "file": "woni.glb",
-      "sha256": "33bf36f4804459e5d69ef19688c0886c337500c02372815ba8d564ebf124d047",
+      "sha256": "ec8b22b59313eaa739436be21da94b00c83e86e2ce496c5d1cd051fc48f82c1e",
       "roundTripVerified": true
     },
     {
       "id": "liv",
       "name": "리브",
-      "bytes": 6595768,
+      "bytes": 7673588,
       "skinMeshes": 2,
       "morphMeshes": 3,
       "animations": [
@@ -29,13 +29,13 @@
         "greeting"
       ],
       "file": "liv.glb",
-      "sha256": "48e9412609219b7d42f3598fb5c0e38d51eca78995c7aa89dfcb621a9bead673",
+      "sha256": "a54c7ece2285bdb1ae0ed555e34c79c7c5f3fb633a8770c82223218e230f29aa",
       "roundTripVerified": true
     },
     {
       "id": "minami",
       "name": "미나미",
-      "bytes": 7167884,
+      "bytes": 8762252,
       "skinMeshes": 2,
       "morphMeshes": 3,
       "animations": [
@@ -43,13 +43,13 @@
         "greeting"
       ],
       "file": "minami.glb",
-      "sha256": "63017b3be69537f715e6b3827c641afe39a86599fb0505f30652cf8ddf58a977",
+      "sha256": "a5a5e45d185c2384d4af4cfd9752d0cb7b9cbf66dba974af261cc57fc81debbb",
       "roundTripVerified": true
     },
     {
       "id": "may",
       "name": "메이",
-      "bytes": 6764800,
+      "bytes": 7841936,
       "skinMeshes": 2,
       "morphMeshes": 3,
       "animations": [
@@ -57,13 +57,13 @@
         "greeting"
       ],
       "file": "may.glb",
-      "sha256": "034f15712155ec452be130fa718ed0b312b215f921f0c082653864095016edec",
+      "sha256": "89f02575aac08cf6d11ece8fda4ffb6d520f755223b4b166dd44ef0dbc341786",
       "roundTripVerified": true
     },
     {
       "id": "zena",
       "name": "제나",
-      "bytes": 5776576,
+      "bytes": 7665148,
       "skinMeshes": 2,
       "morphMeshes": 3,
       "animations": [
@@ -71,7 +71,7 @@
         "greeting"
       ],
       "file": "zena.glb",
-      "sha256": "c0b924851af01f28d23ccac37f9ec2b64589017b97519bb433a7364e4f88996c",
+      "sha256": "32b989ea823cc7c530d014b058532cb6871d1beb3e0fe45664345f77c8564fc4",
       "roundTripVerified": true
     }
   ]
