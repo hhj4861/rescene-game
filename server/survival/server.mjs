@@ -26,6 +26,11 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
   const token = randomBytes(24).toString('hex');
   const files = new Map([
     ['/', ['survival.html', 'text/html']], ['/survival.html', ['survival.html', 'text/html']],
+    ['/assets/dolls/rescene-motion-v2.webp', ['public/assets/dolls/rescene-motion-v2.webp', 'image/webp']],
+    ['/survival-3d-preview.html', ['survival-3d-preview.html', 'text/html']],
+    ['/survival-3d.html', ['survival-3d.html', 'text/html']],
+    ...['meeting.js','game-world.js','game-world.css','dolls.js','world.js','characters.js','character-rig.js','character-motion.js','character-surfaces.js','primitives.js','meeting.css'].map(name => [`/src/survival/three/${name}`, [`src/survival/three/${name}`, name.endsWith('.css') ? 'text/css' : 'text/javascript']]),
+    ...['three.module.js','three.core.js'].map(name => [`/vendor/three/${name}`, [`node_modules/three/build/${name}`, 'text/javascript']]),
     ['/src/survival/art.js', ['src/survival/art.js', 'text/javascript']],
     ['/src/survival/design.css', ['src/survival/design.css', 'text/css']],
     ...['01-arrival','02-planning','03-performance','04-reflection','05-finale'].map(name => [`/assets/survival/${name}.png`, [`public/assets/survival/${name}.png`, 'image/png']]),

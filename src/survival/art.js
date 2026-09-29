@@ -5,11 +5,10 @@ export const memberOrder = ['woni', 'liv', 'minami', 'may', 'zena'];
 export function artwork(file, box, className = '') {
   return `<svg class="approved-art ${className}" viewBox="${box}" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><image href="/assets/survival/${file}.png" width="1672" height="941"/></svg>`;
 }
-const portraits = { woni:'1283 323 100 122', liv:'1399 323 100 122', minami:'1516 323 100 122', may:'1283 500 100 123', zena:'1399 500 100 123' };
 export function portrait(id, large = false) {
-  if (large && id === 'woni') return artwork('01-arrival', '155 635 330 280', 'portrait-large portrait-woni');
-  if (large && id === 'minami') return artwork('02-planning', '177 675 323 266', 'portrait-large portrait-minami');
-  return artwork('01-arrival', portraits[id] || portraits.woni, large ? 'portrait-large portrait-head' : 'portrait-thumb');
+  const names={woni:'원이',liv:'리브',minami:'미나미',may:'메이',zena:'제나'};
+  const member=names[id]?id:'woni';
+  return `<span class="doll-portrait ${large?'portrait-large':'portrait-thumb'}" data-doll-portrait="${member}"><img alt="${names[member]} 캐릭터"></span>`;
 }
 export function sceneFor(state) {
   if (!state) return 'arrival';

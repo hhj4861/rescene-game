@@ -1,0 +1,155 @@
+{
+  "passed": true,
+  "dir": "/var/folders/04/8rm5pwr52f12x6zmvdwsdcjr0000gn/T/rescene-3d-cbc3Tk",
+  "results": [
+    {
+      "browser": "chromium",
+      "render": {
+        "engine": "three.js r180",
+        "avatar": "vivi-cc0-candidate",
+        "greetings": "0",
+        "ready": "true",
+        "frames": "30",
+        "camera": "0.000,2.631,5.298",
+        "triangles": "497563",
+        "draws": "340"
+      },
+      "rig": {
+        "skins": 2,
+        "morphs": 3,
+        "preserved": true,
+        "deformation": 0.49802078935919136,
+        "smile": 0.95,
+        "faceSeamMax": 0
+      },
+      "avatar": {
+        "meshes": 95,
+        "retained": true,
+        "head": [
+          -0.00030381928735328514,
+          1.9965216639186705,
+          -0.060721950477720874
+        ],
+        "hips": [
+          -0.000697314628330517,
+          0.8399999999999999,
+          0.018739527883679028
+        ],
+        "hand": [
+          0.38143525546888873,
+          1.33988567770615,
+          0.5160480538010914
+        ],
+        "raised": [
+          0.8108590114880666,
+          2.0759466652713923,
+          0.08218573443583521
+        ],
+        "morphTargets": 410,
+        "blinkChanged": true,
+        "gaze": 0.2
+      },
+      "applicationErrors": [],
+      "captureDiagnostics": [],
+      "checks": [
+        "vrm-skeleton-preservation",
+        "vrm-blink-gaze-greeting",
+        "face-seam-lighting",
+        "skinned-arm-deformation",
+        "morph-smile",
+        "animated-mesh-preservation",
+        "real-webgl",
+        "five-greetings",
+        "mesh-picking",
+        "camera-presets",
+        "drag",
+        "keyboard",
+        "pause",
+        "mobile",
+        "touch-selection",
+        "reduced-motion",
+        "webgl-fallback",
+        "context-loss",
+        "no-network-model-call"
+      ]
+    },
+    {
+      "browser": "webkit",
+      "render": {
+        "engine": "three.js r180",
+        "avatar": "vivi-cc0-candidate",
+        "greetings": "0",
+        "ready": "true",
+        "frames": "30",
+        "camera": "0.000,2.631,5.298",
+        "triangles": "497563",
+        "draws": "340"
+      },
+      "rig": {
+        "skins": 2,
+        "morphs": 3,
+        "preserved": true,
+        "deformation": 0.4980207893591912,
+        "smile": 0.95,
+        "faceSeamMax": 0
+      },
+      "avatar": {
+        "meshes": 95,
+        "retained": true,
+        "head": [
+          -0.00030381928735328514,
+          1.9965216639186705,
+          -0.060721950477720874
+        ],
+        "hips": [
+          -0.000697314628330517,
+          0.8399999999999999,
+          0.018739527883679028
+        ],
+        "hand": [
+          0.38143525546888873,
+          1.33988567770615,
+          0.5160480538010914
+        ],
+        "raised": [
+          0.8108590114880666,
+          2.0759466652713923,
+          0.08218573443583521
+        ],
+        "morphTargets": 410,
+        "blinkChanged": true,
+        "gaze": 0.2
+      },
+      "applicationErrors": [],
+      "captureDiagnostics": [
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+      ],
+      "checks": [
+        "vrm-skeleton-preservation",
+        "vrm-blink-gaze-greeting",
+        "face-seam-lighting",
+        "skinned-arm-deformation",
+        "morph-smile",
+        "animated-mesh-preservation",
+        "real-webgl",
+        "five-greetings",
+        "mesh-picking",
+        "camera-presets",
+        "drag",
+        "keyboard",
+        "pause",
+        "mobile",
+        "touch-selection",
+        "reduced-motion",
+        "webgl-fallback",
+        "no-network-model-call"
+      ]
+    }
+  ],
+  "savePreserved": true
+}

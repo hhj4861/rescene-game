@@ -1,0 +1,78 @@
+{
+  "stage": "procedural-rigged-prototype",
+  "source": "Original procedural geometry in src/survival/three; no third-party character assets",
+  "limitations": "Seated prototype. Arms have skinning; head and facial parts use transform and morph animation. Not a full humanoid rig or a final match to the design reference.",
+  "command": "node tools/survival/build-character-models.mjs",
+  "models": [
+    {
+      "id": "woni",
+      "name": "원이",
+      "bytes": 7480040,
+      "skinMeshes": 2,
+      "morphMeshes": 3,
+      "animations": [
+        "idle",
+        "greeting"
+      ],
+      "file": "woni.glb",
+      "sha256": "ec8b22b59313eaa739436be21da94b00c83e86e2ce496c5d1cd051fc48f82c1e",
+      "roundTripVerified": true
+    },
+    {
+      "id": "liv",
+      "name": "리브",
+      "bytes": 7673588,
+      "skinMeshes": 2,
+      "morphMeshes": 3,
+      "animations": [
+        "idle",
+        "greeting"
+      ],
+      "file": "liv.glb",
+      "sha256": "a54c7ece2285bdb1ae0ed555e34c79c7c5f3fb633a8770c82223218e230f29aa",
+      "roundTripVerified": true
+    },
+    {
+      "id": "minami",
+      "name": "미나미",
+      "bytes": 8762252,
+      "skinMeshes": 2,
+      "morphMeshes": 3,
+      "animations": [
+        "idle",
+        "greeting"
+      ],
+      "file": "minami.glb",
+      "sha256": "a5a5e45d185c2384d4af4cfd9752d0cb7b9cbf66dba974af261cc57fc81debbb",
+      "roundTripVerified": true
+    },
+    {
+      "id": "may",
+      "name": "메이",
+      "bytes": 7841936,
+      "skinMeshes": 2,
+      "morphMeshes": 3,
+      "animations": [
+        "idle",
+        "greeting"
+      ],
+      "file": "may.glb",
+      "sha256": "89f02575aac08cf6d11ece8fda4ffb6d520f755223b4b166dd44ef0dbc341786",
+      "roundTripVerified": true
+    },
+    {
+      "id": "zena",
+      "name": "제나",
+      "bytes": 7665148,
+      "skinMeshes": 2,
+      "morphMeshes": 3,
+      "animations": [
+        "idle",
+        "greeting"
+      ],
+      "file": "zena.glb",
+      "sha256": "32b989ea823cc7c530d014b058532cb6871d1beb3e0fe45664345f77c8564fc4",
+      "roundTripVerified": true
+    }
+  ]
+}

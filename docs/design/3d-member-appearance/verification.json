@@ -1,0 +1,94 @@
+{
+  "passed": true,
+  "dir": "/var/folders/04/8rm5pwr52f12x6zmvdwsdcjr0000gn/T/rescene-3d-gvNeO3",
+  "results": [
+    {
+      "browser": "chromium",
+      "render": {
+        "engine": "three.js r180",
+        "greetings": "0",
+        "ready": "true",
+        "frames": "30",
+        "camera": "0.000,2.631,5.298",
+        "triangles": "542485",
+        "draws": "269"
+      },
+      "rig": {
+        "skins": 2,
+        "morphs": 3,
+        "preserved": true,
+        "deformation": 0.49802078935919136,
+        "smile": 0.95,
+        "faceSeamMax": 0
+      },
+      "applicationErrors": [],
+      "captureDiagnostics": [],
+      "checks": [
+        "face-seam-lighting",
+        "skinned-arm-deformation",
+        "morph-smile",
+        "animated-mesh-preservation",
+        "real-webgl",
+        "five-greetings",
+        "mesh-picking",
+        "camera-presets",
+        "drag",
+        "keyboard",
+        "pause",
+        "mobile",
+        "touch-selection",
+        "reduced-motion",
+        "webgl-fallback",
+        "context-loss",
+        "no-network-model-call"
+      ]
+    },
+    {
+      "browser": "webkit",
+      "render": {
+        "engine": "three.js r180",
+        "greetings": "0",
+        "ready": "true",
+        "frames": "30",
+        "camera": "0.000,2.631,5.298",
+        "triangles": "542485",
+        "draws": "269"
+      },
+      "rig": {
+        "skins": 2,
+        "morphs": 3,
+        "preserved": true,
+        "deformation": 0.4980207893591912,
+        "smile": 0.95,
+        "faceSeamMax": 0
+      },
+      "applicationErrors": [],
+      "captureDiagnostics": [
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+      ],
+      "checks": [
+        "face-seam-lighting",
+        "skinned-arm-deformation",
+        "morph-smile",
+        "animated-mesh-preservation",
+        "real-webgl",
+        "five-greetings",
+        "mesh-picking",
+        "camera-presets",
+        "drag",
+        "keyboard",
+        "pause",
+        "mobile",
+        "touch-selection",
+        "reduced-motion",
+        "webgl-fallback",
+        "no-network-model-call"
+      ]
+    }
+  ],
+  "savePreserved": true
+}

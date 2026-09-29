@@ -1,0 +1,68 @@
+{
+  "passed": true,
+  "dir": "/var/folders/04/8rm5pwr52f12x6zmvdwsdcjr0000gn/T/rescene-3d-BcFCJ7",
+  "results": [
+    {
+      "browser": "chromium",
+      "render": {
+        "engine": "three.js r180",
+        "ready": "true",
+        "frames": "30",
+        "camera": "0.000,2.631,5.298",
+        "triangles": "254277",
+        "draws": "251"
+      },
+      "applicationErrors": [],
+      "captureDiagnostics": [],
+      "checks": [
+        "real-webgl",
+        "five-greetings",
+        "mesh-picking",
+        "camera-presets",
+        "drag",
+        "keyboard",
+        "pause",
+        "mobile",
+        "touch-selection",
+        "reduced-motion",
+        "webgl-fallback",
+        "context-loss",
+        "no-network-model-call"
+      ]
+    },
+    {
+      "browser": "webkit",
+      "render": {
+        "engine": "three.js r180",
+        "ready": "true",
+        "frames": "30",
+        "camera": "0.000,2.631,5.298",
+        "triangles": "254277",
+        "draws": "251"
+      },
+      "applicationErrors": [],
+      "captureDiagnostics": [
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+      ],
+      "checks": [
+        "real-webgl",
+        "five-greetings",
+        "mesh-picking",
+        "camera-presets",
+        "drag",
+        "keyboard",
+        "pause",
+        "mobile",
+        "touch-selection",
+        "reduced-motion",
+        "webgl-fallback",
+        "no-network-model-call"
+      ]
+    }
+  ],
+  "savePreserved": true
+}
