@@ -67,7 +67,7 @@ export function batchStatic(root, originals = new Set()) {
   }visit(root);
   for(const batch of batches.values()){
     const count=batch.geometries.reduce((n,g)=>n+g.attributes.position.count,0),geometry=new T.BufferGeometry();
-    for(const [name,size] of [['position',3],['normal',3],['uv',2]]){
+    for(const [name,size] of [['position',3],['normal',3],['uv',2],...(batch.material.vertexColors?[['color',3]]:[])]){
       const values=new Float32Array(count*size);let offset=0;
       for(const part of batch.geometries){if(part.attributes[name])values.set(part.attributes[name].array,offset);offset+=part.attributes.position.count*size;}
       geometry.setAttribute(name,new T.BufferAttribute(values,size));

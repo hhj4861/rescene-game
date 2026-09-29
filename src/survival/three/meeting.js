@@ -114,7 +114,8 @@ async function start() {
     camera.position.set(target.x+Math.sin(yaw)*Math.sin(pitch)*distance,target.y+Math.cos(pitch)*distance,target.z+Math.cos(yaw)*Math.sin(pitch)*distance);camera.lookAt(target);
     characters.forEach((c,i)=>{
       c.upper.position.y=.86+(paused?0:Math.sin(elapsed*1.5+i)*.008);
-      c.head.rotation.y=(i===selected?.035:Math.sin(elapsed*.32+i)*.045);
+      const gaze=T.MathUtils.clamp(Math.atan2(camera.position.x-members[i].x,camera.position.z-members[i].z)-c.baseYaw,-.34,.34);
+      c.head.rotation.y=i===selected?gaze:Math.sin(elapsed*.32+i)*.045;
       c.head.rotation.z=paused?0:Math.sin(elapsed*.7+i)*.017;
       const blink=paused?1:((elapsed+i*.73)%4.9<.15?.12:1);c.eyes.forEach(eye=>{eye.scale.y=blink;});
       const waving=!paused&&i===selected&&elapsed<waveUntil;

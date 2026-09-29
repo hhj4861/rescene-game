@@ -27,7 +27,7 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
   const files = new Map([
     ['/', ['survival.html', 'text/html']], ['/survival.html', ['survival.html', 'text/html']],
     ['/survival-3d.html', ['survival-3d.html', 'text/html']],
-    ...['meeting.js','world.js','characters.js','primitives.js','meeting.css'].map(name => [`/src/survival/three/${name}`, [`src/survival/three/${name}`, name.endsWith('.css') ? 'text/css' : 'text/javascript']]),
+    ...['meeting.js','world.js','characters.js','character-surfaces.js','primitives.js','meeting.css'].map(name => [`/src/survival/three/${name}`, [`src/survival/three/${name}`, name.endsWith('.css') ? 'text/css' : 'text/javascript']]),
     ...['three.module.js','three.core.js'].map(name => [`/vendor/three/${name}`, [`node_modules/three/build/${name}`, 'text/javascript']]),
     ['/src/survival/art.js', ['src/survival/art.js', 'text/javascript']],
     ['/src/survival/design.css', ['src/survival/design.css', 'text/css']],
