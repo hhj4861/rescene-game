@@ -18,7 +18,7 @@ const faces=[
   {skin:'#f0d0c5',width:.97,length:.95,eyeSpace:.096,eyeHeight:1.06,eyeTilt:.055,iris:'#564634',lipWidth:.045,brow:'#43363a'},
 ];
 
-function chair(parent,x,z,yaw=0) {
+export function chair(parent,x,z,yaw=0) {
   const g=group(parent,[x,0,z]);g.rotation.y=yaw;
   box(g,[.66,.10,.62],'#88633f',[0,.64,0]);ball(g,[.3,.055,.28],'#d4c5a5',[0,.72,0]);
   for(const side of [-1,1]){link(g,[side*.27,.05,.23],[side*.26,.65,.22],.028,'#654d37');link(g,[side*.29,.04,-.28],[side*.27,1.46,-.25],.028,'#654d37');}

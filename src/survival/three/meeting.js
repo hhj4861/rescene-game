@@ -11,17 +11,19 @@ function failure(message) {
 }
 
 async function start() {
-  const [T,{createWorld},{members,createMember,createEmptyChair,updateMember},{batchStatic},{createAvatar,updateAvatar}]=await Promise.all([
-    import('/vendor/three/three.module.js'),import('./world.js'),import('./characters.js'),import('./primitives.js'),import('./avatar.js'),
+  const [T,{createWorld},{members,chair,createEmptyChair},{batchStatic},{loadDollArt,createDoll,updateDoll}]=await Promise.all([
+    import('/vendor/three/three.module.js'),import('./world.js'),import('./characters.js'),import('./primitives.js'),import('./dolls.js'),
   ]);
   const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.6));renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
   const scene=new T.Scene();scene.background=new T.Color('#c3dedf');scene.fog=new T.Fog('#c3dedf',38,150);
-  const world=createWorld(scene),characters=members.map((m,i)=>createMember(world.room,m,i));createEmptyChair(world.room);
-  const replacement=await createAvatar(world.room,members[0],0);
-  replacement.root.add(characters[0].root.getObjectByName('seat'));
-  characters[0].root.removeFromParent();characters[0]=replacement;canvas.dataset.avatar='vivi-cc0-candidate';
+  const art=await loadDollArt(),world=createWorld(scene);
+  const characters=members.map((member,index)=>{
+    chair(world.room,member.x,member.z,member.yaw);
+    return createDoll(world.room,member,index,art[index]);
+  });
+  createEmptyChair(world.room);canvas.dataset.avatar='original-town-dolls';canvas.dataset.members=String(characters.length);
   const originalGeometries=batchStatic(scene);originalGeometries.forEach(g=>g.dispose());
   const camera=new T.PerspectiveCamera(43,1,.1,250),target=new T.Vector3(),desiredTarget=new T.Vector3();
   const raycaster=new T.Raycaster(),pointer=new T.Vector2();
@@ -33,7 +35,7 @@ async function start() {
   function setView(next,immediate=false) {
     view=next;const mobile=canvas.clientWidth<600;
     desiredYaw=next==='room'?.27:0;desiredPitch=next==='room'?1.07:1.36;
-    desiredDistance=next==='room'?(mobile?14:10.7):(mobile?8.6:5.5);
+    desiredDistance=next==='room'?(mobile?14:10.7):(mobile?9.2:5.5);
     desiredTarget.set(0,next==='room'?1.20:1.48,-.08);
     document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===next)));
     if(immediate||paused){target.copy(desiredTarget);yaw=desiredYaw;pitch=desiredPitch;distance=desiredDistance;}
@@ -91,7 +93,7 @@ async function start() {
     const wasDown=points.has(e.pointerId);points.delete(e.pointerId);
     if(wasDown&&!moved&&down){
       const r=canvas.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
-      raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(characters.map(c=>c.root),true);
+      raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(scene.children,true);
       if(hits.length){let object=hits[0].object;while(object&&object.userData.member===undefined)object=object.parent;if(object)showMember(object.userData.member);}
     }down=null;
   }
@@ -116,12 +118,11 @@ async function start() {
     target.lerp(desiredTarget,smoothing);yaw=T.MathUtils.lerp(yaw,desiredYaw,smoothing);pitch=T.MathUtils.lerp(pitch,desiredPitch,smoothing);distance=T.MathUtils.lerp(distance,desiredDistance,smoothing);
     camera.position.set(target.x+Math.sin(yaw)*Math.sin(pitch)*distance,target.y+Math.cos(pitch)*distance,target.z+Math.cos(yaw)*Math.sin(pitch)*distance);camera.lookAt(target);
     let activeGreetings=0;
-    characters.forEach((c,i)=>{
-      const gaze=T.MathUtils.clamp(Math.atan2(camera.position.x-members[i].x,camera.position.z-members[i].z)-c.baseYaw,-.34,.34);
-      const pose=(c.kind==='vrm'?updateAvatar:updateMember)(c,elapsed,i===selected?gaze:Math.sin(elapsed*.32+i)*.045);
+    characters.forEach(c=>{
+      const pose=updateDoll(c,elapsed,camera);
       if(pose.active)activeGreetings++;
     });
-    canvas.dataset.greetings=String(activeGreetings);
+    canvas.dataset.greetings=String(activeGreetings);canvas.dataset.poses=characters.map(c=>c.pose).join(',');
     world.boats.forEach((boat,i)=>{boat.position.y=-.33+(paused?0:Math.sin(elapsed*.8+i)*.035);boat.rotation.z=paused?0:Math.sin(elapsed*.65+i)*.03;});
     renderer.render(scene,camera);frames++;
     // Read-only render evidence for browser verification; no game-state or credentials.
@@ -141,4 +142,4 @@ async function start() {
   render(performance.now());loading.hidden=true;canvas.dataset.ready='true';
 }
 
-start().catch(error=>failure(error.code==='AVATAR_LOAD'?error.message:'이 브라우저에서 3D 장면을 열지 못했어요. WebGL을 지원하는 브라우저에서 다시 열어 주세요.'));
+start().catch(error=>failure(error.code==='DOLL_LOAD'?error.message:'이 브라우저에서 3D 장면을 열지 못했어요. WebGL을 지원하는 브라우저에서 다시 열어 주세요.'));

@@ -1,0 +1,223 @@
+{
+  "passed": true,
+  "dir": "/var/folders/04/8rm5pwr52f12x6zmvdwsdcjr0000gn/T/rescene-3d-4znRsm",
+  "results": [
+    {
+      "browser": "chromium",
+      "render": {
+        "engine": "three.js r180",
+        "avatar": "original-town-dolls",
+        "members": "5",
+        "greetings": "0",
+        "poses": "0,0,0,0,0",
+        "ready": "true",
+        "frames": "30",
+        "camera": "0.000,2.631,5.298",
+        "triangles": "94377",
+        "draws": "80"
+      },
+      "dolls": [
+        {
+          "index": 0,
+          "rest": 0,
+          "greeting": 1,
+          "returned": 0,
+          "retained": true,
+          "clear": 24781,
+          "solid": 44401,
+          "green": 0,
+          "emptyHits": 0,
+          "width": 261,
+          "height": 268
+        },
+        {
+          "index": 1,
+          "rest": 0,
+          "greeting": 1,
+          "returned": 0,
+          "retained": true,
+          "clear": 21077,
+          "solid": 43288,
+          "green": 0,
+          "emptyHits": 0,
+          "width": 237,
+          "height": 274
+        },
+        {
+          "index": 2,
+          "rest": 0,
+          "greeting": 1,
+          "returned": 0,
+          "retained": true,
+          "clear": 14700,
+          "solid": 34477,
+          "green": 0,
+          "emptyHits": 0,
+          "width": 190,
+          "height": 261
+        },
+        {
+          "index": 3,
+          "rest": 0,
+          "greeting": 1,
+          "returned": 0,
+          "retained": true,
+          "clear": 22414,
+          "solid": 36303,
+          "green": 0,
+          "emptyHits": 0,
+          "width": 226,
+          "height": 262
+        },
+        {
+          "index": 4,
+          "rest": 0,
+          "greeting": 1,
+          "returned": 0,
+          "retained": true,
+          "clear": 28893,
+          "solid": 44371,
+          "green": 0,
+          "emptyHits": 0,
+          "width": 280,
+          "height": 265
+        }
+      ],
+      "applicationErrors": [],
+      "captureDiagnostics": [],
+      "checks": [
+        "five-original-dolls",
+        "alpha-aware-picking",
+        "chroma-key-preserves-art",
+        "greeting-pose-and-return",
+        "animated-card-preservation",
+        "missing-art-error",
+        "real-webgl",
+        "five-greetings",
+        "mesh-picking",
+        "camera-presets",
+        "drag",
+        "keyboard",
+        "pause",
+        "mobile",
+        "touch-selection",
+        "reduced-motion",
+        "webgl-fallback",
+        "context-loss",
+        "no-network-model-call"
+      ]
+    },
+    {
+      "browser": "webkit",
+      "render": {
+        "engine": "three.js r180",
+        "avatar": "original-town-dolls",
+        "members": "5",
+        "greetings": "0",
+        "poses": "0,0,0,0,0",
+        "ready": "true",
+        "frames": "30",
+        "camera": "0.000,2.631,5.298",
+        "triangles": "94377",
+        "draws": "80"
+      },
+      "dolls": [
+        {
+          "index": 0,
+          "rest": 0,
+          "greeting": 1,
+          "returned": 0,
+          "retained": true,
+          "clear": 24781,
+          "solid": 44401,
+          "green": 0,
+          "emptyHits": 0,
+          "width": 261,
+          "height": 268
+        },
+        {
+          "index": 1,
+          "rest": 0,
+          "greeting": 1,
+          "returned": 0,
+          "retained": true,
+          "clear": 21077,
+          "solid": 43288,
+          "green": 0,
+          "emptyHits": 0,
+          "width": 237,
+          "height": 274
+        },
+        {
+          "index": 2,
+          "rest": 0,
+          "greeting": 1,
+          "returned": 0,
+          "retained": true,
+          "clear": 14700,
+          "solid": 34477,
+          "green": 0,
+          "emptyHits": 0,
+          "width": 190,
+          "height": 261
+        },
+        {
+          "index": 3,
+          "rest": 0,
+          "greeting": 1,
+          "returned": 0,
+          "retained": true,
+          "clear": 22414,
+          "solid": 36303,
+          "green": 0,
+          "emptyHits": 0,
+          "width": 226,
+          "height": 262
+        },
+        {
+          "index": 4,
+          "rest": 0,
+          "greeting": 1,
+          "returned": 0,
+          "retained": true,
+          "clear": 28893,
+          "solid": 44371,
+          "green": 0,
+          "emptyHits": 0,
+          "width": 280,
+          "height": 265
+        }
+      ],
+      "applicationErrors": [],
+      "captureDiagnostics": [
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+      ],
+      "checks": [
+        "five-original-dolls",
+        "alpha-aware-picking",
+        "chroma-key-preserves-art",
+        "greeting-pose-and-return",
+        "animated-card-preservation",
+        "missing-art-error",
+        "real-webgl",
+        "five-greetings",
+        "mesh-picking",
+        "camera-presets",
+        "drag",
+        "keyboard",
+        "pause",
+        "mobile",
+        "touch-selection",
+        "reduced-motion",
+        "webgl-fallback",
+        "no-network-model-call"
+      ]
+    }
+  ],
+  "savePreserved": true
+}

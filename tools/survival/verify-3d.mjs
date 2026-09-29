@@ -1,5 +1,6 @@
 /* global console, document, window, HTMLCanvasElement, fetch */
 import assert from 'node:assert/strict';
+import {Buffer} from 'node:buffer';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -39,51 +40,33 @@ try{
       await page.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='true');
       await page.waitForFunction(()=>Number(document.querySelector('canvas').dataset.frames)>=30);
       const render=await page.locator('canvas').evaluate(el=>({...el.dataset}));
-      assert.ok(Number(render.triangles)>100000);assert.ok(Number(render.draws)<350);
+      assert.ok(Number(render.triangles)>50000);assert.ok(Number(render.draws)<350);
       await page.getByRole('button',{name:'동작 멈추기'}).click();
       await capture(page,{path:join(dir,`${name}-desktop.png`)});
-      const rig=await page.evaluate(async()=>{
+      assert.equal(render.avatar,'original-town-dolls');assert.equal(render.members,'5');
+      assert.equal(render.poses,'0,0,0,0,0');
+      const dolls=await page.evaluate(async()=>{
         const T=await import('/vendor/three/three.module.js');
-        const {createMember,members,updateMember}=await import('/src/survival/three/characters.js');
+        const {loadDollArt,createDoll,updateDoll}=await import('/src/survival/three/dolls.js');
         const {batchStatic}=await import('/src/survival/three/primitives.js');
-        const root=new T.Group(),c=createMember(root,{...members[0],x:0,z:0,yaw:0},0);
-        const retained=c.arms.map(a=>a.sleeve.geometry).concat(c.expression.map(p=>p.geometry));
-        const discarded=batchStatic(root);
-        const skins=[],morphs=[];root.traverse(o=>{if(o.isSkinnedMesh)skins.push(o);if(o.morphTargetInfluences?.length)morphs.push(o);});
-        const arm=c.arms[1],vertex=40*17;
-        updateMember(c,0,0);root.updateMatrixWorld(true);
-        const rest=arm.sleeve.getVertexPosition(vertex,new T.Vector3());
-        c.greetingAt=0;updateMember(c,1.1,0);root.updateMatrixWorld(true);
-        const raised=arm.sleeve.getVertexPosition(vertex,new T.Vector3());
-        const face=c.expression[0].geometry,uv=face.attributes.uv,seam=new Map();let faceSeamMax=0;
-        for(let i=0;i<uv.count;i++){
-          if(uv.getX(i)===0)seam.set(uv.getY(i),i);
-          if(uv.getX(i)===1){
-            const other=seam.get(uv.getY(i));
-            for(const normal of [face.attributes.normal,...face.morphAttributes.normal])faceSeamMax=Math.max(faceSeamMax,new T.Vector3().fromBufferAttribute(normal,i).distanceTo(new T.Vector3().fromBufferAttribute(normal,other)));
-          }
-        }
-        return {skins:skins.length,morphs:morphs.length,preserved:retained.every(g=>!discarded.has(g)),deformation:rest.distanceTo(raised),smile:c.expression[0].morphTargetInfluences[0],faceSeamMax};
+        const art=await loadDollArt(),root=new T.Group(),camera=new T.PerspectiveCamera();camera.position.set(0,2,6);
+        return art.map((frames,index)=>{
+          const doll=createDoll(root,{x:0,z:0},index,frames);batchStatic(root);updateDoll(doll,0,camera);
+          const rest=doll.pose;doll.greetingAt=0;updateDoll(doll,1.1,camera);const greeting=doll.pose;
+          const retained=doll.frames.every(mesh=>mesh.parent===doll.pivot);
+          updateDoll(doll,4,camera);const returned=doll.pose;
+          const frame=frames[0];let clear=0,solid=0,green=0;
+          for(let i=0;i<frame.pixels.length;i+=4){const p=frame.pixels;if(p[i+3]===0)clear++;if(p[i+3]>220){solid++;if(p[i+1]-Math.max(p[i],p[i+2])>100)green++;}}
+          // A ray through a fully transparent margin must not select the card.
+          root.updateMatrixWorld(true);const mesh=doll.frames[0],width=frame.width*.0056,height=frame.height*.0056;
+          const corner=mesh.localToWorld(new T.Vector3(-width/2+.001,height/2-.001,0));
+          const ray=new T.Raycaster(corner.clone().add(new T.Vector3(0,0,2)),new T.Vector3(0,0,-1));
+          const emptyHits=ray.intersectObject(mesh).length;
+          return {index,rest,greeting,returned,retained,clear,solid,green,emptyHits,width:frame.width,height:frame.height};
+        });
       });
-      assert.equal(rig.skins,2);assert.equal(rig.morphs,3);assert.equal(rig.preserved,true);
-      assert.ok(rig.deformation>.3);assert.ok(rig.smile>.9);assert.ok(rig.faceSeamMax<1e-6,'Face seam normals must match during a smile');
-      assert.equal(render.avatar,'vivi-cc0-candidate');
-      const avatar=await page.evaluate(async()=>{
-        const T=await import('/vendor/three/three.module.js');
-        const {createAvatar,updateAvatar}=await import('/src/survival/three/avatar.js');
-        const {batchStatic}=await import('/src/survival/three/primitives.js');
-        const root=new T.Group(),a=await createAvatar(root,{x:0,z:0,yaw:0},0);
-        const meshes=a.skins.length;batchStatic(root);
-        const position=name=>a.bone(name).getWorldPosition(new T.Vector3()).toArray();
-        const head=position('head'),hips=position('hips'),hand=position('leftHand');
-        const targets=()=>{const values=[];a.vrm.scene.traverse(o=>{if(o.morphTargetInfluences)values.push(...o.morphTargetInfluences);});return values;};
-        const before=targets();updateAvatar(a,4.99,0);const blink=targets();
-        a.greetingAt=0;updateAvatar(a,1.1,.2);const raised=position('leftHand');
-        return {meshes,retained:a.skins.every(m=>m.parent!==null),head,hips,hand,raised,morphTargets:blink.length,blinkChanged:blink.some((v,i)=>Math.abs(v-before[i])>.5),gaze:a.bone('head').rotation.y};
-      });
-      assert.ok(avatar.meshes>=3);assert.equal(avatar.retained,true);assert.ok(Math.abs(avatar.hips[1]-.84)<.03);
-      assert.ok(avatar.head[1]>1.85&&avatar.head[1]<2.15);assert.ok(avatar.raised[1]>avatar.hand[1]+.3);assert.ok(avatar.hand[1]>1.22&&avatar.hand[1]<1.5,'Resting hand must clear the tabletop');
-      assert.ok(avatar.morphTargets>10);assert.equal(avatar.blinkChanged,true);assert.ok(Math.abs(avatar.gaze-.2)<.001);
+      assert.equal(dolls.length,5);
+      for(const doll of dolls){assert.equal(doll.rest,0);assert.equal(doll.greeting,1);assert.equal(doll.returned,0);assert.equal(doll.retained,true);assert.ok(doll.clear>1000);assert.ok(doll.solid>10000);assert.equal(doll.green,0);assert.equal(doll.emptyHits,0);}
       await page.getByRole('button',{name:'원이',exact:true}).click();
       await capture(page,{path:join(dir,`${name}-avatar-desktop.png`)});
       await page.getByRole('button',{name:'카메라 시점 초기화'}).click();
@@ -102,8 +85,8 @@ try{
       await page.getByRole('button',{name:'제나',exact:true}).click();
       await page.getByRole('button',{name:'카메라 시점 초기화'}).click();
       await page.waitForFunction(()=>document.querySelector('canvas').dataset.camera?.startsWith('0.000,2.631,5.298'));
-      // A direct hit on Woni's rendered head proves mesh picking after batching.
-      await page.locator('canvas').click({position:{x:bounds.width*.276,y:bounds.height*.376}});
+      // A direct hit on Woni's rendered head proves mesh picking after batching and alpha-aware picking.
+      await page.locator('canvas').click({position:{x:bounds.width*.30,y:bounds.height*.40}});
       assert.equal(await page.locator('.stage').getAttribute('data-member'),'woni');
       console.log(`${name}: mesh picking passed, testing greetings`);
       for(const [i,member] of ['원이','리브','미나미','메이','제나'].entries()){
@@ -115,6 +98,7 @@ try{
       await page.getByRole('button',{name:'함께 둘러보기'}).click();
       assert.match(await page.locator('#line').innerText(),/우리만의 계절/);
       await page.getByRole('button',{name:'동작 재생하기'}).click();
+      await page.waitForFunction(()=>document.querySelector('canvas').dataset.poses==='1,1,1,1,1');
       const previousFrames=Number(await page.locator('canvas').getAttribute('data-frames'));
       await page.waitForFunction(before=>Number(document.querySelector('canvas').dataset.frames)>before,previousFrames);
       await page.getByRole('button',{name:'동작 멈추기'}).click();
@@ -152,16 +136,18 @@ try{
         HTMLCanvasElement.prototype.getContext=function(type,...args){if(type.startsWith('webgl'))return null;return original.call(this,type,...args);};
       });
       const missing=await browser.newPage();
-      await missing.route('**/woni-base.vrm',route=>route.fulfill({status:404,body:'not found'}));
+      await missing.route('**/rescene-motion-v2.webp',route=>route.fulfill({status:404,body:'not found'}));
       await missing.goto(`${url}/survival-3d.html`);await missing.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='error');
-      assert.match(await missing.locator('#load-state').innerText(),/캐릭터 모델/);assert.equal(await missing.locator('#greet').isDisabled(),true);await missing.close();
+      assert.match(await missing.locator('#load-state').innerText(),/캐릭터 이미지/);assert.equal(await missing.locator('#greet').isDisabled(),true);await missing.close();
       await unavailable.goto(`${url}/survival-3d.html`);await unavailable.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='error');
       assert.equal(await unavailable.getByRole('button',{name:'다시 열기'}).isVisible(),true);
       assert.equal(await unavailable.locator('#greet').isDisabled(),true);await unavailable.close();
-      results.push({browser:name,render,rig,avatar,applicationErrors:errors,captureDiagnostics,checks:['vrm-skeleton-preservation','vrm-blink-gaze-greeting','face-seam-lighting','skinned-arm-deformation','morph-smile','animated-mesh-preservation','real-webgl','five-greetings','mesh-picking','camera-presets','drag','keyboard','pause','mobile','touch-selection','reduced-motion','webgl-fallback',...(name==='chromium'?['context-loss']:[]),'no-network-model-call']});
+      results.push({browser:name,render,dolls,applicationErrors:errors,captureDiagnostics,checks:['five-original-dolls','alpha-aware-picking','chroma-key-preserves-art','greeting-pose-and-return','animated-card-preservation','missing-art-error','real-webgl','five-greetings','mesh-picking','camera-presets','drag','keyboard','pause','mobile','touch-selection','reduced-motion','webgl-fallback',...(name==='chromium'?['context-loss']:[]),'no-network-model-call']});
     }finally{await browser.close();}
   }
-  assert.ok(!(await fetch(url+'/survival.html')).headers.get('content-security-policy').includes('blob:'));
+  for(const path of ['/survival.html','/survival-3d.html'])assert.ok(!(await fetch(url+path)).headers.get('content-security-policy').includes('blob:'));
+  assert.deepEqual(Buffer.from(await (await fetch(url+'/assets/dolls/rescene-motion-v2.webp')).arrayBuffer()),readFileSync('public/assets/dolls/rescene-motion-v2.webp'));
+  for(const path of ['/vendor/vrm/avatar-loader.js','/assets/survival-3d/characters/woni-base.vrm'])assert.equal((await fetch(url+path)).status,404);
   assert.equal(calls,0);assert.equal(readFileSync(game.store.path,'utf8'),saveBefore);
   for(const path of ['/vendor/three/package.json','/src/survival/three/not-allowed.js'])assert.equal((await fetch(url+path)).status,404);
   writeFileSync(join(dir,'results.json'),JSON.stringify({passed:true,dir,results,savePreserved:true},null,2));
