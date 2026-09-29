@@ -1,0 +1,17 @@
+{
+  "method": "built-in image_gen background-extraction",
+  "reference": "reference.png",
+  "referenceSource": "docs/design/semireal-characters/cast-lineup-v1.png (deb8c7f root checkout)",
+  "atlas": "cast.png",
+  "atlasSize": [
+    1774,
+    887
+  ],
+  "prompt": "Use case: background-extraction.\nEdit target: the attached RESCENE cast lineup. Create a production-ready transparent sprite atlas containing ONLY the five FULL-BODY women from the TOP ROW. Remove the entire grey background, floor, shadows, all text, dividers, numbers and all bottom-row portrait panels.\nCRITICAL: preserve exactly the five original character designs, faces, expressions, hair, skin tones, clothing, body proportions and poses. Do not redesign, beautify, restyle or swap anyone. Same left-to-right order: long black wavy hair navy headband; ash-blonde bob wink silver clips; long copper red waves braided crown; black two braids white ribbons; long straight black wispy bangs wink. All wear the original white short sleeved blouse, plaid tie and pleated plaid skirt, white ankle socks and black loafers.\nLayout: wide landscape atlas, five equal-width columns, one full-body figure centered in each column. All five heads aligned to the same upper line and shoes aligned on the same lower line. Entire body and hair inside each respective column, generous transparent gap between figures; never overlapping or touching. Tall slim original proportions, NOT chibi, NOT 3D figurines. Every foot, finger and hair tip visible. Use canvas efficiently; characters fill about 88% of canvas height. Actual transparent alpha background. No drop shadows, no text, no frames, no portraits, no additional items. This is extraction of the approved characters for a 2.5D game, not a new concept.",
+  "notes": [
+    "Face close-ups display the approved reference directly via SVG viewports.",
+    "Transparent full-body atlas is an imagegen edit; not pixel-identical to the reference.",
+    "Visual IDs 01–05 are intentionally not mapped to real members.",
+    "No Tripo asset or paid export used."
+  ]
+}

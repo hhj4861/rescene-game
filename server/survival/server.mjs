@@ -25,6 +25,9 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
   const game = new Game(store, gameRuntime);
   const token = randomBytes(24).toString('hex');
   const files = new Map([
+    ['/character-review.html', ['character-review.html', 'text/html']],
+    ...['review.js','review.css'].map(name => [`/src/survival/characters25/${name}`, [`src/survival/characters25/${name}`, name.endsWith('.css') ? 'text/css' : 'text/javascript']]),
+    ...['cast','reference'].map(name => [`/assets/characters25/${name}.png`, [`public/assets/characters25/${name}.png`, 'image/png']]),
     ['/', ['survival.html', 'text/html']], ['/survival.html', ['survival.html', 'text/html']],
     ['/assets/dolls/rescene-motion-v2.webp', ['public/assets/dolls/rescene-motion-v2.webp', 'image/webp']],
     ['/survival-3d-preview.html', ['survival-3d-preview.html', 'text/html']],

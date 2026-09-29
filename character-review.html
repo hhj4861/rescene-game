@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#e9eeeb">
+  <title>다섯 사람, 첫인상 · RESCENE</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/src/survival/characters25/review.css">
+</head>
+<body>
+  <header class="masthead">
+    <a class="wordmark" href="/character-review.html">RESCENE<span>우리 여섯의 계절</span></a>
+    <button id="open-reference" class="text-button">원본 시안 비교 <span aria-hidden="true">↗</span></button>
+  </header>
+  <main>
+    <div class="page-heading"><div><p>캐릭터 미리보기</p><h1>다섯 사람, 첫인상</h1></div><p class="intro">마음에 담아 둔 모습 그대로.<br>한 사람씩, 조금 더 가까이 만나보세요.</p></div>
+    <div class="review-layout">
+      <section class="scene-panel" aria-label="다섯 캐릭터의 전신 미리보기">
+        <div class="scene-toolbar">
+          <div class="segmented" role="group" aria-label="캐릭터 보기 방식">
+            <button data-view="group" aria-pressed="true">함께 보기</button><button data-view="solo" aria-pressed="false">한 명씩 보기</button>
+          </div>
+          <button id="motion-toggle" class="quiet-button" aria-pressed="false">움직임 멈추기</button>
+        </div>
+        <div id="scene" class="scene" data-view="group" data-backdrop="coast">
+          <div class="scenery" aria-hidden="true"><div class="sea"></div><div class="island island-one"></div><div class="island island-two"></div><div class="window-frame"></div><div class="floor"></div><div class="sunlight"></div></div>
+          <p class="scene-caption">바닷빛이 머무는 연습실</p>
+          <div id="cast" class="cast"></div>
+          <div class="scene-bottom"><span>캐릭터를 누르면 자세히 볼 수 있어요</span><button id="backdrop-toggle" class="quiet-button" aria-pressed="false">단색 배경</button></div>
+          <p id="asset-status" class="asset-status" role="status">캐릭터를 불러오고 있어요.</p>
+        </div>
+      </section>
+      <aside class="detail" aria-label="선택한 캐릭터">
+        <div id="portrait" class="portrait"></div>
+        <div class="detail-copy" aria-live="polite" aria-atomic="true"><div class="detail-title"><h2 id="character-title">캐릭터 01</h2><span id="character-count">01 / 05</span></div><p id="character-description"></p></div>
+        <div class="dialogue-sample"><span>대화 장면 미리보기</span><p id="dialogue" aria-live="polite">“우리, 여기서부터 시작해 볼까?”</p><button id="greet" class="greet-button">인사 건네기 <span aria-hidden="true">↗</span></button></div>
+      </aside>
+    </div>
+    <nav id="portrait-list" class="portrait-list" aria-label="캐릭터 선택"></nav>
+    <footer><p>외형 확인용 · 멤버 이름 배정 전</p><p>원본 얼굴 확대와 배경 분리 전신을 함께 확인하세요.</p></footer>
+  </main>
+  <dialog id="reference-dialog" aria-labelledby="reference-title"><div class="dialog-heading"><div><h2 id="reference-title">승인한 원본 시안</h2><p>얼굴·헤어·의상·비율의 비교 기준입니다.</p></div><button id="close-reference" aria-label="원본 시안 닫기">닫기 ×</button></div><img src="/assets/characters25/reference.png" alt="01부터 05까지 다섯 캐릭터의 승인된 전신과 얼굴 원본 시안" width="1536" height="1024"></dialog>
+  <noscript>캐릭터 선택과 움직임을 보려면 JavaScript를 켜주세요. <a href="/assets/characters25/reference.png">원본 시안 보기</a></noscript>
+  <script type="module" src="/src/survival/characters25/review.js"></script>
+</body>
+</html>
