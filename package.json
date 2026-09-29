@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "arcade:dev": "vite --config arcade-room.config.js --open /arcade-room.html",
+    "arcade:build": "vite build --config arcade-room.config.js",
+    "arcade:test": "node --test tests/arcade-room/*.test.mjs",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
