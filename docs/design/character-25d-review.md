@@ -45,6 +45,6 @@ node --input-type=module -e 'import {startServer} from "./server/survival/server
 - HTML·JS·CSS·이미지 2개, 총 5개 정적 경로 HTTP 200 확인.
 - 기존 서버 회귀 테스트 1/1 통과, 변경 JS ESLint·구문 검사·diff 검사 통과. 서버 테스트의 최초 sandbox 포트 제한은 승인된 실행에서 재검증했다.
 
-![데스크톱 전체 보기](character-25d-review/desktop.png)
-![모바일 전체 보기](character-25d-review/mobile.png)
-![모바일 개별 보기](character-25d-review/solo.png)
+![데스크톱 전체 보기](character-25d-review/desktop.jpg)
+![모바일 전체 보기](character-25d-review/mobile.jpg)
+![모바일 개별 보기](character-25d-review/solo.jpg)
