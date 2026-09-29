@@ -1,3 +1,4 @@
+import { portrait } from './art.js';
 import { mountGame, captureGameFocus } from './game-view.js';
 /* global document, fetch, clearTimeout, setTimeout, crypto, structuredClone, confirm, AudioContext, FormData */
 const app = document.querySelector('#app');
@@ -10,7 +11,7 @@ const labels = { announced: '회의 준비', proposal: '각자의 아이디어',
 const danceNames = { flow: '유연한 동작', groove: '리듬 중심', power: '파워 안무' };
 const riskNames = { none: '안정적인 구성', adlib: '보컬 애드리브', danceBreak: '댄스 브레이크', unit: '유닛 전환' };
 const name = id => catalog.members.find(m => m.id === id)?.name || catalog.judges.find(j => j.id === id)?.name || '나';
-function team() { return `<div class="team">${[...catalog.members, { id: 'user', name: '나' }].map(m => `<div class="seat"><div class="avatar">${esc(m.name.slice(0, 1))}</div><strong>${m.name}</strong><small>${m.id === 'user' ? '여섯 번째 팀원' : '우리 팀'}</small></div>`).join('')}</div><div class="tableline"></div>`; }
+function team() { return `<div class="team">${[...catalog.members, { id: 'user', name: '나' }].map(m => `<div class="seat">${m.id==='user'?'<div class="avatar">나</div>':portrait(m.id)}<strong>${m.name}</strong><small>${m.id === 'user' ? '여섯 번째 팀원' : '우리 팀'}</small></div>`).join('')}</div><div class="tableline"></div>`; }
 async function refresh(force = false) {
   try {
     const response = await fetch('/api/state'); if (!response.ok) throw new Error('게임 서버에 연결할 수 없습니다');

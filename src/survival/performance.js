@@ -1,7 +1,7 @@
 /* global document, AudioContext, Blob, URL, requestAnimationFrame, cancelAnimationFrame, matchMedia */
 import { composePerformance, renderPcm, encodeWav, stageFrame } from './arrangement.js';
 import { escapeHtml as esc } from './scene.js';
-import {setPerformanceFrame} from './three/game-world.js';
+import {setPerformanceFrame} from './characters25/world.js';
 let disposeCurrent = () => {};
 export function stopPerformance() { disposeCurrent(); disposeCurrent=()=>{}; }
 export function mountPerformance(panel, { round, members, seed }) {

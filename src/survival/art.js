@@ -1,14 +1,15 @@
+import { castOrder, characterFor, characterArt } from './characters25/cast.js';
 // The approved paintings are immutable atlases. SVG viewports expose only art;
 // all controls, state and dialogue are live DOM, never screenshot hotspots.
 export const artFiles = ['01-arrival', '02-planning', '03-performance', '04-reflection', '05-finale'];
-export const memberOrder = ['woni', 'liv', 'minami', 'may', 'zena'];
+export const memberOrder = castOrder;
 export function artwork(file, box, className = '') {
   return `<svg class="approved-art ${className}" viewBox="${box}" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><image href="/assets/survival/${file}.png" width="1672" height="941"/></svg>`;
 }
 export function portrait(id, large = false) {
-  const names={woni:'원이',liv:'리브',minami:'미나미',may:'메이',zena:'제나'};
-  const member=names[id]?id:'woni';
-  return `<span class="doll-portrait ${large?'portrait-large':'portrait-thumb'}" data-doll-portrait="${member}"><img alt="${names[member]} 캐릭터"></span>`;
+  const member=characterFor(id);
+  if(!member)return '';
+  return `<span class="doll-portrait cast-portrait ${large?'portrait-large':'portrait-thumb'}" role="img" aria-label="${member.name} 캐릭터" data-portrait-member="${member.id}" data-visual="${member.visual}">${characterArt(id)}</span>`;
 }
 export function sceneFor(state) {
   if (!state) return 'arrival';

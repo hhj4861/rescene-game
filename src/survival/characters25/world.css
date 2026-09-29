@@ -1,0 +1,108 @@
+/* Approved character art: shared meeting, performance and season world. */
+.live-world,.concert-world{position:absolute;inset:0;overflow:hidden}
+.cast-world{--look-x:0px;--look-y:0px;isolation:isolate;background:#dce8e6;color:#2c4248}
+.cast-setting{position:absolute;inset:-12px;overflow:hidden;background:linear-gradient(#e4eee9,#c7dce0 68%,#eae3d8 68%);transform:translate(calc(var(--look-x) * -1),calc(var(--look-y) * -1));transition:transform .25s ease}
+.cast-sea{position:absolute;inset:43% 0 27%;background:linear-gradient(#91afb2,#b9cdcb)}
+.cast-sea:after{content:"";position:absolute;inset:15% 0;background:repeating-linear-gradient(0deg,transparent 0 20px,#edf1db60 21px 22px,transparent 23px 43px);transform:scaleX(.6)}
+.cast-island{position:absolute;top:36%;left:-4%;width:36%;height:9%;background:#9ab1a7;border-radius:100% 100% 0 0;opacity:.55}
+.cast-windows{position:absolute;inset:0 0 25%;border:22px solid #ece8db;border-top:0;border-bottom-width:17px;background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 6px),#e9e4d7 calc(25% - 6px) calc(25% + 6px),transparent calc(25% + 6px) 50%);box-shadow:0 8px 12px #587b8020}
+.cast-floor{position:absolute;inset:75% 0 0;background:linear-gradient(#e6ddce,#cfc5b7);border-top:2px solid #fbf6e9}
+.cast-floor:after{content:"";position:absolute;inset:0 -35% -75%;background:repeating-linear-gradient(90deg,transparent 0 84px,#a997811c 85px 86px);transform:perspective(200px) rotateX(45deg);transform-origin:top}
+.cast-light{position:absolute;inset:0;background:linear-gradient(116deg,#fffff720 0 40%,#fffffa60 40% 48%,transparent 48%);pointer-events:none}
+.cast-place{position:absolute;top:24px;left:26px;margin:0;font:14px "AppleMyungjo","Batang",serif;color:#526c70;letter-spacing:.08em}
+.cast-actors{position:absolute;inset:65px 18px 76px;display:flex;align-items:end;justify-content:center;transform:translate(var(--look-x),var(--look-y));transition:transform .25s ease}
+.cast-actor{position:relative;width:20%;height:100%;min-width:0;min-height:0;flex-shrink:0;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0;padding:0 0 23px;color:inherit;isolation:isolate;cursor:pointer}
+.cast-actor:focus-visible{outline:2px solid #477882;outline-offset:0;border-radius:10px}
+.cast-actor[hidden]{display:none!important}
+.cast-body{display:block;height:100%;width:100%;transform-origin:50% 98%;animation:cast-breathe 5.8s ease-in-out infinite}
+.cast-art{display:block;width:100%;height:100%;overflow:hidden}
+.cast-actor:nth-child(2) .cast-body{animation-delay:-1.1s}.cast-actor:nth-child(3) .cast-body{animation-delay:-2.7s}.cast-actor:nth-child(4) .cast-body{animation-delay:-4.1s}.cast-actor:nth-child(5) .cast-body{animation-delay:-3.3s}
+.cast-name{position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);font-size:13px;white-space:nowrap;border-radius:30px;padding:5px 13px;color:#52676b;background:#fff5}
+.cast-actor[aria-pressed=true] .cast-name{background:#365866;color:#fff}
+.cast-shadow{position:absolute;width:38%;height:9px;background:#4b4d4940;border-radius:50%;bottom:36px;left:31%;filter:blur(5px);z-index:-1}
+.cast-world[data-focus=true] .cast-actor{width:75%;max-width:290px}
+.world-controls{position:absolute;bottom:16px;right:16px;display:flex;gap:6px;z-index:4}
+.world-controls button{background:#f7f8f4e8;color:#344c5d;border:1px solid #a9bcb6;border-radius:24px;font-size:12px;padding:8px 13px;min-height:38px}
+.world-controls button[aria-pressed=true]{background:#365866;color:#fff}
+.world-loading{position:absolute;inset:30% 8% auto;background:#f7f8f4ed;padding:20px;line-height:1.7;text-align:center;border-radius:8px;font-size:14px;z-index:5}
+.world-loading[hidden]{display:none}
+.motion-paused .cast-body,.page-hidden .cast-body{animation-play-state:paused}
+.motion-paused .cast-setting,.motion-paused .cast-actors{transition:none}
+@keyframes cast-breathe{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-1px) scaleY(1.003)}}
+
+/* The approved face sheet is used everywhere the game shows a member. */
+.doll-portrait.cast-portrait{display:block;position:relative;overflow:hidden;padding:0;background:#dfded8;line-height:0;border-radius:3px}
+.cast-portrait .cast-art{width:100%;height:100%}
+.arrival-members .cast-portrait{height:90px;aspect-ratio:1}
+.vote-portraits .cast-portrait{height:43px;width:40px;margin:auto}
+.plan-member .cast-portrait{height:100%;width:100%}
+.reflection-members .cast-portrait{height:88px}.rest-members .cast-portrait{height:95px}
+.team .cast-portrait{width:66px;height:66px;margin:auto}
+.finale-paper article>.cast-portrait{width:34%;height:80px;flex-shrink:0}
+.story-box #dialogue-portrait{width:210px;height:178px;left:16px;bottom:0;border-radius:8px 8px 0 0}
+.story-box{grid-template-columns:240px minmax(0,1fr) minmax(260px,34%)}
+[data-scene=reflection] .story-box{grid-template-columns:240px minmax(0,1fr)}
+#scene-sheet{pointer-events:none}#scene-sheet>*{pointer-events:auto}
+[data-scene=planning] #scene-sheet,[data-scene=reflection] #scene-sheet{pointer-events:auto}
+[data-scene=arrival] .world-painting{right:30%}
+[data-scene=finale] .world-painting{right:30%;top:126px}
+[data-scene=finale] .finale-title{width:70%;height:126px;pointer-events:none}
+[data-scene=finale] .finale-title p{position:static;width:auto;margin:10px 0 4px;font-size:14px}
+[data-scene=finale] .finale-title h1{position:static;width:auto;height:auto;clip-path:none;overflow:visible;font-size:32px;margin:8px 0}
+[data-scene=finale] .finale-title>span{position:static;display:inline-block;width:auto;font-size:16px;min-height:0;padding:4px 16px;border-radius:20px}
+.concert-world{z-index:0}
+.song-label,.stage-back,.concert-caption,.live-part{z-index:2}
+.stage-glow{pointer-events:none}
+.concert-caption{left:calc(50% - 120px);top:auto;bottom:17px;width:240px}
+.live-part{top:72px}
+.cast-world[data-scene=performance]{color:#f8f3e8;background:#233c52}
+.cast-world[data-scene=performance] .cast-setting{background:radial-gradient(ellipse at 50% 35%,#607d97,#263f59 65%);transform:none}
+.cast-world[data-scene=performance] .cast-sea,.cast-world[data-scene=performance] .cast-island,.cast-world[data-scene=performance] .cast-windows{display:none}
+.cast-world[data-scene=performance] .cast-floor{inset:76% 0 0;background:linear-gradient(#71848b,#334a5b);border-top:1px solid #e0c99b66}
+.cast-world[data-scene=performance] .cast-light{background:conic-gradient(from -23deg at 25% -20%,transparent,#f8e1b440 10deg,transparent 20deg),conic-gradient(from -5deg at 75% -20%,transparent,#a2ceec35 10deg,transparent 22deg)}
+.cast-world[data-scene=performance] .cast-actors{inset:100px 10px 75px;display:block;transform:none}
+.cast-world[data-scene=performance] .cast-actor{position:absolute;left:var(--stage-x,50%);bottom:0;height:90%;width:18%;max-width:230px;transform:translate(-50%,calc(var(--stage-lift,0px) * -1)) rotate(var(--stage-tilt,0deg));transform-origin:50% 98%;z-index:1}
+.cast-world[data-scene=performance] .cast-actor.is-lead{height:100%;z-index:2}
+.cast-world[data-scene=performance] .cast-body{animation:none}
+.cast-world[data-scene=performance] .cast-name{color:#f2f0e9;background:#1f394ca8}
+.cast-world[data-scene=performance] .is-lead .cast-name{color:#2b4556;background:#e6d1a8}
+.cast-world[data-scene=performance] .cast-shadow{background:#14283280}
+.cast-world[data-scene=performance] .world-controls{bottom:14px;right:15px}
+.cast-world[data-scene=performance] .world-controls button{min-height:32px;padding:5px 10px;font-size:11px}
+@media(max-width:1100px){
+  .story-box{grid-template-columns:175px minmax(0,1fr) minmax(210px,30%)}
+  .story-box #dialogue-portrait{width:155px;height:160px;left:10px}
+  [data-scene=reflection] .story-box{grid-template-columns:165px minmax(0,1fr)}
+  .arrival-members .cast-portrait{height:64px}.arrival-paper{padding:20px 15px}.arrival-paper>p{font-size:16px}
+  .world-controls{right:10px;gap:4px}.world-controls button{font-size:11px;padding:7px 10px}
+  .cast-actors{inset:55px 6px 72px}.cast-name{font-size:11px;padding:5px 9px}
+}
+@media(max-width:760px){
+  [data-scene=arrival] .world-painting{right:0;height:330px}
+  [data-scene=planning] .world-painting,[data-scene=reflection] .world-painting{height:320px!important}
+  [data-scene=planning] #scene-sheet,[data-scene=reflection] #scene-sheet{margin-top:320px}
+  .arrival-paper{margin-top:330px}
+  .story-box,[data-scene=reflection] .story-box{grid-template-columns:88px minmax(0,1fr)}
+  .story-box #dialogue-portrait{width:82px;height:100px;left:8px}
+  .arrival-members .cast-portrait{height:76px}.reflection-members .cast-portrait{height:63px}.rest-members .cast-portrait{height:65px}
+  .cast-place{top:14px;left:16px;font-size:12px}
+  .cast-actors{inset:35px 7px 68px}
+  .cast-world[data-focus=true] .cast-actor{max-width:130px}
+  .world-controls{bottom:10px;right:10px}
+  .cast-name{font-size:10px;padding:4px 7px}
+  .cast-shadow{height:6px;bottom:31px}
+  .concert-caption{bottom:12px;left:calc(50% - 88px);width:176px;font-size:12px}
+  .live-part{top:72px;font-size:11px}
+  .cast-world[data-scene=performance] .cast-actors{inset:76px 0 75px}
+  .cast-world[data-scene=performance] .cast-actor{width:20%}
+  .cast-world[data-scene=performance] .world-controls{right:4px;bottom:50px}
+  .cast-world[data-scene=performance] .world-controls button{font-size:10px}
+  [data-scene=finale] .world-painting{inset:125px 0 auto;height:320px}
+  [data-scene=finale] .finale-title{width:100%;height:125px}
+  [data-scene=finale] .finale-title h1{font-size:26px}
+  [data-scene=finale] .finale-paper{margin-top:450px}
+}
+@media(prefers-reduced-motion:reduce){
+  .cast-world *{animation:none!important;transition:none!important}
+  .cast-setting,.cast-actors{transform:none!important}
+}

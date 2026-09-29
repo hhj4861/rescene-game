@@ -10,6 +10,13 @@ test('HTTP protects loopback game actions from cross-origin and stale requests',
   const { server } = startServer({ port: 0, dataDir: mkdtempSync(join(tmpdir(), 'rescene-http-')) });
   await once(server, 'listening'); const base = `http://127.0.0.1:${server.address().port}`;
   try {
+    for (const path of ['/','/survival.html','/survival-3d.html','/survival-25d.html']) {
+      const page=await fetch(base+path); assert.equal(page.status,200);
+      assert.match(await page.text(),/characters25\/world.css/);
+    }
+    for (const path of ['/src/survival/characters25/world.js','/src/survival/characters25/cast.js','/src/survival/characters25/world.css','/assets/characters25/cast.png','/assets/characters25/reference.png']) {
+      const asset=await fetch(base+path);assert.equal(asset.status,200);assert.ok((await asset.arrayBuffer()).byteLength>0);
+    }
     const bootstrap = await (await fetch(base + '/api/state')).json();
     let res = await fetch(base + '/api/new', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); assert.equal(res.status, 403);
     res = await fetch(base + '/api/new', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Survival-Token': bootstrap.token, Origin: 'https://evil.example' }, body: '{}' }); assert.equal(res.status, 403);

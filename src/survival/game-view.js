@@ -1,8 +1,8 @@
 /* global document, Event */
-import {mountGameWorld,selectWorldMember,hydrateDollPortraits} from './three/game-world.js';
+import {mountGameWorld,selectWorldMember} from './characters25/world.js';
 import { mountPerformance, stopPerformance } from './performance.js';
 import { escapeHtml as esc } from './scene.js';
-import { artwork, portrait, memberOrder, sceneFor, resultSummary, placeIcon } from './art.js';
+import { portrait, memberOrder, sceneFor, resultSummary, placeIcon } from './art.js';
 let selectedMember = 'woni', activeRoom = null, previousPhase, previousSeason, previousScene;
 let dialogueIndex = 0, focusSnapshot;
 const names = { dorm:'숙소', schedule:'연습실', meeting:'회의실', stage:'공연장', journal:'기록실', settings:'수첩과 설정', start:'함께 시작하기', details:'우리의 성장 기록', votes:'팀 회의 기록', results:'심사와 전체 순위' };
@@ -95,14 +95,14 @@ export function mountGame({ app, state, catalog, draft }) {
       const summary=resultSummary(state);
       const endingLabel=summary.outcome==='champion'?'우리 여섯이 만든 우승':summary.title.includes('준우승')?'함께 만든 준우승':'함께 남긴 시즌 기록';
       const ours=Object.values(state.rounds).filter(v=>v.evidence.some(e=>e.teamId==='team-0'));
-      sheet.innerHTML=`<div class="finale-title"><p>시즌 완료</p><h1>우리 여섯이 만든 계절</h1><span title="${esc(summary.title)}">${endingLabel}</span></div><section class="paper finale-paper"><h2>함께 남긴 기록</h2>${ours.filter((_,i)=>i===0||i===Math.floor((ours.length-1)/2)||i===ours.length-1).map(v=>`<article>${artwork('05-finale',v===ours[0]?'1277 271 213 119':v===ours.at(-1)?'1277 546 213 120':'1277 410 213 118')}<div><h3>${esc(v.concept)}</h3><p>${v.reflections.length}명의 회고 · ${v.learningCommitted?'경험 저장 완료':'회고 대기'}</p></div></article>`).join('')}</section>`;
+      sheet.innerHTML=`<div class="finale-title"><p>시즌 완료</p><h1>우리 여섯이 만든 계절</h1><span title="${esc(summary.title)}">${endingLabel}</span></div><section class="paper finale-paper"><h2>함께 남긴 기록</h2>${ours.filter((_,i)=>i===0||i===Math.floor((ours.length-1)/2)||i===ours.length-1).map(v=>`<article>${portrait(v.plan?.leads?.[0]||'woni')}<div><h3>${esc(v.concept)}</h3><p>${v.reflections.length}명의 회고 · ${v.learningCommitted?'경험 저장 완료':'회고 대기'}</p></div></article>`).join('')}</section>`;
       q('#story-actions').append(html('<div class="finale-actions"><button data-open="details">이번 시즌 기록 보기</button><button id="finale-restart" class="secondary">새 시즌 준비</button><small>기존 시즌은 보관돼요.</small></div>'));
       q('#finale-restart').onclick=()=>panels.settings.querySelector('#restart')?.click();
     }
     q('.place-menu').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(
       scene==='planning'&&b.dataset.open===(activeRoom==='schedule'?'schedule':'meeting') || scene==='performance'&&b.dataset.open==='stage' || scene==='reflection'&&b.dataset.open==='journal' || scene==='finale'&&b.dataset.open==='stage')));
     mountGameWorld(scene==='performance'&&performancePanel?performancePanel.querySelector('.concert-world'):q('.world-painting'),{scene,selectedMember,onSelect:id=>{selectedMember=id;dialogueIndex=0;paintMember();}});
-    paintMember();hydrateDollPortraits(app);
+    paintMember();
   };
   const openModal = (id,trigger) => {
     performancePanel?.pausePerformance?.(); returnFocus=trigger || returnFocus;
@@ -114,7 +114,7 @@ export function mountGame({ app, state, catalog, draft }) {
     body.append(panels[id]);
     q('#window-title').textContent=names[id];
     q('#window-notice').append(status); q('#window-actions').append(primary);
-    activeRoom=id; if(!modal.open)modal.showModal();hydrateDollPortraits(app);
+    activeRoom=id; if(!modal.open)modal.showModal();
   };
   const closeRoom=()=>{activeRoom=null;modal.close();q('#game-status').append(status);(q('.reflection-primary')||q('#story-actions')).append(primary);returnFocus?.focus({preventScroll:true});};
   const navigate=(id,trigger)=>{
@@ -140,7 +140,7 @@ export function mountGame({ app, state, catalog, draft }) {
     const lines=r?[...r.reflections.map(p=>({...p,origin:'무대 회고'})),...r.discussion.map(p=>({...p,origin:'팀 토론'})).reverse(),...r.proposals.map(p=>({...p,origin:'첫 제안'}))].filter(p=>p.agentId===m.id):[];
     dialogueIndex=Math.min(dialogueIndex,Math.max(0,lines.length-1));
     const line=lines[dialogueIndex];
-    q('#dialogue-portrait').innerHTML=portrait(m.id,true);selectWorldMember(m.id);hydrateDollPortraits(q('#dialogue-portrait'));
+    q('#dialogue-portrait').innerHTML=portrait(m.id,true);selectWorldMember(m.id);
     q('#speaker-name').textContent=line?m.name:'진행 안내';
     q('#speech-origin').textContent=line?line.origin:`${m.name} 선택 중`;
     q('#speech-text').textContent=line?.text || (!state?'마지막 한 사람, 기다리고 있었어요. 함께 첫 무대를 준비해 볼까요?':'멤버의 의견을 듣고 함께 무대를 준비해요. 일정과 대화는 현재 라운드에 저장됩니다.');
