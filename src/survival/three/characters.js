@@ -1,4 +1,6 @@
 import { group, ball, box, cylinder, curve, link, material } from './primitives.js';
+import { createArm, poseArm } from './character-rig.js';
+import { characterPose } from './character-motion.js';
 import { sculptFace, sculptEyes, sculptHair, garment } from './character-surfaces.js';
 
 export const members = [
@@ -52,15 +54,6 @@ function outfit(upper,member,cloth){
   }
 }
 
-function sleeve(arm,side,color,member){
-  const sleeveColor=member.outfit==='varsity'?'#e8e6df':color;
-  const points=[[0,0,0],[side*.068,-.28,.10],[side*.076,-.315,.19],[side*.025,-.29,.49]];
-  curve(arm,points,.074,sleeveColor);
-  ball(arm,[.078,.08,.074],sleeveColor,[-side*.015,-.04,0]);
-  link(arm,[side*.028,-.29,.445],[side*.023,-.29,.525],.078,member.outfit==='varsity'?member.color:color,.071);
-  if(['hoodie','jacket','varsity'].includes(member.outfit))for(let i=0;i<2;i++)curve(arm,[[side*(.01+i*.024),.044,.04],[side*(.104+i*.019),-.22,.115],[side*(.12+i*.019),-.278,.23],[side*(.077+i*.019),-.255,.46]],.004,'#ece6d7');
-}
-
 function hand(parent,position,skin,raised=false){
   const g=group(parent,position);if(raised)g.rotation.x=-Math.PI/2;
   ball(g,[.057,.033,.086],skin,[0,0,0]);
@@ -74,7 +67,7 @@ function hand(parent,position,skin,raised=false){
 
 export function createMember(parent,member,index){
   const root=group(parent,[member.x,0,member.z]);root.rotation.y=member.yaw;root.userData.member=index;root.userData.articulated=true;
-  chair(root,0,0);
+  chair(root,0,0).name="seat";
   const design=faces[index],skin=material(design.skin,.65),cloth=material(member.color,.94);
   for(const side of [-1,1]){
     link(root,[side*.14,.77,.01],[side*.16,.67,.49],.098,'#535c6b',.103);
@@ -87,15 +80,20 @@ export function createMember(parent,member,index){
   const upper=group(root,[0,.86,0]);upper.userData.articulated=true;
   outfit(upper,member,cloth);cylinder(upper,.067,.082,.20,skin,[0,.92,0]);
   const head=group(upper,[0,1.16,0]);head.scale.set(.93,.93,.93);head.userData.articulated=true;
-  sculptFace(head,design);const eyes=sculptEyes(head,design);sculptHair(head,member);
-  const arms=[];
-  for(const side of [-1,1]){const arm=group(upper,[side*.234,.71,0]);arm.userData.articulated=true;sleeve(arm,side,cloth,member);hand(arm,[side*.018,-.29,.575],skin);arms.push(arm);}
-  const wave=group(upper,[.234,.71,0]);wave.visible=false;wave.userData.articulated=true;
-  const sleeveColor=member.outfit==='varsity'?'#e8e6df':cloth;
-  curve(wave,[[0,0,0],[.19,.015,.045],[.235,.16,.07],[.23,.35,.08]],.071,sleeveColor);
-  ball(wave,[.084,.089,.078],sleeveColor,[.01,.00,0]);
-  link(wave,[.23,.31,.08],[.23,.38,.08],.074,cloth,.068);hand(wave,[.23,.44,.08],skin,true);
-  return {root,upper,head,eyes,arms,wave,index,baseYaw:member.yaw};
+  const expression=sculptFace(head,design);const eyes=sculptEyes(head,design);sculptHair(head,member);
+  const arms=[-1,1].map(side=>createArm(upper,side,member,skin,hand));
+  const character={root,upper,head,eyes,expression,arms,index,baseYaw:member.yaw,greetingAt:null};
+  updateMember(character,0,0);return character;
 }
 
 export function createEmptyChair(parent){return chair(parent,0,1.85,Math.PI);}
+
+export function updateMember(character,time,gaze){
+  const pose=characterPose(time,character.index,character.greetingAt);
+  character.upper.position.y=.86+pose.breath;
+  character.head.rotation.set(pose.nod,gaze,pose.tilt);
+  character.eyes.forEach(eye=>{eye.scale.y=pose.blink;});
+  character.expression.forEach(part=>{part.morphTargetInfluences[0]=pose.smile;});
+  character.arms.forEach(arm=>poseArm(arm,pose,arm.side===1));
+  return pose;
+}

@@ -33,15 +33,28 @@ export function sculptFace(parent,design) {
     }
   }
   const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));geo.setAttribute('normal',new T.Float32BufferAttribute(positions.map(()=>0),3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();
-  mesh(parent,geo,new T.MeshStandardMaterial({vertexColors:true,roughness:.58,color:'#fff9f3'}));
+  const expression=[mesh(parent,geo,new T.MeshStandardMaterial({vertexColors:true,roughness:.58,color:'#fff9f3'}))];
   // Subtle lips follow the face instead of separate protruding cheek/mouth beads.
-  curve(parent,[[-.046,-.158,.195],[-.019,-.154,.206],[0,-.159,.211],[.019,-.154,.206],[.046,-.158,.195]],.0045,'#a46968');
-  curve(parent,[[-.034,-.164,.200],[0,-.174,.211],[.034,-.164,.200]],.006,'#ca8c86');
+  expression.push(curve(parent,[[-.046,-.158,.195],[-.019,-.154,.206],[0,-.159,.211],[.019,-.154,.206],[.046,-.158,.195]],.0045,'#a46968'));
+  expression.push(curve(parent,[[-.034,-.164,.200],[0,-.174,.211],[.034,-.164,.200]],.006,'#ca8c86'));
   for(const side of [-1,1]){
     const ear=ball(parent,[.032,.066,.024],design.skin,[side*.24*design.width,-.036,-.012]);ear.rotation.z=-side*.18;
     ball(parent,[.012,.034,.012],'#d9a796',[side*.255*design.width,-.037,.005]);
     if(design.earring)ball(parent,[.012,.017,.01],'#e1c78c',[side*.25*design.width,-.1,.005]);
   }
+  for(const part of expression){
+    const geometry=part.geometry,target=geometry.clone(),positions=target.attributes.position;
+    for(let i=0;i<positions.count;i++){
+      const x=positions.getX(i),y=positions.getY(i),z=positions.getZ(i);
+      const weight=z>.14?gauss(y,-.16,.045)*gauss(Math.abs(x),.049,.036):0;
+      positions.setXYZ(i,x*(1+weight*.035),y+weight*.014,z+weight*.002);
+    }
+    target.computeVertexNormals();positions.name='smile';
+    geometry.morphAttributes.position=[positions];
+    geometry.morphAttributes.normal=[target.attributes.normal];
+    part.updateMorphTargets();
+  }
+  return expression;
 }
 
 let irisMap;

@@ -42,6 +42,23 @@ try{
       assert.ok(Number(render.triangles)>100000);assert.ok(Number(render.draws)<350);
       await page.getByRole('button',{name:'동작 멈추기'}).click();
       await capture(page,{path:join(dir,`${name}-desktop.png`)});
+      const rig=await page.evaluate(async()=>{
+        const T=await import('/vendor/three/three.module.js');
+        const {createMember,members,updateMember}=await import('/src/survival/three/characters.js');
+        const {batchStatic}=await import('/src/survival/three/primitives.js');
+        const root=new T.Group(),c=createMember(root,{...members[0],x:0,z:0,yaw:0},0);
+        const retained=c.arms.map(a=>a.sleeve.geometry).concat(c.expression.map(p=>p.geometry));
+        const discarded=batchStatic(root);
+        const skins=[],morphs=[];root.traverse(o=>{if(o.isSkinnedMesh)skins.push(o);if(o.morphTargetInfluences?.length)morphs.push(o);});
+        const arm=c.arms[1],vertex=40*17;
+        updateMember(c,0,0);root.updateMatrixWorld(true);
+        const rest=arm.sleeve.getVertexPosition(vertex,new T.Vector3());
+        c.greetingAt=0;updateMember(c,1.1,0);root.updateMatrixWorld(true);
+        const raised=arm.sleeve.getVertexPosition(vertex,new T.Vector3());
+        return {skins:skins.length,morphs:morphs.length,preserved:retained.every(g=>!discarded.has(g)),deformation:rest.distanceTo(raised),smile:c.expression[0].morphTargetInfluences[0]};
+      });
+      assert.equal(rig.skins,2);assert.equal(rig.morphs,3);assert.equal(rig.preserved,true);
+      assert.ok(rig.deformation>.3);assert.ok(rig.smile>.9);
       console.log(`${name}: rendered, testing camera`);
       const initialCamera=await page.locator('canvas').getAttribute('data-camera');
       await page.getByRole('button',{name:'공간 둘러보기',exact:true}).click();
@@ -108,7 +125,7 @@ try{
       await unavailable.goto(`${url}/survival-3d.html`);await unavailable.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='error');
       assert.equal(await unavailable.getByRole('button',{name:'다시 열기'}).isVisible(),true);
       assert.equal(await unavailable.locator('#greet').isDisabled(),true);await unavailable.close();
-      results.push({browser:name,render,applicationErrors:errors,captureDiagnostics,checks:['real-webgl','five-greetings','mesh-picking','camera-presets','drag','keyboard','pause','mobile','touch-selection','reduced-motion','webgl-fallback',...(name==='chromium'?['context-loss']:[]),'no-network-model-call']});
+      results.push({browser:name,render,rig,applicationErrors:errors,captureDiagnostics,checks:['skinned-arm-deformation','morph-smile','animated-mesh-preservation','real-webgl','five-greetings','mesh-picking','camera-presets','drag','keyboard','pause','mobile','touch-selection','reduced-motion','webgl-fallback',...(name==='chromium'?['context-loss']:[]),'no-network-model-call']});
     }finally{await browser.close();}
   }
   assert.equal(calls,0);assert.equal(readFileSync(game.store.path,'utf8'),saveBefore);
