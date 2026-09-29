@@ -26,8 +26,10 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
   const token = randomBytes(24).toString('hex');
   const files = new Map([
     ['/', ['survival.html', 'text/html']], ['/survival.html', ['survival.html', 'text/html']],
+    ['/vendor/vrm/avatar-loader.js', ['public/assets/survival-3d/avatar-loader.js', 'text/javascript']],
+    ['/assets/survival-3d/characters/woni-base.vrm', ['public/assets/survival-3d/characters/woni-base.vrm', 'model/gltf-binary']],
     ['/survival-3d.html', ['survival-3d.html', 'text/html']],
-    ...['meeting.js','world.js','characters.js','character-rig.js','character-motion.js','character-surfaces.js','primitives.js','meeting.css'].map(name => [`/src/survival/three/${name}`, [`src/survival/three/${name}`, name.endsWith('.css') ? 'text/css' : 'text/javascript']]),
+    ...['meeting.js','avatar.js','world.js','characters.js','character-rig.js','character-motion.js','character-surfaces.js','primitives.js','meeting.css'].map(name => [`/src/survival/three/${name}`, [`src/survival/three/${name}`, name.endsWith('.css') ? 'text/css' : 'text/javascript']]),
     ...['three.module.js','three.core.js'].map(name => [`/vendor/three/${name}`, [`node_modules/three/build/${name}`, 'text/javascript']]),
     ['/src/survival/art.js', ['src/survival/art.js', 'text/javascript']],
     ['/src/survival/design.css', ['src/survival/design.css', 'text/css']],
@@ -53,7 +55,7 @@ export function startServer({ port = 4317, dataDir = join(tmpdir(), 'rescene-sur
       if (req.method === 'GET' && files.has(path)) {
         const [file, type] = files.get(path);
         res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8`, 'Cache-Control': 'no-store',
-          'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'", 'X-Content-Type-Options': 'nosniff' });
+          'Content-Security-Policy': `default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'${path === '/survival-3d.html' ? ' blob:' : ''}; img-src 'self' data:${path === '/survival-3d.html' ? ' blob:' : ''}; frame-ancestors 'none'`, 'X-Content-Type-Options': 'nosniff' });
         return res.end(readFileSync(join(root, file)));
       }
       if (req.method !== 'POST' || !['/api/new', '/api/command', '/api/cancel'].includes(path)) return send(404, { error: '없는 경로입니다' });

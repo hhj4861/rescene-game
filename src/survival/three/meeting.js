@@ -11,14 +11,17 @@ function failure(message) {
 }
 
 async function start() {
-  const [T,{createWorld},{members,createMember,createEmptyChair,updateMember},{batchStatic}]=await Promise.all([
-    import('/vendor/three/three.module.js'),import('./world.js'),import('./characters.js'),import('./primitives.js'),
+  const [T,{createWorld},{members,createMember,createEmptyChair,updateMember},{batchStatic},{createAvatar,updateAvatar}]=await Promise.all([
+    import('/vendor/three/three.module.js'),import('./world.js'),import('./characters.js'),import('./primitives.js'),import('./avatar.js'),
   ]);
   const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.6));renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
   const scene=new T.Scene();scene.background=new T.Color('#c3dedf');scene.fog=new T.Fog('#c3dedf',38,150);
   const world=createWorld(scene),characters=members.map((m,i)=>createMember(world.room,m,i));createEmptyChair(world.room);
+  const replacement=await createAvatar(world.room,members[0],0);
+  replacement.root.add(characters[0].root.getObjectByName('seat'));
+  characters[0].root.removeFromParent();characters[0]=replacement;canvas.dataset.avatar='vivi-cc0-candidate';
   const originalGeometries=batchStatic(scene);originalGeometries.forEach(g=>g.dispose());
   const camera=new T.PerspectiveCamera(43,1,.1,250),target=new T.Vector3(),desiredTarget=new T.Vector3();
   const raycaster=new T.Raycaster(),pointer=new T.Vector2();
@@ -115,7 +118,7 @@ async function start() {
     let activeGreetings=0;
     characters.forEach((c,i)=>{
       const gaze=T.MathUtils.clamp(Math.atan2(camera.position.x-members[i].x,camera.position.z-members[i].z)-c.baseYaw,-.34,.34);
-      const pose=updateMember(c,elapsed,i===selected?gaze:Math.sin(elapsed*.32+i)*.045);
+      const pose=(c.kind==='vrm'?updateAvatar:updateMember)(c,elapsed,i===selected?gaze:Math.sin(elapsed*.32+i)*.045);
       if(pose.active)activeGreetings++;
     });
     canvas.dataset.greetings=String(activeGreetings);
@@ -138,4 +141,4 @@ async function start() {
   render(performance.now());loading.hidden=true;canvas.dataset.ready='true';
 }
 
-start().catch(()=>failure('이 브라우저에서 3D 장면을 열지 못했어요. WebGL을 지원하는 브라우저에서 다시 열어 주세요.'));
+start().catch(error=>failure(error.code==='AVATAR_LOAD'?error.message:'이 브라우저에서 3D 장면을 열지 못했어요. WebGL을 지원하는 브라우저에서 다시 열어 주세요.'));

@@ -33,7 +33,7 @@ try{
         if(name==='webkit'&&capturing&&m.text()==="Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.")captureDiagnostics.push(m.text());
         else errors.push(m.text());
       });
-      page.on('request',r=>{if(r.url().includes('/api/'))apiRequests.push(r.url());if(!r.url().startsWith(url))external.push(r.url());});
+      page.on('request',r=>{if(r.url().includes('/api/'))apiRequests.push(r.url());if(!r.url().startsWith(url)&&!r.url().startsWith('blob:'+url+'/'))external.push(r.url());});
       const response=await page.goto(`${url}/survival-3d.html`);
       assert.equal(response.status(),200);assert.match(response.headers()['content-security-policy'],/script-src 'self'/);
       await page.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='true');
@@ -67,6 +67,27 @@ try{
       });
       assert.equal(rig.skins,2);assert.equal(rig.morphs,3);assert.equal(rig.preserved,true);
       assert.ok(rig.deformation>.3);assert.ok(rig.smile>.9);assert.ok(rig.faceSeamMax<1e-6,'Face seam normals must match during a smile');
+      assert.equal(render.avatar,'vivi-cc0-candidate');
+      const avatar=await page.evaluate(async()=>{
+        const T=await import('/vendor/three/three.module.js');
+        const {createAvatar,updateAvatar}=await import('/src/survival/three/avatar.js');
+        const {batchStatic}=await import('/src/survival/three/primitives.js');
+        const root=new T.Group(),a=await createAvatar(root,{x:0,z:0,yaw:0},0);
+        const meshes=a.skins.length;batchStatic(root);
+        const position=name=>a.bone(name).getWorldPosition(new T.Vector3()).toArray();
+        const head=position('head'),hips=position('hips'),hand=position('leftHand');
+        const targets=()=>{const values=[];a.vrm.scene.traverse(o=>{if(o.morphTargetInfluences)values.push(...o.morphTargetInfluences);});return values;};
+        const before=targets();updateAvatar(a,4.99,0);const blink=targets();
+        a.greetingAt=0;updateAvatar(a,1.1,.2);const raised=position('leftHand');
+        return {meshes,retained:a.skins.every(m=>m.parent!==null),head,hips,hand,raised,morphTargets:blink.length,blinkChanged:blink.some((v,i)=>Math.abs(v-before[i])>.5),gaze:a.bone('head').rotation.y};
+      });
+      assert.ok(avatar.meshes>=3);assert.equal(avatar.retained,true);assert.ok(Math.abs(avatar.hips[1]-.84)<.03);
+      assert.ok(avatar.head[1]>1.85&&avatar.head[1]<2.15);assert.ok(avatar.raised[1]>avatar.hand[1]+.3);assert.ok(avatar.hand[1]>1.22&&avatar.hand[1]<1.5,'Resting hand must clear the tabletop');
+      assert.ok(avatar.morphTargets>10);assert.equal(avatar.blinkChanged,true);assert.ok(Math.abs(avatar.gaze-.2)<.001);
+      await page.getByRole('button',{name:'원이',exact:true}).click();
+      await capture(page,{path:join(dir,`${name}-avatar-desktop.png`)});
+      await page.getByRole('button',{name:'카메라 시점 초기화'}).click();
+
       console.log(`${name}: rendered, testing camera`);
       const initialCamera=await page.locator('canvas').getAttribute('data-camera');
       await page.getByRole('button',{name:'공간 둘러보기',exact:true}).click();
@@ -108,7 +129,7 @@ try{
       assert.equal(await page.locator('.stage').getAttribute('data-view'),'member');
       await capture(page,{path:join(dir,`${name}-member.png`),fullPage:true});
       assert.deepEqual(apiRequests,[]);assert.deepEqual(external,[]);assert.deepEqual(errors,[]);
-      assert.equal(captureDiagnostics.length,name==='webkit'?5:0);
+      assert.equal(captureDiagnostics.length,name==='webkit'?6:0);
       // Reduced motion takes effect on first load, with keyboard-accessible greeting controls.
       const reduced=await browser.newPage({reducedMotion:'reduce',viewport:{width:390,height:844},hasTouch:true});
       reduced.setDefaultTimeout(20000);
@@ -130,12 +151,17 @@ try{
         const original=HTMLCanvasElement.prototype.getContext;
         HTMLCanvasElement.prototype.getContext=function(type,...args){if(type.startsWith('webgl'))return null;return original.call(this,type,...args);};
       });
+      const missing=await browser.newPage();
+      await missing.route('**/woni-base.vrm',route=>route.fulfill({status:404,body:'not found'}));
+      await missing.goto(`${url}/survival-3d.html`);await missing.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='error');
+      assert.match(await missing.locator('#load-state').innerText(),/캐릭터 모델/);assert.equal(await missing.locator('#greet').isDisabled(),true);await missing.close();
       await unavailable.goto(`${url}/survival-3d.html`);await unavailable.waitForFunction(()=>document.querySelector('canvas').dataset.ready==='error');
       assert.equal(await unavailable.getByRole('button',{name:'다시 열기'}).isVisible(),true);
       assert.equal(await unavailable.locator('#greet').isDisabled(),true);await unavailable.close();
-      results.push({browser:name,render,rig,applicationErrors:errors,captureDiagnostics,checks:['face-seam-lighting','skinned-arm-deformation','morph-smile','animated-mesh-preservation','real-webgl','five-greetings','mesh-picking','camera-presets','drag','keyboard','pause','mobile','touch-selection','reduced-motion','webgl-fallback',...(name==='chromium'?['context-loss']:[]),'no-network-model-call']});
+      results.push({browser:name,render,rig,avatar,applicationErrors:errors,captureDiagnostics,checks:['vrm-skeleton-preservation','vrm-blink-gaze-greeting','face-seam-lighting','skinned-arm-deformation','morph-smile','animated-mesh-preservation','real-webgl','five-greetings','mesh-picking','camera-presets','drag','keyboard','pause','mobile','touch-selection','reduced-motion','webgl-fallback',...(name==='chromium'?['context-loss']:[]),'no-network-model-call']});
     }finally{await browser.close();}
   }
+  assert.ok(!(await fetch(url+'/survival.html')).headers.get('content-security-policy').includes('blob:'));
   assert.equal(calls,0);assert.equal(readFileSync(game.store.path,'utf8'),saveBefore);
   for(const path of ['/vendor/three/package.json','/src/survival/three/not-allowed.js'])assert.equal((await fetch(url+path)).status,404);
   writeFileSync(join(dir,'results.json'),JSON.stringify({passed:true,dir,results,savePreserved:true},null,2));

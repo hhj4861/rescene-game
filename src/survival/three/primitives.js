@@ -56,6 +56,7 @@ export function batchStatic(root, originals = new Set()) {
   function visit(node){
     for(const child of [...node.children]){
       // A skinned or morphing mesh must retain its geometry, weights and targets.
+      if(child.userData.externalAvatar)continue;
       if(child.isSkinnedMesh || (child.isMesh && Object.keys(child.geometry.morphAttributes).length))continue;
       if(child.isBone){batchStatic(child,originals);continue;}
       if(child.userData.articulated){batchStatic(child,originals);continue;}
