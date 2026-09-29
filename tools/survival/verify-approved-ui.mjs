@@ -10,8 +10,9 @@ import { defaultPlan } from '../../server/survival/catalog.mjs';
 const require=createRequire(resolve(process.env.SURVIVAL_DEPENDENCIES||'.','package.json'));
 const {chromium,webkit}=require('@playwright/test');
 const dir=mkdtempSync(join(tmpdir(),'rescene-approved-ui-'));
+const provider='litellm';
 const calls=[];let game;
-const runtime={async run(req){
+const runtime={describe(){return {defaultProvider:provider,litellm:{configured:provider==='litellm',model:'explicit-fixture'}};},async run(req){
   const p=JSON.parse(req.prompt),agentId=req.agentId;
   calls.push(req);
   let data={agentId,text:'시험 응답: 서로의 호흡을 듣고, 마지막까지 함께 맞춰 보자.'};
@@ -46,8 +47,14 @@ try{
   await capture('01-arrival');
   assert.equal(calls.length,0);
   await page.locator('#begin-story').click();
+  if(provider==='litellm'){
+    assert.equal(await page.locator('#provider').count(),0);
+    assert.equal(await page.locator('#start select').count(),0);
+    await page.getByText('기본 AI로 함께 시작해요.',{exact:true}).waitFor();
+  }
   await page.getByRole('button',{name:'팀 회의실 들어가기'}).click();
   await page.getByText('Round 1 / 10',{exact:true}).waitFor();
+  assert.equal(game.state.provider,provider);
   for(let round=1;round<=10;round++){
     await page.locator('[data-action="open"]').click();
     await page.locator('#discuss').waitFor();
@@ -122,6 +129,7 @@ try{
   const wb=await webkit.launch({headless:true});
   try{const wp=await wb.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});wp.on('pageerror',e=>errors.push(e.message));await wp.goto(base);await wp.locator('.finale-paper').waitFor();assert.equal(await wp.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await wp.screenshot({path:join(dir,'webkit-mobile.png'),fullPage:true});}finally{await wb.close();}
   assert.deepEqual(errors,[]);assert.deepEqual(httpErrors,[]);
+  assert.ok(calls.every(c=>c.provider===provider));
   writeFileSync(join(dir,'verification.json'),JSON.stringify({passed:true,mode:'explicit-fixture',rounds:10,calls:calls.length,errors,httpErrors,dir},null,2));
   console.log(JSON.stringify({passed:true,dir,calls:calls.length,rounds:10,mode:'explicit-fixture'}));
 }catch(e){await capture('failure');console.error(JSON.stringify({dir,errors,httpErrors,phase:game.state?.phase}));throw e;}

@@ -68,7 +68,7 @@ export function observeHypotheses(s, memberId, event) {
   }
 }
 export function newSeason(seed, provider = 'claude') {
-  if (!['claude', 'codex'].includes(provider)) throw new Error('런타임을 선택하세요');
+  if (!['claude', 'codex', 'litellm'].includes(provider)) throw new Error('런타임을 선택하세요');
   const names = ['RESCENE', '루멘', '파동', '벨벳문', '블루아워', '프리즘', '오르빗', '플로라', '샤인온', '아리아', '모자이크', '스텔라', '오로라', '하모니', '소나', '미라주', '에코', '루트', '코멧', '누벨'];
   const sorted = names.map((name, i) => ({ id: `team-${i}`, name })).sort((a, b) => random(seed, a.id) - random(seed, b.id));
   const state = { version: 2, id: randomUUID(), seed, provider, revision: 0, round: 1, phase: 'announced', busy: false,
@@ -174,7 +174,9 @@ export class Game {
   }
   create(seed, provider) {
     if (this.state?.busy) throw new Error('진행 중인 호출을 먼저 취소하세요');
+    provider ||= this.runtime.describe?.().defaultProvider || 'claude';
     const next = newSeason(String(seed || 'rescene').slice(0, 80), provider);
+    Object.assign(next, this.runtime.seasonConfig?.(provider));
     if (this.state?.sourceLibrary) next.sourceLibrary = structuredClone(this.state.sourceLibrary);
     if (this.state) this.store.archive(this.state);
     this.state = next; this.save(); return this.snapshot();
@@ -231,7 +233,7 @@ export class Game {
     try {
       const result = await this.runtime.run({ provider: s.provider, agentId: agent.id,
         contextKey: `${s.id}-${judge ? `judge-r${s.round}-${record.attempts}` : `g${session.generation}`}`,
-        sessionId: judge ? null : session.id, prompt: record.prompt, schema: record.schema || schemaFor(kind, r.rulesVersion || 1), signal: this.controller.signal, model: s.model });
+        sessionId: judge ? null : session.id, prompt: record.prompt, schema: record.schema || schemaFor(kind, r.rulesVersion || 1), signal: this.controller.signal, model: s.model, routeModel: s.routeModel, deploymentId: s.deploymentId });
       const d = result.data; validate(record.schema || schemaFor(kind, r.rulesVersion || 1), d);
       if (d.agentId !== agent.id) throw new Error('역할 ID 불일치');
       if (d.plan) checkPlan(d.plan);
@@ -246,6 +248,8 @@ export class Game {
       if (kind === 'reflection' && d.structuredAction && !Object.keys(d.structuredAction).length) throw new Error('시험할 행동을 한 가지 이상 지정하세요');
       if (kind === 'reflection' && d.eventRef !== record.input.event.eventId) throw new Error('회고 사건 참조 불일치');
       if (result.model && s.model && result.model !== s.model) throw new Error('시즌 중 모델 변경을 거부했습니다');
+      if (result.deploymentId && s.deploymentId && result.deploymentId !== s.deploymentId) throw new Error('LiteLLM 시즌 중 모델 배포 변경을 거부했습니다');
+      if (result.deploymentId) s.deploymentId = result.deploymentId;
       if (result.model) s.model = result.model;
       if (!judge && Object.entries(s.sessions).some(([other, x]) => other !== agent.id && x.id === result.sessionId)) throw new Error('멤버 간 세션 공유 거부');
       const usage = result.usage || {};
