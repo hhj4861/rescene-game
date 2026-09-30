@@ -1,0 +1,21 @@
+{
+  "name": "rescene-small-arcade",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config arcade-room.config.js --open /arcade-room.html",
+    "build": "vite build --config arcade-room.config.js",
+    "preview": "vite preview --config arcade-room.config.js",
+    "test": "node --test tests/arcade-room/*.test.mjs",
+    "lint": "eslint src tests arcade-room.config.js",
+    "arcade:dev": "npm run dev",
+    "arcade:build": "npm run build",
+    "arcade:test": "npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.1",
+    "eslint": "9.39.1",
+    "vite": "5.4.21"
+  }
+}
