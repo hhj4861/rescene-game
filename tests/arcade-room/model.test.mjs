@@ -22,6 +22,6 @@ test('blocked spawn ends a round and timeout prevents further placement',()=>{
 });
 test('records preserve each game, never downgrade, and tolerate denied or malformed storage',()=>{
   const values=new Map(),store={getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v)};
-  saveRecord(store,'drive',300);saveRecord(store,'blocks',500);saveRecord(store,'drive',100);assert.deepEqual(readRecords(store),{drive:300,blocks:500});
-  values.set(RECORD_KEY,'{"drive":-4,"blocks":"999"}');assert.deepEqual(readRecords(store),{drive:0,blocks:0});assert.equal(saveRecord(undefined,'drive',12).saved,false);assert.equal(saveRecord(store,'bad',12).saved,false);
+  saveRecord(store,'drive',300);saveRecord(store,'blocks',500);saveRecord(store,'drive',100);assert.deepEqual(readRecords(store),{drive:300,blocks:500,photo:0,rhythm:0,catch:0});
+  values.set(RECORD_KEY,'{"drive":-4,"blocks":"999"}');assert.deepEqual(readRecords(store),{drive:0,blocks:0,photo:0,rhythm:0,catch:0});assert.equal(saveRecord(undefined,'drive',12).saved,false);assert.equal(saveRecord(store,'bad',12).saved,false);
 });

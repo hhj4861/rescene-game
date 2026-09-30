@@ -11,10 +11,12 @@
     "lint": "eslint src tests arcade-room.config.js",
     "arcade:dev": "npm run dev",
     "arcade:build": "npm run build",
-    "arcade:test": "npm test"
+    "arcade:test": "npm test",
+    "e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "9.39.1",
+    "@playwright/test": "1.63.0",
     "eslint": "9.39.1",
     "vite": "5.4.21"
   }
