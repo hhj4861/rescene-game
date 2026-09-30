@@ -6,12 +6,14 @@ test.beforeEach(async({page})=>{
   await page.goto('/');await expect(page.getByRole('button',{name:games.drive,exact:true})).toBeEnabled();
   await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
 });
-for(const [kind,name] of Object.entries(games))test(`${kind}: start, input, pause, result, retry and saved record`,async({page})=>{
+for(const [kind,name] of Object.entries(games))test(`${kind}: start, input, pause, result, retry and saved record`,async({page},testInfo)=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  if(kind==='drive')await page.screenshot({path:testInfo.outputPath('home.png'),fullPage:true});
   await page.getByRole('button',{name,exact:true}).click();await expect(page.locator('#app')).toHaveAttribute('data-state','playing');
   if(kind==='photo'){await page.getByRole('button',{name:'사진 찍기',exact:true}).click();await expect(page.locator('#score')).not.toHaveText('0');}
   else if(kind==='rhythm'){await page.clock.runFor(2000);await page.getByRole('button',{name:'왼쪽 박자',exact:true}).click();await expect(page.locator('#score')).not.toHaveText('0');}
   else{await page.getByRole('button',{name:'왼쪽으로 이동',exact:true}).click();if(kind==='blocks'){await expect(page.locator('#next')).toBeVisible();await page.getByRole('button',{name:'조각 회전'}).click();await page.getByRole('button',{name:'내려놓기 ↓'}).click();await expect(page.locator('#score')).not.toHaveText('0');}}
+  await page.screenshot({path:testInfo.outputPath('game.png'),fullPage:true});
   await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();const time=await page.locator('#time').innerText();await page.clock.fastForward(65000);await expect(page.locator('#time')).toHaveText(time);
   await page.getByRole('button',{name:'계속하기 ▶'}).click();await page.clock.fastForward(61000);await expect(page.locator('#app')).toHaveAttribute('data-state','result');
   const score=await page.locator('#score').innerText();await expect(page.locator('#best')).toHaveText(score);await expect(page.getByText('최고 기록은 이 기기에 저장했어요.',{exact:true})).toBeVisible();
