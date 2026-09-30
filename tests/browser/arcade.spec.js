@@ -1,3 +1,4 @@
+/* global document, window */
 import {test,expect} from '@playwright/test';
 const games={drive:'원이의 바닷길 드라이브 시작',blocks:'메이의 조각 공방 시작',photo:'제나의 깜짝 포토부스 시작',rhythm:'미나미의 댄스 타임 시작',catch:'리브의 별빛 산책 시작'};
 test.beforeEach(async({page})=>{
