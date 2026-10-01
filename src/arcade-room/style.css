@@ -28,3 +28,6 @@
 @keyframes clear-cheer{0%{transform:translateY(10px) scale(.9)}55%{transform:translateY(-5px) scale(1.04)}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.clear-portrait{animation:none}}
 @media(max-width:700px){.result-paper{padding:14px 16px}.result-paper .quiet{margin-top:6px}}
+
+.member-voice{padding:8px 10px;margin:6px 0 10px;border-radius:12px;background:#f3ecdd;color:var(--ink)}
+.member-voice>small{display:block;font-size:10px;line-height:1.6}.member-voice a{display:inline-block;color:inherit;font-size:10px;padding:10px 6px;min-height:36px}.member-voice .voice-replay{padding:6px;min-height:40px}.member-voice button:focus-visible,.member-voice a:focus-visible{outline:2px solid currentColor;outline-offset:2px}
