@@ -2,6 +2,17 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+## 무한 스테이지·목숨 저장·무음 수정 운영 배포 — 2026-10-01
+
+- 사용자 명시 승인 후 [PR #11](https://github.com/hhj4861/rescene-game/pull/11)을 머지했다. 운영 소스는 `394a305a782510f7f46b23dee450f9de913689d6`이다.
+- [main CI 36857833806](https://github.com/hhj4861/rescene-game/actions/runs/36857833806)의 단위 테스트 39개·브라우저 78개·린트·빌드 통과 후, 해당 `arcade-static-site` 산출물을 기존 Wrangler 로그인으로 배포했다. 내려받은 MP3 다섯 개가 머지된 소스의 수정 파일과 같은지도 SHA-256으로 확인했다.
+- Pages 배포 `8d828705-8ece-46a7-8e57-749e62fe88c4`: Production / main / source `394a305`. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://8d828705.rescene-arcade.pages.dev).
+- 멤버별 목숨 3개로 6단계 이후에도 진행한다. 단계별 난이도가 증가하고 현재 단계·남은 목숨·최고 도달 단계를 저장한다. 기존 5단계 완료 저장은 6단계로 이관하며, 새 도전은 1단계부터 시작한다. [게임 규칙](../design/endless-survival.md).
+- 이전 `f7037308` 배포의 MP3 다섯 개는 무음이었다. 당시 디코딩·재생 시간·파일 해시 검사는 가청성을 검증하지 못했다. 원본 구간 추출 순서를 수정하고 캐시 버전을 올렸으며, 실제 디코딩 샘플의 peak·RMS·유효 샘플 검사를 추가했다. [원인과 수정](../design/member-voices.md).
+- 최신 main을 기존 공개 검증 브랜치에 통합했다(`67cb32e`). [공개 검증 36858323059](https://github.com/hhj4861/rescene-game/actions/runs/36858323059) **81개가 모두 통과했다**. 세 브라우저에서 5→6단계, 목숨 소진·저장 복원, 다섯 MP3의 실제 디코딩 신호·재생·정지를 확인했다. HTML·JS·CSS·캐릭터 2개·음성 5개의 SHA-256을 내려받은 main CI 산출물과 대조해 모두 일치했다. 모바일 WebKit 캡처에서 6단계·목숨 2개 및 메이 클리어 화면을 확인했다. 실기기 스피커 청음은 미수행이다.
+- [공개 검증 브랜치의 정적 CI 36858328688](https://github.com/hhj4861/rescene-game/actions/runs/36858328688)도 성공했다. PR #8 자체는 승인 전이므로 머지하지 않았다.
+- 배포 산출물과 후속 검증 증적은 iCloud 작업 루트 `rescene-game/endless-deploy-20261001/`에 보관한다. CI 배포용 인증이나 자동 배포를 추가한 것은 아니다.
+
 ## 멤버 유행어·실제 음성 운영 배포 — 2026-10-01
 
 - 사용자 명시 승인 후 [PR #10](https://github.com/hhj4861/rescene-game/pull/10)을 머지했다. 운영 코드: `93b2726b09df700d89b14ebf7a5878f59d887424`.
