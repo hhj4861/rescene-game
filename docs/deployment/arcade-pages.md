@@ -2,6 +2,16 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+## 난이도 조정 운영 배포 — 2026-10-01
+
+- 사용자 승인 후 PR #7을 머지했다. 배포 소스는 `main`의 `fefef8dd44e26f75c0c3a7a60286941f8a02c515`이다.
+- [main CI 36823221116](https://github.com/hhj4861/rescene-game/actions/runs/36823221116)에서 Node 17건·브라우저 36건·린트·빌드 통과 후, 동일 `arcade-static-site` 산출물을 기존 Wrangler 로그인으로 배포했다. CI 배포 인증은 추가하지 않았다.
+- Pages 배포 ID: `282bbad8-e4c5-4728-89e0-f1a84536bd03`; Environment: `Production`; Branch: `main`; Source: `fefef8d`. 배포 후 운영 목록에서 확인했다.
+- [공개 게임](https://rescene-arcade.pages.dev/), [해당 배포](https://282bbad8.rescene-arcade.pages.dev).
+- 다섯 게임의 시작 속도를 높이고 10초 이후 점진적으로 가속한다. 사진·리듬 판정도 후반에 더 정밀해진다. 캐릭터 아틀라스는 기존 SHA-256과 일치하며 조작·기존 최고 기록은 유지한다.
+- 공개 브라우저 검증은 도구 시간 초과 후 연결된 브라우저가 없어 완료하지 못했다. 공개 주소 HTTP 비교도 403 응답으로 중단했다. 운영 배포 등록과 CI 동작은 확인했지만, 이번 배포 후 공개 화면에서의 직접 플레이와 CDN 전체 파일 일치는 미확인이다.
+- 산출물: 공용 iCloud 작업 루트의 `rescene-game/arcade-difficulty-publish-20261001/site/`.
+
 ## 첫 운영 배포 결과 — 2026-10-01
 
 - PR #6를 사용자 승인 후 머지했다. 배포 소스는 `main`의 `2a7de6d11206ebbf9a2646e18a5ecc60bc8330d6`이다.
