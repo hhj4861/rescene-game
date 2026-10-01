@@ -17,7 +17,7 @@ for(const [kind,name] of Object.entries(games))test(`${kind}: start, input, paus
   await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();const time=await page.locator('#time').innerText();await page.clock.fastForward(65000);await expect(page.locator('#time')).toHaveText(time);
   await page.getByRole('button',{name:'계속하기 ▶'}).click();await page.clock.fastForward(61000);await expect(page.locator('#app')).toHaveAttribute('data-state','result');
   const score=await page.locator('#score').innerText();await expect(page.locator('#best')).toHaveText(score);await expect(page.getByText('진행 상황과 최고 기록은 이 기기에 저장했어요.',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'한 판 더 ▶'}).click();await expect(page.locator('#score')).toHaveText('0');await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();await page.getByRole('button',{name:'오락실로 돌아가기'}).click();
+  await page.getByRole('button',{name:/^(다시 도전|새 도전) ▶$/}).click();await expect(page.locator('#score')).toHaveText('0');await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();await page.getByRole('button',{name:'오락실로 돌아가기'}).click();
   await page.reload();await expect(page.locator(`#machine-${kind} .cabinet-bottom b`)).toHaveText(score);expect(errors).toEqual([]);
 });
 test('small viewport exposes next piece and all controls without horizontal overflow',async({page})=>{

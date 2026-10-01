@@ -28,7 +28,8 @@ test('touch or mouse input scores, then completes after viewport rotation',async
   await page.setViewportSize({width:844,height:390});
   await expect(snap).toBeVisible();await page.setViewportSize({width:390,height:844});
   await page.clock.fastForward(61000);await expect(page.locator('#app')).toHaveAttribute('data-state','result');
-  await expect(page.getByRole('button',{name:'한 판 더 ▶'})).toBeInViewport();
+  await expect(page.getByRole('button',{name:'다시 도전 ▶'})).toBeInViewport();
+  await expect(page.locator('.result-lives')).toContainText('♥♥♡');
 });
 
 test('denied storage still allows a round and explains the unsaved score',async({page})=>{
@@ -37,7 +38,8 @@ test('denied storage still allows a round and explains the unsaved score',async(
   await page.getByRole('button',{name:'사진 찍기',exact:true}).click();await page.clock.fastForward(61000);
   await expect(page.locator('#app')).toHaveAttribute('data-state','result');
   await expect(page.getByText('기기에 저장할 수 없어요. 이번 탭에서만 진행을 유지해요.',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'한 판 더 ▶'}).click();await expect(page.locator('#score')).toHaveText('0');
+  await page.getByRole('button',{name:'다시 도전 ▶'}).click();await expect(page.locator('#score')).toHaveText('0');
+  await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 2개');
 });
 
 test('focus loss pauses elapsed time and resume restores keyboard play',async({page})=>{

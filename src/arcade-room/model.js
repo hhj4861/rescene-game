@@ -1,6 +1,12 @@
 export const DURATION=60;
-export const STAGE_COUNT=5;
-export function stageSpeed(s){return 1+(Math.max(1,Math.min(STAGE_COUNT,s.stage||1))-1)*.12;}
+export const INITIAL_LIVES=3;
+export const validStage=n=>Number.isSafeInteger(n)&&n>=1;
+export function stageSpeed(s){const stage=validStage(s.stage)?s.stage:1;return stage<=5?1+(stage-1)*.12:1.48+1.52*(1-1/(1+(stage-5)*.07));}
+function loseLife(s){if(s.stage){s.hearts=Math.max(0,s.hearts-1);if(!s.hearts)s.ended=true;}}
+function settleFailure(s){
+  if(!s.stage||!s.ended||s.endReason)return;
+  if(!s.hearts)s.endReason='lives';else{s.endReason=s.remaining<=0?'timeout':'blocked';loseLife(s);}
+}
 // Keep the first ten seconds steady, then ramp smoothly through the round.
 function pressure(elapsed){return Math.max(0,Math.min(1,(elapsed-10)/(DURATION-10)));}
 export const COLS=8,ROWS=12;
@@ -83,11 +89,12 @@ export function snapPhoto(s){
   const windows=photoWindows(s),grade=distance<=windows.perfect?'perfect':distance<=windows.good?'good':'miss';
   s.combo=grade==='miss'?0:s.combo+1;
   if(grade!=='miss'){s.photos=(s.photos||0)+1;s.score+=(grade==='perfect'?100:60)+Math.min(5,s.combo)*10;s.flash=.2;if(grade==='perfect')s.perfect++;}
+  if(grade==='miss')loseLife(s);
   s.album.push(grade);s.album=s.album.slice(-5);s.event=grade==='miss'?'photo-miss':`photo-${grade}`;return true;
 }
 export const BEAT_SECONDS=.7;
 export const RHYTHM_WINDOW=.19;
-function rhythmWindow(at,stage=1){return RHYTHM_WINDOW-.04*pressure(at)-.008*(stage-1);}
+function rhythmWindow(at,stage=1){return RHYTHM_WINDOW-.04*pressure(at)-Math.min(.075,(stageSpeed({stage})-1)*(.032/.48));}
 const PATTERN=[0,1,0,0,1,1,0,1];
 export function makeRhythm(offsetMs=0,stage=1){
   const offset=Number.isFinite(offsetMs)?Math.max(-200,Math.min(200,offsetMs))/1000:0;
@@ -102,7 +109,7 @@ export function makeRhythm(offsetMs=0,stage=1){
 }
 export function stepRhythm(s,dt){
   if(s.ended)return;advance(s,dt);
-  for(const note of s.notes)if(note.status==='waiting'&&s.elapsed-s.offset-note.at>rhythmWindow(note.at,s.stage)){note.status='miss';s.misses++;s.combo=0;s.event='rhythm-miss';}
+  for(const note of s.notes)if(note.status==='waiting'&&s.elapsed-s.offset-note.at>rhythmWindow(note.at,s.stage)){note.status='miss';s.misses++;s.combo=0;s.event='rhythm-miss';loseLife(s);if(s.stage&&!s.hearts)break;}
 }
 export function tapRhythm(s,lane){
   if(s.ended||![0,1].includes(lane)||s.elapsed-s.lastTap<.1)return false;
@@ -121,25 +128,26 @@ export function stepCatch(s,dt){
   for(const o of s.objects){
     const before=o.y;o.y+=delta*(.38+.14*pressure(s.elapsed))*stageSpeed(s);
     if(!o.hit&&before<=.88&&o.y>=.73&&o.lane===s.lane){o.hit=true;s.stars++;s.score+=o.blue?200:100;s.event=o.blue?'blue-star':'catch-star';}
-    if(!o.hit&&before<=1&&o.y>1){s.misses++;s.event='catch-miss';}
+    if(!o.hit&&before<=1&&o.y>1){s.misses++;s.event='catch-miss';loseLife(s);if(s.stage&&!s.hearts)break;}
   }
   s.objects=s.objects.filter(o=>o.y<=1.1&&!o.hit);
 }
 export function createGame(kind,options={}){
-  const stage=Number.isInteger(options.stage)?Math.max(1,Math.min(STAGE_COUNT,options.stage)):1;
+  const stage=validStage(options.stage)?options.stage:1;
   let seed=(options.seed??Math.floor(Math.random()*4294967296))>>>0;
   const next=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   const random=options.random||(options.stage?next:Math.random);
   const s=({drive:()=>makeDrive(random),blocks:()=>makeBlocks(random),photo:makePhoto,rhythm:()=>makeRhythm(options.offsetMs,stage),catch:()=>makeCatch(random)})[kind]?.();
-  if(s&&options.stage){s.stage=stage;s.rngState=seed;if(!options.random)s.random=()=>{s.rngState=(Math.imul(s.rngState,1664525)+1013904223)>>>0;return s.rngState/4294967296;};}
+  if(s&&options.stage){s.stage=stage;s.hearts=Number.isInteger(options.hearts)?Math.max(1,Math.min(INITIAL_LIVES,options.hearts)):INITIAL_LIVES;s.rngState=seed;if(!options.random)s.random=()=>{s.rngState=(Math.imul(s.rngState,1664525)+1013904223)>>>0;return s.rngState/4294967296;};}
   if(s?.kind==='photo')s.photos=0;
   return s;
 }
-export function stepGame(s,dt){({drive:stepDrive,blocks:stepBlocks,photo:stepPhoto,rhythm:stepRhythm,catch:stepCatch})[s.kind](s,dt);}
+export function stepGame(s,dt){if(s.ended)return;({drive:stepDrive,blocks:stepBlocks,photo:stepPhoto,rhythm:stepRhythm,catch:stepCatch})[s.kind](s,dt);settleFailure(s);}
 export function gameAction(s,action){
   if(s.ended)return;
   if(s.kind==='drive'||s.kind==='catch'){if(action==='left'||action==='right')steer(s,action==='left'?-1:1);}
   else if(s.kind==='blocks'){if(action==='left'||action==='right')moveBlock(s,action==='left'?-1:1);else if(action==='rotate')rotateBlock(s);else if(action==='drop')dropBlock(s,true);else if(action==='down')dropBlock(s);}
   else if(s.kind==='photo'&&action==='snap')snapPhoto(s);
   else if(s.kind==='rhythm'&&(action==='left'||action==='right'))tapRhythm(s,action==='left'?0:1);
+  settleFailure(s);
 }
