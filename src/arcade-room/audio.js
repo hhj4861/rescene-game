@@ -1,7 +1,7 @@
 /* global window */
-// Original synthesized notes only; game timing never depends on audio availability.
+// Original game tones and short source recordings; timing never depends on audio.
 export class ArcadeAudio {
-  constructor(){this.enabled=false;this.voiceEnabled=false;this.context=null;this.nodes=new Set();this.scheduled=new Set();}
+  constructor(){this.enabled=false;this.voiceEnabled=false;this.context=null;this.nodes=new Set();this.scheduled=new Set();this.voice=null;this.voiceReport=null;this.voiceRequest=0;}
   async enable(value){
     this.enabled=value;if(!value){this.stop();return false;}
     try{this.context??=new (window.AudioContext||window.webkitAudioContext)();await this.context.resume();return true;}
@@ -17,16 +17,24 @@ export class ArcadeAudio {
     if(!this.enabled||state.kind!=='rhythm')return;
     state.notes.forEach((n,i)=>{const delay=n.at-state.elapsed;if(delay>=0&&delay<.12&&!this.scheduled.has(i)){this.scheduled.add(i);this.tone(n.lane?660:440,delay,.12);}});
   }
-  cancelVoice(){try{window.speechSynthesis?.cancel();}catch{/* Speech is optional. */}}
-  speak(line,report=()=>{}){
-    this.cancelVoice();
-    if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){report('이 브라우저에서는 음성을 지원하지 않아요. 멘트는 자막으로 확인해 주세요.');return false;}
-    try{
-      const utterance=new window.SpeechSynthesisUtterance(line);utterance.lang='ko-KR';utterance.rate=.95;
-      const korean=window.speechSynthesis.getVoices().find(v=>v.lang.startsWith('ko'));if(korean)utterance.voice=korean;
-      utterance.onstart=()=>report('임시 합성 음성 재생 중');utterance.onend=()=>report('임시 합성 음성 · 실제 멤버 녹음 아님');utterance.onerror=()=>report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');
-      window.speechSynthesis.speak(utterance);report('임시 합성 음성 · 실제 멤버 녹음 아님');return true;
-    }catch{report('음성을 재생하지 못했어요. 멘트는 자막으로 확인해 주세요.');return false;}
+  cancelVoice(){
+    this.voiceRequest++;
+    if(this.voice){this.voice.onplaying=null;this.voice.onended=null;this.voice.onerror=null;this.voice.pause();this.voice.removeAttribute('src');this.voice.load();this.voice=null;}
+    this.voiceReport?.('음성 재생을 멈췄어요.');this.voiceReport=null;
   }
+  async playVoice(source,report=()=>{}){
+    this.cancelVoice();const request=this.voiceRequest;
+    const current=()=>request===this.voiceRequest;
+    if(!source?.file){report('연결된 음성이 없어요. 자막으로 확인해 주세요.');return false;}
+    try{
+      const voice=new window.Audio(source.file);this.voice=voice;this.voiceReport=report;voice.volume=.85;
+      const failed=()=>{if(current()){report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}};
+      voice.onplaying=()=>{if(current())report('실제 멤버 음성 재생 중');};
+      voice.onended=()=>{if(current()){report('원본 음성 · 방송 배경음 포함');this.cancelVoiceQuietly();}};
+      voice.onerror=failed;report('멤버 음성 준비 중…');
+      await voice.play();return current();
+    }catch{if(current()){report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}return false;}
+  }
+  cancelVoiceQuietly(){this.voiceReport=null;this.cancelVoice();}
   stop(){this.cancelVoice();for(const o of this.nodes){try{o.stop();}catch{/* Already ended. */}}this.nodes.clear();this.scheduled.clear();}
 }
