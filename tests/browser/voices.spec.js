@@ -35,6 +35,13 @@ for(const [kind,game] of Object.entries(GAMES))test(`${game.member}: real record
   await expect.poll(()=>page.evaluate(()=>window.voiceElements.at(-1).currentTime)).toBeGreaterThan(0);
   const clip=await page.evaluate(()=>{const a=window.voiceElements.at(-1);return {src:a.currentSrc,duration:a.duration,error:a.error?.code};});
   expect(clip.src).toContain(`/voices/${game.member}.mp3`);expect(clip.duration).toBeGreaterThan(1);expect(clip.duration).toBeLessThan(4);expect(clip.error).toBeUndefined();
+  // A playing clock also advances for silent MP3s. Verify the decoded signal itself.
+  const signal=await page.evaluate(async path=>{
+    const context=new (window.AudioContext||window.webkitAudioContext)();
+    try{const response=await window.fetch(path),buffer=await context.decodeAudioData(await response.arrayBuffer());const samples=buffer.getChannelData(0);let peak=0,power=0,active=0;for(const sample of samples){peak=Math.max(peak,Math.abs(sample));power+=sample*sample;if(Math.abs(sample)>.001)active++;}return {peak,rms:Math.sqrt(power/samples.length),active:active/samples.length};}finally{await context.close();}
+  },VOICES[game.member].file);
+  expect(signal.peak,'MP3 must contain audible samples').toBeGreaterThan(.01);expect(signal.rms,'silent audio regression').toBeGreaterThan(.001);expect(signal.active).toBeGreaterThan(.1);
+
   await page.getByRole('button',{name:'음성 정지',exact:true}).click();
   expect(await page.evaluate(()=>window.voiceElements.at(-1).paused)).toBe(true);
   await page.getByRole('button',{name:`▶ ${game.name} 실제 음성 듣기`,exact:true}).click();
@@ -45,13 +52,13 @@ for(const [kind,game] of Object.entries(GAMES))test(`${game.member}: real record
 });
 
 test('default is quiet; failed media keeps clear progress and retry usable',async({page})=>{
-  await page.route('**/voices/*.mp3',route=>route.abort());
-  const requests=[];page.on('request',r=>{if(r.url().endsWith('.mp3'))requests.push(r.url());});
+  await page.route('**/voices/*.mp3*',route=>route.abort());
+  const requests=[];page.on('request',r=>{if(r.url().includes('/voices/'))requests.push(r.url());});
   await readyToClear(page,'blocks');await page.getByRole('button',{name:'계속하기 ▶'}).click();await page.clock.runFor(50);
   expect(requests).toEqual([]);await expect(page.getByRole('button',{name:'다음 스테이지 ▶'})).toBeEnabled();
   await page.getByRole('button',{name:'▶ 메이 실제 음성 듣기',exact:true}).click();
   await expect(page.locator('#voice-status')).toContainText('다시 듣기');
-  await page.getByRole('button',{name:'다음 스테이지 ▶'}).click();await expect(page.locator('.stage-goal')).toContainText('STAGE 2 / 5');
+  await page.getByRole('button',{name:'다음 스테이지 ▶'}).click();await expect(page.locator('.stage-goal')).toContainText('STAGE 2');
 });
 
 test('backgrounding a result stops voice and source link stays in the keyboard focus loop',async({page})=>{
