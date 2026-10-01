@@ -1,18 +1,18 @@
 export const GAMES={
-  drive:{member:'woni',name:'원이',title:'바닷길 드라이브',line:'바다 보러 갈래? 내가 운전할게!',hint:'좌우로 피하고, 별빛을 모아요.',color:'mint',guide:'차는 자동으로 달려요. 좌우 버튼이나 길을 눌러 별을 모아요. 10초 뒤부터 점점 빨라져요. 부딪힐 때마다 목숨이 줄어요. 클리어해도 남은 목숨 그대로 다음 스테이지!',keys:'← → 이동 · 길 터치',extra:'모은 별'},
-  blocks:{member:'may',name:'메이',title:'조각 공방',line:'작은 조각도 모이면 예뻐질 거야.',hint:'조각을 맞춰 한 줄을 채워요.',color:'peach',guide:'좌우로 옮기고 회전해 한 줄을 채워요. 점선은 내려놓을 자리예요. 10초 뒤부터 조각이 점점 빨리 내려와요. 목표 줄 수를 채우면 클리어! 위까지 쌓이거나 시간이 끝나면 목숨 하나를 쓰고 재도전해요.',keys:'← → 이동 · ↑ 회전 · Space 내려놓기',extra:'완성한 줄'},
-  photo:{member:'zena',name:'제나',title:'깜짝 포토부스',line:'준비됐지? 우리 표정 남기자!',hint:'불빛이 가운데 오면 찰칵!',color:'rose',guide:'불빛이 가운데 노란 칸에 오면 찰칵! 10초 뒤부터 불빛이 빨라지고 노란 칸이 좁아져요. 노란 칸을 놓치면 목숨 하나가 줄어요. 목숨이 남아 있으면 계속 도전!',keys:'Space 또는 찰칵 버튼',extra:'멋진 사진'},
-  rhythm:{member:'minami',name:'미나미',title:'댄스 타임',line:'왼쪽, 오른쪽! 같이 춰 볼까?',hint:'음표가 선에 닿으면 같은 쪽을 톡!',color:'lilac',guide:'음표가 아래 선에 닿으면 같은 쪽 버튼을 눌러요. 10초 뒤부터 박자가 빨라지니 선에 더 정확히 맞춰봐요. 음표를 놓치면 목숨 하나가 줄어요. 소리 없이도 할 수 있어요.',keys:'← → 또는 A / L',extra:'연속 성공'},
-  catch:{member:'liv',name:'리브',title:'별빛 산책',line:'오늘은 어떤 별을 만나게 될까?',hint:'좌우로 움직여 떨어지는 별을 받아요.',color:'sky',guide:'좌우 버튼이나 별길을 눌러 바구니를 옮겨요. 파란 별은 두 배! 10초 뒤부터 별이 더 자주, 빠르게 내려와요. 별을 놓치면 목숨 하나가 줄어요. 목숨이 남아 있으면 계속 도전!',keys:'← → 이동 · 별길 터치/드래그',extra:'모은 별'},
+ drive:{member:'woni',name:'원이',title:'파이리 팡팡',line:'파이리 나왔다! 같이 잡자!',hint:'나타난 파이리를 톡! 금빛은 두 배예요.',color:'mint',guide:'9개 구멍에서 나타나는 파이리를 눌러요. 금빛 파이리는 두 배, 연속 성공은 추가 점수! 놓치면 목숨 하나가 줄어요.',keys:'구멍 터치 · 숫자 1~9',extra:'연속 성공'},
+ blocks:{member:'may',name:'메이',title:'보글보글 공방',line:'방울에 가두고, 팡! 신나지?',hint:'방울로 가두고, 가까이에서 한 번 더 팡!',color:'peach',guide:'좌우로 이동하고 점프로 발판에 올라가요. 방울 버튼으로 적을 가둔 뒤 가까이에서 다시 누르거나 닿으면 팡! 갇힌 적은 5초 뒤 풀려나고, 맨몸으로 부딪히면 목숨이 줄어요.',keys:'← → 이동 · Space 점프 · F 방울',extra:'터뜨린 방울'},
+ photo:{member:'zena',name:'제나',title:'신라빵',line:'갓 구운 빵! 연쇄로 더 맛있게!',hint:'이웃한 빵 두 개를 바꿔 같은 빵 3개!',color:'rose',guide:'빵을 하나 누르고 이웃한 빵을 눌러 자리를 바꿔요. 같은 빵 3개가 맞으면 팡! 4개 이상은 십자 폭발 빵, 연쇄는 배수 점수예요. 교환 횟수 안에 목표를 채워요. 안 맞는 교환은 횟수를 쓰지 않아요.',keys:'빵 두 개 터치 · 방향키 탐색 / Enter 선택',extra:'남은 교환'},
+ rhythm:{member:'minami',name:'미나미',title:'펌프 댄스타임',line:'다섯 발판으로, 우리 무대 시작!',hint:'올라오는 화살표가 위 판정선에 닿으면 톡!',color:'lilac',guide:'화살표가 위쪽 발판에 겹치면 같은 방향을 눌러요. ↙ ↖ ● ↗ ↘ 다섯 방향! 3단계부터 동시 발판도 나와요. 놓치면 목숨이 줄고, 연속 성공은 추가 점수예요.',keys:'Z ↙ · Q ↖ · S ● · E ↗ · C ↘',extra:'연속 성공'},
+ catch:{member:'liv',name:'리브',title:'별빛 디펜스',line:'우리 별빛 정원, 내가 지킬게!',hint:'빈 칸에 수비대 배치, 다시 누르면 강화!',color:'sky',guide:'세 길의 빈 칸을 누르면 별 2개로 수비대를 세워요. 같은 칸을 다시 누르면 별 3개로 강화해요. 별은 자동으로 모이고 적을 막아도 받아요. 위험할 땐 별빛 파동! 적이 왼쪽 끝에 닿으면 목숨이 줄어요.',keys:'수비 칸 터치 · 숫자 1~6 · Space 파동',extra:'배치용 별'},
 };
-export function extraValue(s){return s.kind==='drive'?s.stars:s.kind==='blocks'?s.lines:s.kind==='photo'?s.perfect:s.kind==='rhythm'?s.combo:s.stars;}
-export function resultLine(s){return s.kind==='drive'||s.kind==='catch'?`별빛 ${s.stars}개를 모았어요.`:s.kind==='blocks'?`${s.lines}줄의 조각을 완성했어요.`:s.kind==='photo'?`찰칵 ${s.shots}번 · 멋진 사진 ${s.perfect}장`:`성공 ${s.hits}번 · 최고 연속 ${s.bestCombo}번`;}
+export function extraValue(s){return s.kind==='blocks'?s.popped:s.kind==='photo'?s.moves:s.kind==='catch'?s.energy:s.combo;}
+export function resultLine(s){return s.kind==='drive'?`파이리 ${s.hits}번 · 최고 ${s.bestCombo}콤보`:s.kind==='blocks'?`방울 ${s.popped}개를 터뜨렸어요!`:s.kind==='photo'?`빵 ${s.collected}개를 구웠어요!`:s.kind==='catch'?`정원을 ${s.defeated}번 지켰어요!`:`성공 ${s.hits}번 · 최고 ${s.bestCombo}콤보`;}
 export const REACTIONS={
-  star:['반짝! 별빛 하나 더 모았어.','바다까지 조금만 더 가자!'],bump:['괜찮아, 천천히 다시 가자.','다음 길은 같이 살펴보자.'],
-  line:['짜잔! 조각들이 딱 맞았어.','우리가 만든 무늬, 예쁘다!'],place:['좋아, 다음 조각도 같이 맞춰 보자.','작은 조각도 소중해.'],
-  'photo-perfect':['지금 표정, 완벽해!','이건 꼭 간직하자!'],'photo-good':['찰칵! 우리답게 나왔어.','다음엔 다른 표정 해 볼까?'],'photo-miss':['앗, 내가 먼저 웃었네!','괜찮아, 또 찍으면 되지!'],
-  'rhythm-perfect':['딱 맞았어! 이 느낌이야.','우리 호흡 잘 맞는다!'],'rhythm-good':['좋아, 리듬을 타고 있어!','왼쪽, 오른쪽, 같이 가자.'],'rhythm-early':['선에 닿을 때 톡 눌러봐.'],'rhythm-miss':['다음 음표부터 다시 같이!'],
-  'catch-star':['작은 별 하나, 우리 주머니에.','오늘 밤도 반짝이네.'],'blue-star':['파란 별이다! 두 배로 반짝여.'],'catch-miss':['저 별은 하늘에 남겨두자.'],
+ 'whack-hit':['잡았다! 손발이 척척이네!'],'whack-gold':['금빛 파이리! 두 배다!'],'whack-miss':['다음 파이리는 같이 잡자!'],
+ 'bubble-trap':['가뒀어! 가까이에서 팡 해봐!'],'bubble-pop':['팡! 방울 터뜨리는 맛이지!'],'bubble-miss':['다시, 방울부터 불어보자!'],
+ 'bread-match':['갓 구운 빵 나왔어요!'],'bread-chain':['연쇄로 팡팡! 신라빵 대박!'],'bread-invalid':['같은 빵 세 개를 맞춰봐.'],'bread-shuffle':['새로운 빵판, 준비됐지?'],
+ 'rhythm-perfect':['PERFECT! 발판을 지배했어!'],'rhythm-good':['좋아! 리듬 그대로!'],'rhythm-early':['위쪽 발판에 겹칠 때 톡!'],'rhythm-miss':['다음 박자부터 다시 같이!'],
+ 'defense-build':['든든한 수비대, 준비 완료!'],'defense-hit':['별빛 정원은 안전해!'],'defense-burst':['별빛 파동! 한 번에 밀어내자!'],'defense-miss':['다음 길을 더 단단하게 지키자!'],
 };
 // Catchphrases from source research; adapted lines are labeled separately from recordings.
 export const SIGNATURES={
@@ -23,4 +23,4 @@ export const SIGNATURES={
   liv:{line:'너도? 아 나도!' ,label:'리브의 손하트',motion:'heart'},
 };
 
-for(const game of Object.values(GAMES))game.guide+=' 스테이지마다 제한 시간은 60초이며, 시간 초과도 목숨 하나를 써요. 스테이지가 오를수록 더 어려워져요.';
+for(const game of Object.values(GAMES))game.guide+=' 목숨 3개로 시작하고, 60초 안에 클리어하면 남은 목숨으로 더 어려운 다음 단계에 도전해요.';
