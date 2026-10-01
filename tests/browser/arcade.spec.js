@@ -3,7 +3,7 @@ import {test,expect} from '@playwright/test';
 const games={drive:'원이의 바닷길 드라이브 시작',blocks:'메이의 조각 공방 시작',photo:'제나의 깜짝 포토부스 시작',rhythm:'미나미의 댄스 타임 시작',catch:'리브의 별빛 산책 시작'};
 test.beforeEach(async({page})=>{
   await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});
-  await page.goto('/');await expect(page.getByRole('button',{name:games.drive,exact:true})).toBeEnabled();
+  await page.goto('./');await expect(page.getByRole('button',{name:games.drive,exact:true})).toBeEnabled();
   await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
 });
 for(const [kind,name] of Object.entries(games))test(`${kind}: start, input, pause, result, retry and saved record`,async({page},testInfo)=>{

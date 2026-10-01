@@ -12,6 +12,8 @@ jobs:
     timeout-minutes: 15
     env:
       ARCADE_TEST_OUTPUT: ${{ github.workspace }}/artifacts/browser
+      ARCADE_BUILD_OUTPUT: ${{ github.workspace }}/dist-arcade-room
+      ARCADE_BASE_PATH: /
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
