@@ -1,6 +1,6 @@
 /* global process, URL */
 import {test,expect} from '@playwright/test';
-import {readFile,readdir} from 'node:fs/promises';
+import {readFile,readdir,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 
@@ -25,5 +25,7 @@ test('public HTML, game code, styles and cast match the verified build',async({p
   const results=await Promise.all(pending);
   for(const result of results)if(result.error)throw result.error;
   expect([...seen].sort()).toEqual([...files].sort());
-  await testInfo.attach('public-asset-hashes',{body:JSON.stringify(results,null,2),contentType:'application/json'});
+  const evidence=testInfo.outputPath('public-asset-hashes.json');
+  await writeFile(evidence,JSON.stringify(results,null,2));
+  await testInfo.attach('public-asset-hashes',{path:evidence,contentType:'application/json'});
 });
