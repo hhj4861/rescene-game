@@ -1,4 +1,6 @@
 export const DURATION=60;
+export const STAGE_COUNT=5;
+export function stageSpeed(s){return 1+(Math.max(1,Math.min(STAGE_COUNT,s.stage||1))-1)*.12;}
 // Keep the first ten seconds steady, then ramp smoothly through the round.
 function pressure(elapsed){return Math.max(0,Math.min(1,(elapsed-10)/(DURATION-10)));}
 export const COLS=8,ROWS=12;
@@ -10,10 +12,10 @@ export function stepDrive(s,dt){
   if(s.spawn<=0){
     // At most one obstacle in a row, always leaving two safe lanes.
     const lane=Math.floor(s.random()*3);s.objects.push({lane,y:-.08,kind:s.random()<.42?'star':'cone',hit:false});
-    s.spawn=.8-.22*pressure(s.elapsed);
+    s.spawn=(.8-.22*pressure(s.elapsed))/stageSpeed(s);
   }
   for(const o of s.objects){
-    const before=o.y;o.y+=dt*(.32+.14*pressure(s.elapsed));
+    const before=o.y;o.y+=dt*(.32+.14*pressure(s.elapsed))*stageSpeed(s);
     if(!o.hit&&o.lane===s.lane&&before<=.91&&o.y>=.73){
       o.hit=true;
       if(o.kind==='star'){s.stars++;s.event='star';}
@@ -48,7 +50,7 @@ export function ghostRow(s){let y=s.active.y;while(fits(s,{...s.active,y:y+1}))y
 export function stepBlocks(s,dt){
   if(s.ended)return;s.remaining=Math.max(0,s.remaining-Math.max(0,dt));
   if(!s.remaining){s.ended=true;return;}s.fall+=dt;
-  const interval=Math.max(.4,.95-.35*pressure(DURATION-s.remaining)-s.lines*.025);while(s.fall>=interval&&!s.ended){s.fall-=interval;dropBlock(s);}
+  const interval=Math.max(.4,.95-.35*pressure(DURATION-s.remaining)-s.lines*.025)/stageSpeed(s);while(s.fall>=interval&&!s.ended){s.fall-=interval;dropBlock(s);}
 }
 export const RECORD_KEY='rescene.small-arcade.v1';
 export const GAME_IDS=['drive','blocks','photo','rhythm','catch'];
@@ -71,43 +73,43 @@ export function photoPosition(s){
   // Integrate the increasing speed so the cursor never jumps at a tempo change.
   const ramp=Math.max(0,s.elapsed-10);
   const phase=s.elapsed/1.4+ramp*ramp*(1/1.05-1/1.4)/(2*(DURATION-10));
-  return .5+Math.sin(phase*Math.PI)*.43;
+  return .5+Math.sin(phase*Math.PI*stageSpeed(s))*.43;
 }
-export function photoWindows(s){const p=pressure(s.elapsed);return {perfect:.045-.01*p,good:.13-.03*p};}
+export function photoWindows(s){const p=pressure(s.elapsed),factor=1+(stageSpeed(s)-1)*.5;return {perfect:(.045-.01*p)/factor,good:(.13-.03*p)/factor};}
 export function stepPhoto(s,dt){const delta=advance(s,dt);s.cooldown=Math.max(0,s.cooldown-delta);s.flash=Math.max(0,s.flash-delta);}
 export function snapPhoto(s){
   if(s.ended||s.cooldown>0)return false;
   s.cooldown=.65;s.shots++;const distance=Math.abs(photoPosition(s)-.5);
   const windows=photoWindows(s),grade=distance<=windows.perfect?'perfect':distance<=windows.good?'good':'miss';
   s.combo=grade==='miss'?0:s.combo+1;
-  if(grade!=='miss'){s.score+=(grade==='perfect'?100:60)+Math.min(5,s.combo)*10;s.flash=.2;if(grade==='perfect')s.perfect++;}
+  if(grade!=='miss'){s.photos=(s.photos||0)+1;s.score+=(grade==='perfect'?100:60)+Math.min(5,s.combo)*10;s.flash=.2;if(grade==='perfect')s.perfect++;}
   s.album.push(grade);s.album=s.album.slice(-5);s.event=grade==='miss'?'photo-miss':`photo-${grade}`;return true;
 }
 export const BEAT_SECONDS=.7;
 export const RHYTHM_WINDOW=.19;
-function rhythmWindow(at){return RHYTHM_WINDOW-.04*pressure(at);}
+function rhythmWindow(at,stage=1){return RHYTHM_WINDOW-.04*pressure(at)-.008*(stage-1);}
 const PATTERN=[0,1,0,0,1,1,0,1];
-export function makeRhythm(offsetMs=0){
+export function makeRhythm(offsetMs=0,stage=1){
   const offset=Number.isFinite(offsetMs)?Math.max(-200,Math.min(200,offsetMs))/1000:0;
   const notes=[];
   // Leave enough time for the final note, even with +200ms calibration.
   for(let at=2,i=0;at<=DURATION-.4;i++){
     notes.push({at,lane:PATTERN[i%PATTERN.length],status:'waiting'});
-    at+=BEAT_SECONDS-.18*pressure(at);
+    at+=(BEAT_SECONDS-.18*pressure(at))/stageSpeed({stage});
   }
   return {...timed('rhythm'),offset,combo:0,bestCombo:0,hits:0,misses:0,lastTap:-1,
     notes};
 }
 export function stepRhythm(s,dt){
   if(s.ended)return;advance(s,dt);
-  for(const note of s.notes)if(note.status==='waiting'&&s.elapsed-s.offset-note.at>rhythmWindow(note.at)){note.status='miss';s.misses++;s.combo=0;s.event='rhythm-miss';}
+  for(const note of s.notes)if(note.status==='waiting'&&s.elapsed-s.offset-note.at>rhythmWindow(note.at,s.stage)){note.status='miss';s.misses++;s.combo=0;s.event='rhythm-miss';}
 }
 export function tapRhythm(s,lane){
   if(s.ended||![0,1].includes(lane)||s.elapsed-s.lastTap<.1)return false;
   s.lastTap=s.elapsed;
   const note=s.notes.filter(n=>n.status==='waiting'&&n.lane===lane).sort((a,b)=>Math.abs(a.at-s.elapsed+s.offset)-Math.abs(b.at-s.elapsed+s.offset))[0];
   const delta=note?Math.abs(s.elapsed-s.offset-note.at):Infinity;
-  if(!note||delta>rhythmWindow(note.at)){s.combo=0;s.event='rhythm-early';return false;}
+  if(!note||delta>rhythmWindow(note.at,s.stage)){s.combo=0;s.event='rhythm-early';return false;}
   note.status='hit';s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);
   const perfect=delta<=.08-.015*pressure(note.at);
   s.score+=(perfect?100:60)+Math.min(10,s.combo)*5;s.event=perfect?'rhythm-perfect':'rhythm-good';return true;
@@ -115,16 +117,23 @@ export function tapRhythm(s,lane){
 export function makeCatch(random=Math.random){return {...timed('catch'),lane:1,stars:0,misses:0,objects:[],spawn:.6,random};}
 export function stepCatch(s,dt){
   if(s.ended)return;const delta=advance(s,dt);s.spawn-=delta;
-  if(s.spawn<=0){s.objects.push({lane:Math.floor(s.random()*3),y:-.06,blue:s.random()<.2,hit:false});s.spawn=.78-.22*pressure(s.elapsed);}
+  if(s.spawn<=0){s.objects.push({lane:Math.floor(s.random()*3),y:-.06,blue:s.random()<.2,hit:false});s.spawn=(.78-.22*pressure(s.elapsed))/stageSpeed(s);}
   for(const o of s.objects){
-    const before=o.y;o.y+=delta*(.38+.14*pressure(s.elapsed));
+    const before=o.y;o.y+=delta*(.38+.14*pressure(s.elapsed))*stageSpeed(s);
     if(!o.hit&&before<=.88&&o.y>=.73&&o.lane===s.lane){o.hit=true;s.stars++;s.score+=o.blue?200:100;s.event=o.blue?'blue-star':'catch-star';}
     if(!o.hit&&before<=1&&o.y>1){s.misses++;s.event='catch-miss';}
   }
   s.objects=s.objects.filter(o=>o.y<=1.1&&!o.hit);
 }
 export function createGame(kind,options={}){
-  return ({drive:()=>makeDrive(options.random),blocks:()=>makeBlocks(options.random),photo:makePhoto,rhythm:()=>makeRhythm(options.offsetMs),catch:()=>makeCatch(options.random)})[kind]?.();
+  const stage=Number.isInteger(options.stage)?Math.max(1,Math.min(STAGE_COUNT,options.stage)):1;
+  let seed=(options.seed??Math.floor(Math.random()*4294967296))>>>0;
+  const next=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+  const random=options.random||(options.stage?next:Math.random);
+  const s=({drive:()=>makeDrive(random),blocks:()=>makeBlocks(random),photo:makePhoto,rhythm:()=>makeRhythm(options.offsetMs,stage),catch:()=>makeCatch(random)})[kind]?.();
+  if(s&&options.stage){s.stage=stage;s.rngState=seed;if(!options.random)s.random=()=>{s.rngState=(Math.imul(s.rngState,1664525)+1013904223)>>>0;return s.rngState/4294967296;};}
+  if(s?.kind==='photo')s.photos=0;
+  return s;
 }
 export function stepGame(s,dt){({drive:stepDrive,blocks:stepBlocks,photo:stepPhoto,rhythm:stepRhythm,catch:stepCatch})[s.kind](s,dt);}
 export function gameAction(s,action){
