@@ -14,11 +14,11 @@ export const REACTIONS={
   'rhythm-perfect':['딱 맞았어! 이 느낌이야.','우리 호흡 잘 맞는다!'],'rhythm-good':['좋아, 리듬을 타고 있어!','왼쪽, 오른쪽, 같이 가자.'],'rhythm-early':['선에 닿을 때 톡 눌러봐.'],'rhythm-miss':['다음 음표부터 다시 같이!'],
   'catch-star':['작은 별 하나, 우리 주머니에.','오늘 밤도 반짝이네.'],'blue-star':['파란 별이다! 두 배로 반짝여.'],'catch-miss':['저 별은 하늘에 남겨두자.'],
 };
-// Provisional game dialogue, except May's line supplied by the user.
+// Catchphrases from source research; adapted lines are labeled separately from recordings.
 export const SIGNATURES={
-  woni:{line:'좋아, 다음 길도 같이 가자!',label:'원이의 힘찬 응원',motion:'cheer'},
-  may:{line:'클리어는 그립갑이 좋다',label:'메이의 윙크',motion:'wink'},
-  zena:{line:'이 순간, 저장 완료! 찰칵!',label:'제나의 볼꽃 포즈',motion:'cheek'},
-  minami:{line:'우리 호흡, 딱 맞았어!',label:'미나미의 댄스 브이',motion:'dance'},
-  liv:{line:'반짝이는 오늘, 함께 간직하자!',label:'리브의 손하트',motion:'heart'},
+  woni:{line:'오이쉬에~',label:'원이의 힘찬 응원',motion:'cheer'},
+  may:{line:'클리어는 그립감이 좋다',adapted:true,label:'메이의 윙크',motion:'wink'},
+  zena:{line:'내는 원래 이 순간을 싸랑해~',adapted:true,label:'제나의 볼꽃 포즈',motion:'cheek'},
+  minami:{line:'거제 야호~',label:'미나미의 댄스 브이',motion:'dance'},
+  liv:{line:'너도? 아 나도!' ,label:'리브의 손하트',motion:'heart'},
 };
