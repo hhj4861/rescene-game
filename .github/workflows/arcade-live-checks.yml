@@ -1,0 +1,38 @@
+name: Arcade live checks
+on:
+  workflow_dispatch:
+  push:
+    branches: ['feat/arcade-live-verification-*']
+permissions:
+  contents: read
+concurrency:
+  group: arcade-live-checks
+  cancel-in-progress: false
+jobs:
+  verify-public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ARCADE_TEST_OUTPUT: ${{ github.workspace }}/artifacts/live-browser
+      ARCADE_BUILD_OUTPUT: ${{ github.workspace }}/dist-arcade-room
+      ARCADE_BASE_PATH: /
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npx eslint playwright.live.config.js
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Verify the public game, not a local preview
+        run: npx playwright test --config playwright.live.config.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arcade-live-verification
+          path: artifacts/live-browser
+          retention-days: 7
