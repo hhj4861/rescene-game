@@ -1,4 +1,4 @@
-/* global window, Event */
+/* global window, Event, URL */
 import {test,expect} from '@playwright/test';
 
 const photo='제나의 깜짝 포토부스 시작';
@@ -8,9 +8,9 @@ async function openGame(page){
   await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
 }
 
-test('static root and legacy entry load scripts and character assets under the deployment path',async({page})=>{
+test('static root and legacy entry load scripts and character assets under the deployment path',async({page,baseURL})=>{
   const failures=[];page.on('pageerror',error=>failures.push(error.message));
-  page.on('response',response=>{if(response.url().startsWith('http://127.0.0.1:4331')&&response.status()>=400)failures.push(response.url());});
+  page.on('response',response=>{if(new URL(response.url()).origin===new URL(baseURL).origin&&response.status()>=400)failures.push(response.url());});
   for(const entry of ['./','./arcade-room.html']){
     await page.goto(entry);await expect(page.locator('[data-start]')).toHaveCount(5);
     await expect(page.getByRole('button',{name:photo})).toBeEnabled();
