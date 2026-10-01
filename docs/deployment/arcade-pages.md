@@ -2,6 +2,18 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+## 멤버 유행어·실제 음성 운영 배포 — 2026-10-01
+
+- 사용자 명시 승인 후 [PR #10](https://github.com/hhj4861/rescene-game/pull/10)을 머지했다. 운영 코드: `93b2726b09df700d89b14ebf7a5878f59d887424`.
+- [main CI 36840623288](https://github.com/hhj4861/rescene-game/actions/runs/36840623288): 단위 테스트 29개·브라우저 69개·린트·빌드 통과. 이 실행의 `arcade-static-site` 산출물을 그대로 기존 Wrangler 로그인으로 배포했다.
+- Pages: `f7037308-48c8-4ca7-b1d8-d81aa2338069`, Production / main / source `93b2726`. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://f7037308.rescene-arcade.pages.dev).
+- 수집한 유행어·게임용 각색과 짧은 실제 음성 5개를 연결했다. 기본 무음이며 각 게임의 ‘멤버 음성 켜기’에서 미리 듣고 클리어 때 자동 재생한다. 결과 화면의 다시 듣기·정지·출처 확인도 지원한다. 녹음에는 원본 방송의 배경음·웃음이 포함된다.
+- 기존 캐릭터·줄 완성 윙크·저장·단계별 난이도는 유지한다. 실제 멤버의 새 대사를 합성한 것이 아니며, 각색 자막과 녹음 원문은 구분해 표시한다. [원본 구간과 검수 한계](../design/member-voices.md).
+- 공개 검증 **72개 통과**: [36841178739](https://github.com/hhj4861/rescene-game/actions/runs/36841178739). 승인된 main을 기존 공개 검증 브랜치에 통합하고 음성 파일의 해시 검사도 추가했다(`ca8c366`). PR #8 자체는 별도 승인 전이므로 머지하지 않았다.
+- 세 브라우저(데스크톱 Chromium·모바일 Chromium·모바일 WebKit)에서 다섯 음성의 실제 디코딩·재생 시간 진행, 다시 듣기·정지·화면 이동 시 취소, 저장·스테이지 기능을 확인했다. HTML·JS·CSS·캐릭터 2개·음성 5개의 SHA-256을 배포한 CI 산출물과 대조했다. 실기기 스피커 청음 검증은 아니다.
+- [공개 검증 브랜치의 정적 CI 36841185958](https://github.com/hhj4861/rescene-game/actions/runs/36841185958)도 성공했다.
+- 배포 산출물과 검증 증적은 iCloud 작업 루트 `rescene-game/member-voices-deploy-20261001/`에 보관한다. CI 배포 자격 설정이나 자동 배포 연결을 추가한 것은 아니다.
+
 ## 스테이지·자동 저장 운영 배포 — 2026-10-01
 
 - 사용자 명시 승인 후 [PR #9](https://github.com/hhj4861/rescene-game/pull/9)를 머지했다. 배포 소스: `main`의 `403388bc96df14c1821b97f5375400ba78463cc8`.

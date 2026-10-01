@@ -1,6 +1,6 @@
 # 멤버 유행어와 원본 음성 연결
 
-작성일: 2026-10-01. 이 문서는 `feat/arcade-five-games-member-voices-20261001` 구현에 해당한다. 운영 배포는 이 PR 머지 승인 후 별도로 진행한다.
+작성일: 2026-10-01. 사용자 승인 후 [PR #10](https://github.com/hhj4861/rescene-game/pull/10)을 머지하고 [운영 게임](https://rescene-arcade.pages.dev/)에 배포했다. 소스는 `93b2726`, Pages 배포는 `f7037308-48c8-4ca7-b1d8-d81aa2338069`이며 검증 기록은 [배포 문서](../deployment/arcade-pages.md)에 정리한다.
 
 ## 플레이 흐름
 
