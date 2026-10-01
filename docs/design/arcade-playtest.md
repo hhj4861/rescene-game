@@ -22,9 +22,9 @@
 
 ## 출시 전 남은 일
 
-- 새 다섯 게임 PR 검토 및 사용자 명시 승인 후 머지.
+- PR #6는 2026-10-01 사용자 승인 후 main에 머지했다.
 - 실제 기기와 짧은 이용자 테스트 후 필요한 난이도 조정.
-- 생성된 Cloudflare Pages `rescene-arcade`의 CI 인증 연결, 배포와 공개 URL 재검증. [Cloudflare 연결 구성](../deployment/arcade-pages.md)은 준비했으며 현재 운영 배포는 없다.
+- [공개 게임](https://rescene-arcade.pages.dev/)을 기존 Wrangler 로그인으로 첫 배포했다. 공개 Chrome의 첫 화면·포토부스 흐름은 확인했으며 전체 실제 기기 확인과 CI 배포 인증 연결은 남아 있다. [배포 기록](../deployment/arcade-pages.md)을 참고한다.
 - JEV는 사용량·응답 지연 등 실제 필요를 확인한 뒤 별도 검토. 현재 아케이드는 AI 호출이 없어 도입하지 않는다.
 
 온라인 순위표·계정·서버 기록 동기화·수집 보상은 현재 다섯 게임 완성 범위에 포함하지 않는다.

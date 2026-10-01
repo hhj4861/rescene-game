@@ -1,8 +1,19 @@
 # 작은 오락실 — 기존 Cloudflare Pages 연결
 
-2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 프로젝트 목록에서 생성됨을 확인했고 배포 목록은 비어 있다. 아직 공개 게임은 없다.
+2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
-## 준비한 경로
+## 첫 운영 배포 결과 — 2026-10-01
+
+- PR #6를 사용자 승인 후 머지했다. 배포 소스는 `main`의 `2a7de6d11206ebbf9a2646e18a5ecc60bc8330d6`이다.
+- [main CI 36815975048](https://github.com/hhj4861/rescene-game/actions/runs/36815975048)의 성공한 `arcade-static-site` 산출물을 그대로 배포했다. 이 실행은 단위 12건·브라우저 36건·린트·빌드를 통과했다.
+- 사용자가 “별도 토큰 없음 — 이번에는 기존 로그인으로 배포”를 선택하여 기존 Wrangler 로그인으로 업로드했다. GitHub Actions 배포 인증을 연결한 것은 아니다.
+- Pages 배포 ID: `822f5d47-f012-4fd3-8eaf-c496426337e1`; Environment: `Production`; Branch: `main`; Source: `2a7de6d`.
+- [공개 게임](https://rescene-arcade.pages.dev/), [해당 배포](https://822f5d47.rescene-arcade.pages.dev).
+- Chrome의 공개 주소에서 다섯 멤버의 첫 화면, 포토부스 시작·입력 반응·60초 종료·저장 안내·재도전·일시정지·오락실 복귀를 확인했다. 공개 주소에서 나머지 네 게임을 모두 한 판씩 완료하거나 실제 휴대폰으로 검증한 것은 아니다.
+- 별도 Python HTTP 파일 비교 요청은 403 응답으로 중단됐다. CDN 파일 전체의 해시 일치 검증은 완료하지 못했다. 브라우저에서는 공개 페이지에 정상 접속했고 게임이 동작했다.
+- 로컬 배포 산출물은 공용 iCloud 작업 루트의 `rescene-game/arcade-publish-20261001/site/`에 보관했다. 캐릭터 아틀라스 SHA-256은 기존 승인 파일과 동일하다.
+
+## 이후 CI 배포 경로
 
 `main` → 수동 `Publish arcade to Cloudflare Pages` 실행 → 기존 프로젝트/운영 브랜치 확인 → 테스트·린트·정적 빌드 → Chromium/WebKit 검사 → 통과한 동일 빌드만 기존 프로젝트에 배포.
 
@@ -22,8 +33,8 @@ GitHub Actions variables에 `CLOUDFLARE_PAGES_PROJECT=rescene-arcade`, `CLOUDFLA
 ## 첫 공개 절차
 
 1. 생성된 `rescene-arcade`와 운영 브랜치 `main`을 대상으로 사용한다. Git Provider는 No로 확인했으므로 현재 Pages 자체 Git 자동 배포는 연결되어 있지 않다.
-2. 사용자에게 PR #6 머지 승인을 받은 뒤 머지한다. 연결 값은 승인된 경로로 설정한다.
-3. 공개 배포 승인 후 `Publish arcade to Cloudflare Pages`를 `main`에서 실행한다.
+2. PR #6는 승인 후 머지됐다. 이후 변경 PR도 명시적 승인 후 머지하고, CI 연결 값은 승인된 경로로 설정한다.
+3. 이후 CI 배포는 인증 연결과 해당 배포 승인 후 `Publish arcade to Cloudflare Pages`를 `main`에서 실행한다. 첫 배포는 위에 기록한 기존 로그인 방식으로 완료했다.
 4. 배포 결과의 실제 URL에서 첫 화면, 다섯 게임 시작, 결과·재도전·기록 복원을 확인하고 커밋·실행 번호·실제 URL을 기록한다. 예상 주소를 배포 완료 링크로 안내하지 않는다.
 5. iPhone Safari와 Android Chrome에서 [실제 기기 체크리스트](../design/arcade-playtest.md)를 진행한다. localhost 기록은 공개 주소로 자동 이동하지 않는다.
 
@@ -34,7 +45,7 @@ GitHub Actions variables에 `CLOUDFLARE_PAGES_PROJECT=rescene-arcade`, `CLOUDFLA
 - 복구 커밋 `e48c3e6` 기준 [CI 실행 36809734700](https://github.com/hhj4861/rescene-game/actions/runs/36809734700)에서 Node 12건, 브라우저 36건, 린트·정적 빌드가 통과했다. 동일 커밋의 브랜치 검사 36809732162도 통과했다.
 - 기존 iCloud 저장소의 미전송 정적 배포 검사·Cloudflare workflow 변경과 배포 메모를 새 로컬 worktree로 복구했다. 기존 PR #6 브랜치에 정상 push했으며, 추가된 브라우저 검사 12건을 포함한 총 36건을 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 통과했다.
 - 코드 기준은 `/Users/admin/workSpace/rescene-game`, 구현 worktree는 `.worktrees/arcade-complete`다. 이전 iCloud checkout은 보존하며 새 저장소의 Git·패키지 파일은 정상적으로 읽힌다. 테스트·빌드 산출물은 공용 iCloud 작업 루트 아래 `rescene-game/arcade-release-20261001/`에 둔다.
-- PR #6 머지 승인, CI용 인증 연결, 공개 배포 및 실제 기기 확인이 남아 있다. 프로젝트 생성 승인은 PR 머지 승인과 구분한다.
+- PR #6 머지와 첫 공개 배포는 완료했다. CI용 인증 연결, 실제 휴대폰·이용자 확인은 남아 있다. 기존 로그인 배포와 CI 배포 인증 완료를 구분한다.
 
 ## 로컬 검사
 
