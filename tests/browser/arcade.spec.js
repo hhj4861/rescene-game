@@ -6,7 +6,7 @@ test.beforeEach(async({page})=>{
   await page.goto('./');await expect(page.getByRole('button',{name:games.drive,exact:true})).toBeEnabled();
   await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
 });
-for(const [kind,name] of Object.entries(games))test(`${kind}: start, input, pause, result, retry and saved record`,async({page},testInfo)=>{
+for(const [kind,name] of Object.entries(games))test(`${kind}: start, input, pause, result, continue and saved record`,async({page},testInfo)=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   if(kind==='drive')await page.screenshot({path:testInfo.outputPath('home.png'),fullPage:true});
   await page.getByRole('button',{name,exact:true}).click();await expect(page.locator('#app')).toHaveAttribute('data-state','playing');
@@ -17,7 +17,10 @@ for(const [kind,name] of Object.entries(games))test(`${kind}: start, input, paus
   await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();const time=await page.locator('#time').innerText();await page.clock.fastForward(65000);await expect(page.locator('#time')).toHaveText(time);
   await page.getByRole('button',{name:'계속하기 ▶'}).click();await page.clock.fastForward(61000);await expect(page.locator('#app')).toHaveAttribute('data-state','result');
   const score=await page.locator('#score').innerText();await expect(page.locator('#best')).toHaveText(score);await expect(page.getByText('진행 상황과 최고 기록은 이 기기에 저장했어요.',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'한 판 더 ▶'}).click();await expect(page.locator('#score')).toHaveText('0');await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();await page.getByRole('button',{name:'오락실로 돌아가기'}).click();
+  const cleared=await page.locator('#app').getAttribute('data-cleared')==='true',hearts=(await page.locator('#lives').innerText()).split('♥').length-1;
+  await page.getByRole('button',{name:cleared?'다음 스테이지 ▶':hearts?'다시 도전 ▶':'새 도전 ▶',exact:true}).click();await expect(page.locator('#score')).toHaveText('0');
+  await expect(page.locator('.stage-goal b')).toHaveText(`STAGE ${cleared?2:1}`);await expect(page.locator('#lives')).toHaveAttribute('aria-label',`남은 목숨 ${hearts||3}개`);
+  await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();await page.getByRole('button',{name:'오락실로 돌아가기'}).click();
   await page.reload();await expect(page.locator(`#machine-${kind} .cabinet-bottom b`)).toHaveText(score);expect(errors).toEqual([]);
 });
 test('small viewport exposes next piece and all controls without horizontal overflow',async({page})=>{
