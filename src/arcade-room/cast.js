@@ -23,8 +23,11 @@ export async function loadCast(){
     const sheet=document.createElement('canvas');sheet.width=reactions.width;sheet.height=reactions.height;
     const c=sheet.getContext('2d',{willReadFrequently:true});c.drawImage(reactions,0,0);
     const pixels=c.getImageData(0,0,sheet.width,sheet.height).data;
+    // Measured transparent gutters in the generated 2172px sheet; equal fifths
+    // would include Zena's left ponytail in May's pose.
+    const edges=[0,444,896,1286,1701,2172].map(x=>Math.round(x*sheet.width/2172));
     for(const [id,{column}] of Object.entries(MEMBERS)){
-      const start=Math.round(column*sheet.width/5),end=Math.round((column+1)*sheet.width/5);let left=end,right=start,top=sheet.height,bottom=0;
+      const start=edges[column],end=edges[column+1];let left=end,right=start,top=sheet.height,bottom=0;
       for(let y=0;y<sheet.height;y++)for(let x=start;x<end;x++)if(pixels[(y*sheet.width+x)*4+3]>120){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
       if(right<left)continue;
       const out=document.createElement('canvas');out.width=320;out.height=360;const w=right-left+1,h=bottom-top+1,scale=Math.min(304/w,348/h);
