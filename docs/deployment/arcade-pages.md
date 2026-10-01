@@ -31,8 +31,8 @@ GitHub Actions variables에 `CLOUDFLARE_PAGES_PROJECT=rescene-arcade`, `CLOUDFLA
 
 ## 현재 검증과 남은 단계 — 2026-10-01
 
-- 원격 PR #6의 `757e58b` 기준 Node 12건, 브라우저 24건, 린트·빌드는 통과했다.
-- 기존 iCloud 저장소의 미전송 정적 배포 검사·Cloudflare workflow 변경과 배포 메모를 새 로컬 worktree로 복구했다. 추가된 브라우저 검사 12건을 포함한 총 36건은 PR CI 검증 대상이다.
+- 복구 커밋 `e48c3e6` 기준 [CI 실행 36809734700](https://github.com/hhj4861/rescene-game/actions/runs/36809734700)에서 Node 12건, 브라우저 36건, 린트·정적 빌드가 통과했다. 동일 커밋의 브랜치 검사 36809732162도 통과했다.
+- 기존 iCloud 저장소의 미전송 정적 배포 검사·Cloudflare workflow 변경과 배포 메모를 새 로컬 worktree로 복구했다. 기존 PR #6 브랜치에 정상 push했으며, 추가된 브라우저 검사 12건을 포함한 총 36건을 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 통과했다.
 - 코드 기준은 `/Users/admin/workSpace/rescene-game`, 구현 worktree는 `.worktrees/arcade-complete`다. 이전 iCloud checkout은 보존하며 새 저장소의 Git·패키지 파일은 정상적으로 읽힌다. 테스트·빌드 산출물은 공용 iCloud 작업 루트 아래 `rescene-game/arcade-release-20261001/`에 둔다.
 - PR #6 머지 승인, CI용 인증 연결, 공개 배포 및 실제 기기 확인이 남아 있다. 프로젝트 생성 승인은 PR 머지 승인과 구분한다.
 
