@@ -16,8 +16,8 @@ for(const [kind,name] of Object.entries(games))test(`${kind}: start, input, paus
   await page.screenshot({path:testInfo.outputPath('game.png'),fullPage:true});
   await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();const time=await page.locator('#time').innerText();await page.clock.fastForward(65000);await expect(page.locator('#time')).toHaveText(time);
   await page.getByRole('button',{name:'계속하기 ▶'}).click();await page.clock.fastForward(61000);await expect(page.locator('#app')).toHaveAttribute('data-state','result');
-  const score=await page.locator('#score').innerText();await expect(page.locator('#best')).toHaveText(score);await expect(page.getByText('최고 기록은 이 기기에 저장했어요.',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'한 판 더 ▶'}).click();await expect(page.locator('#score')).toHaveText('0');await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();await page.getByRole('button',{name:'이번 판을 끝내고 오락실로'}).click();
+  const score=await page.locator('#score').innerText();await expect(page.locator('#best')).toHaveText(score);await expect(page.getByText('진행 상황과 최고 기록은 이 기기에 저장했어요.',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'한 판 더 ▶'}).click();await expect(page.locator('#score')).toHaveText('0');await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();await page.getByRole('button',{name:'오락실로 돌아가기'}).click();
   await page.reload();await expect(page.locator(`#machine-${kind} .cabinet-bottom b`)).toHaveText(score);expect(errors).toEqual([]);
 });
 test('small viewport exposes next piece and all controls without horizontal overflow',async({page})=>{
@@ -32,5 +32,5 @@ test('held movement repeats and stops after release',async({page})=>{
 });
 test('rhythm correction persists and help returns keyboard focus to the game',async({page})=>{
   await page.getByRole('button',{name:games.rhythm}).click();await page.getByRole('button',{name:'하는 방법'}).click();await page.locator('#offset').fill('100');await expect(page.locator('#offset-value')).toHaveText('100ms');
-  await page.getByRole('button',{name:'계속하기 ▶'}).click();await expect(page.locator('#game')).toBeFocused();await page.reload();await page.getByRole('button',{name:games.rhythm}).click();await page.getByRole('button',{name:'하는 방법'}).click();await expect(page.locator('#offset')).toHaveValue('100');
+  await page.getByRole('button',{name:'계속하기 ▶'}).click();await expect(page.locator('#game')).toBeFocused();await page.reload();await page.getByRole('button',{name:games.rhythm}).click();await page.getByRole('button',{name:'계속하기 ▶'}).click();await page.getByRole('button',{name:'하는 방법'}).click();await expect(page.locator('#offset')).toHaveValue('100');
 });

@@ -12,7 +12,7 @@ test('static root and legacy entry load scripts and character assets under the d
   const failures=[];page.on('pageerror',error=>failures.push(error.message));
   page.on('response',response=>{if(response.url().startsWith('http://127.0.0.1:4331')&&response.status()>=400)failures.push(response.url());});
   for(const entry of ['./','./arcade-room.html']){
-    await page.goto(entry);await expect(page.locator('[data-start]')).toHaveCount(5);
+    await page.goto(entry);await expect(page.locator('.control-deck>.start')).toHaveCount(5);
     await expect(page.getByRole('button',{name:photo})).toBeEnabled();
     await expect(page.getByRole('alert')).toHaveCount(0);
   }
@@ -36,7 +36,7 @@ test('denied storage still allows a round and explains the unsaved score',async(
   await openGame(page);await page.getByRole('button',{name:photo}).click();
   await page.getByRole('button',{name:'사진 찍기',exact:true}).click();await page.clock.fastForward(61000);
   await expect(page.locator('#app')).toHaveAttribute('data-state','result');
-  await expect(page.getByText('기록을 저장할 수 없어요. 이번 점수는 화면에서 확인해 주세요.',{exact:true})).toBeVisible();
+  await expect(page.getByText('기기에 저장할 수 없어요. 이번 탭에서만 진행을 유지해요.',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'한 판 더 ▶'}).click();await expect(page.locator('#score')).toHaveText('0');
 });
 

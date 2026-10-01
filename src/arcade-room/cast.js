@@ -17,6 +17,23 @@ export async function loadCast(){
       const out=document.createElement('canvas');out.width=320;out.height=360;const w=right-left+1,h=bottom-top+1,scale=Math.min(304/w,348/h);out.getContext('2d').drawImage(sheet,left,top,w,h,(320-w*scale)/2,360-h*scale,w*scale,h*scale);frames[id].push(out);
     }
   }
+  // Optional reaction art never prevents the original cast from loading.
+  try{
+    const reactions=new Image();reactions.src=new URL('./cast-reactions.png',document.baseURI).href;await reactions.decode();
+    const sheet=document.createElement('canvas');sheet.width=reactions.width;sheet.height=reactions.height;
+    const c=sheet.getContext('2d',{willReadFrequently:true});c.drawImage(reactions,0,0);
+    const pixels=c.getImageData(0,0,sheet.width,sheet.height).data;
+    // Measured transparent gutters in the generated 2172px sheet; equal fifths
+    // would include Zena's left ponytail in May's pose.
+    const edges=[0,444,896,1286,1701,2172].map(x=>Math.round(x*sheet.width/2172));
+    for(const [id,{column}] of Object.entries(MEMBERS)){
+      const start=edges[column],end=edges[column+1];let left=end,right=start,top=sheet.height,bottom=0;
+      for(let y=0;y<sheet.height;y++)for(let x=start;x<end;x++)if(pixels[(y*sheet.width+x)*4+3]>120){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
+      if(right<left)continue;
+      const out=document.createElement('canvas');out.width=320;out.height=360;const w=right-left+1,h=bottom-top+1,scale=Math.min(304/w,348/h);
+      out.getContext('2d').drawImage(sheet,left,top,w,h,(320-w*scale)/2,360-h*scale,w*scale,h*scale);frames[id][3]=out;
+    }
+  }catch{/* Base poses remain available when a reaction image is unavailable. */}
 }
-export function drawDoll(ctx,id,x,y,height,pose=0){if(frames?.[id])ctx.drawImage(frames[id][pose],x-height*320/360/2,y-height,height*320/360,height);}
+export function drawDoll(ctx,id,x,y,height,pose=0){if(frames?.[id])ctx.drawImage(frames[id][pose]||frames[id][2],x-height*320/360/2,y-height,height*320/360,height);}
 export function paintDolls(root,pose=0){root.querySelectorAll('canvas[data-doll]').forEach(canvas=>{canvas.width=320;canvas.height=360;drawDoll(canvas.getContext('2d'),canvas.dataset.doll,160,360,360,pose);});}
