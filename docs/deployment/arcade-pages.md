@@ -2,6 +2,16 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+## 스테이지·자동 저장 운영 배포 — 2026-10-01
+
+- 사용자 명시 승인 후 [PR #9](https://github.com/hhj4861/rescene-game/pull/9)를 머지했다. 배포 소스: `main`의 `403388bc96df14c1821b97f5375400ba78463cc8`.
+- [main 검증 36833167782](https://github.com/hhj4861/rescene-game/actions/runs/36833167782): Node 26개, 브라우저 48개, lint, build 통과. 이 실행의 `arcade-static-site` 산출물을 그대로 기존 Wrangler 로그인으로 배포했다.
+- Pages: `af3f7586-f852-4f51-921f-f466c0d9302d`, Production / main / source `403388b`. [공개 게임](https://rescene-arcade.pages.dev/), [고정 배포 주소](https://af3f7586.rescene-arcade.pages.dev).
+- [공개 주소 검증 36833799540](https://github.com/hhj4861/rescene-game/actions/runs/36833799540): **51개 통과**. 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 저장 복원, 스테이지 클리어/해금, 메이 윙크, 게임 조작과 결과·재도전을 확인했다. 합성 음성은 API 스텁 호출 검증이며 실제 멤버 녹음 또는 실기기 청음 검증이 아니다.
+- 세 브라우저 모두 공개 HTML·JS·CSS·원본 캐릭터·새 반응 이미지의 SHA-256이 기대 빌드와 일치했다. 증적은 iCloud 작업 루트의 `rescene-game/arcade-progression-merge-20261001/live-36833799540/`에 보관했다.
+- 공개 검증은 기존 PR #8 작업 브랜치에 승인된 main을 통합하고 최신 자산 검사를 추가해 실행했다(`9dbeb58`). [해당 브랜치 정적 검증 36833801796](https://github.com/hhj4861/rescene-game/actions/runs/36833801796)도 통과. PR #8 자체는 별도 머지 승인이 없어 열어 둔다.
+- [멤버 유행어 조사](../research/member-catchphrases-youtube.md)는 출처 수집 문서이며, 조사한 표현으로 게임을 바꾸거나 유튜브 음성을 게임에 넣은 상태는 아니다.
+
 ## 난이도 조정 운영 배포 — 2026-10-01
 
 - 사용자 승인 후 PR #7을 머지했다. 배포 소스는 `main`의 `fefef8dd44e26f75c0c3a7a60286941f8a02c515`이다.
