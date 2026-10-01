@@ -7,7 +7,7 @@ import {createHash} from 'node:crypto';
 test('public HTML, game code, styles and cast match the verified build',async({page,baseURL},testInfo)=>{
   const output=process.env.ARCADE_BUILD_OUTPUT;
   if(!output)throw new Error('Set ARCADE_BUILD_OUTPUT to the expected static build.');
-  const files=['index.html','town-cast.webp',...(await readdir(join(output,'assets'))).map(name=>`assets/${name}`)];
+  const files=['index.html','town-cast.webp','cast-reactions.png',...(await readdir(join(output,'assets'))).map(name=>`assets/${name}`)];
   const expected=new Map(await Promise.all(files.map(async name=>[new URL(name==='index.html'?'':name,baseURL).href,{name,body:await readFile(join(output,name))}])));
   const pending=[],seen=new Set();
   const hash=data=>createHash('sha256').update(data).digest('hex');
@@ -21,7 +21,7 @@ test('public HTML, game code, styles and cast match the verified build',async({p
     })().catch(error=>({error})));
   });
   await page.goto('./');
-  await expect(page.locator('[data-start]:enabled')).toHaveCount(5);
+  await expect(page.locator('.control-deck>.start:enabled')).toHaveCount(5);
   const results=await Promise.all(pending);
   for(const result of results)if(result.error)throw result.error;
   expect([...seen].sort()).toEqual([...files].sort());
