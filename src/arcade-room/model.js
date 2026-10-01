@@ -49,5 +49,72 @@ export function stepBlocks(s,dt){
   const interval=Math.max(.5,1.15-s.lines*.035);while(s.fall>=interval&&!s.ended){s.fall-=interval;dropBlock(s);}
 }
 export const RECORD_KEY='rescene.small-arcade.v1';
-export function readRecords(storage){try{const x=JSON.parse(storage.getItem(RECORD_KEY));return Object.fromEntries(['drive','blocks'].map(k=>[k,Number.isSafeInteger(x?.[k])&&x[k]>=0?x[k]:0]));}catch{return {drive:0,blocks:0};}}
-export function saveRecord(storage,kind,score){const records=readRecords(storage);if(!['drive','blocks'].includes(kind)||!Number.isSafeInteger(score)||score<0)return {records,saved:false};records[kind]=Math.max(records[kind],score);try{storage.setItem(RECORD_KEY,JSON.stringify(records));return {records,saved:true};}catch{return {records,saved:false};}}
+export const GAME_IDS=['drive','blocks','photo','rhythm','catch'];
+export function readRecords(storage){
+  let data;try{data=JSON.parse(storage?.getItem(RECORD_KEY));}catch{/* Missing or denied storage starts with empty records. */}
+  return Object.fromEntries(GAME_IDS.map(k=>[k,Number.isSafeInteger(data?.[k])&&data[k]>=0?data[k]:0]));
+}
+export function saveRecord(storage,kind,score){const records=readRecords(storage);if(!GAME_IDS.includes(kind)||!Number.isSafeInteger(score)||score<0)return {records,saved:false};records[kind]=Math.max(records[kind],score);try{storage.setItem(RECORD_KEY,JSON.stringify(records));return {records,saved:true};}catch{return {records,saved:false};}}
+
+function advance(s,dt){
+  if(s.ended)return 0;
+  const delta=Math.min(Number.isFinite(dt)?Math.max(0,dt):0,s.remaining);
+  s.elapsed+=delta;s.remaining=Math.max(0,DURATION-s.elapsed);
+  if(s.remaining===0)s.ended=true;
+  return delta;
+}
+function timed(kind){return {kind,elapsed:0,remaining:DURATION,score:0,ended:false,event:null};}
+export function makePhoto(){return {...timed('photo'),shots:0,perfect:0,combo:0,cooldown:0,flash:0,album:[]};}
+export function photoPosition(s){return .5+Math.sin(s.elapsed*Math.PI/1.6)*.43;}
+export function stepPhoto(s,dt){const delta=advance(s,dt);s.cooldown=Math.max(0,s.cooldown-delta);s.flash=Math.max(0,s.flash-delta);}
+export function snapPhoto(s){
+  if(s.ended||s.cooldown>0)return false;
+  s.cooldown=.65;s.shots++;const distance=Math.abs(photoPosition(s)-.5);
+  const grade=distance<=.05?'perfect':distance<=.15?'good':'miss';
+  s.combo=grade==='miss'?0:s.combo+1;
+  if(grade!=='miss'){s.score+=(grade==='perfect'?100:60)+Math.min(5,s.combo)*10;s.flash=.2;if(grade==='perfect')s.perfect++;}
+  s.album.push(grade);s.album=s.album.slice(-5);s.event=grade==='miss'?'photo-miss':`photo-${grade}`;return true;
+}
+export const BEAT_SECONDS=.75;
+export const RHYTHM_WINDOW=.22;
+const PATTERN=[0,1,0,0,1,1,0,1];
+export function makeRhythm(offsetMs=0){
+  const offset=Number.isFinite(offsetMs)?Math.max(-200,Math.min(200,offsetMs))/1000:0;
+  return {...timed('rhythm'),offset,combo:0,bestCombo:0,hits:0,misses:0,lastTap:-1,
+    notes:Array.from({length:76},(_,i)=>({at:2+i*BEAT_SECONDS,lane:PATTERN[i%PATTERN.length],status:'waiting'}))};
+}
+export function stepRhythm(s,dt){
+  if(s.ended)return;advance(s,dt);
+  for(const note of s.notes)if(note.status==='waiting'&&s.elapsed-s.offset-note.at>RHYTHM_WINDOW){note.status='miss';s.misses++;s.combo=0;s.event='rhythm-miss';}
+}
+export function tapRhythm(s,lane){
+  if(s.ended||![0,1].includes(lane)||s.elapsed-s.lastTap<.1)return false;
+  s.lastTap=s.elapsed;
+  const note=s.notes.filter(n=>n.status==='waiting'&&n.lane===lane).sort((a,b)=>Math.abs(a.at-s.elapsed+s.offset)-Math.abs(b.at-s.elapsed+s.offset))[0];
+  const delta=note?Math.abs(s.elapsed-s.offset-note.at):Infinity;
+  if(delta>RHYTHM_WINDOW){s.combo=0;s.event='rhythm-early';return false;}
+  note.status='hit';s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);
+  s.score+=(delta<=.09?100:60)+Math.min(10,s.combo)*5;s.event=delta<=.09?'rhythm-perfect':'rhythm-good';return true;
+}
+export function makeCatch(random=Math.random){return {...timed('catch'),lane:1,stars:0,misses:0,objects:[],spawn:.6,random};}
+export function stepCatch(s,dt){
+  if(s.ended)return;const delta=advance(s,dt);s.spawn-=delta;
+  if(s.spawn<=0){s.objects.push({lane:Math.floor(s.random()*3),y:-.06,blue:s.random()<.2,hit:false});s.spawn=.85;}
+  for(const o of s.objects){
+    const before=o.y;o.y+=delta*.35;
+    if(!o.hit&&before<=.88&&o.y>=.73&&o.lane===s.lane){o.hit=true;s.stars++;s.score+=o.blue?200:100;s.event=o.blue?'blue-star':'catch-star';}
+    if(!o.hit&&before<=1&&o.y>1){s.misses++;s.event='catch-miss';}
+  }
+  s.objects=s.objects.filter(o=>o.y<=1.1&&!o.hit);
+}
+export function createGame(kind,options={}){
+  return ({drive:()=>makeDrive(options.random),blocks:()=>makeBlocks(options.random),photo:makePhoto,rhythm:()=>makeRhythm(options.offsetMs),catch:()=>makeCatch(options.random)})[kind]?.();
+}
+export function stepGame(s,dt){({drive:stepDrive,blocks:stepBlocks,photo:stepPhoto,rhythm:stepRhythm,catch:stepCatch})[s.kind](s,dt);}
+export function gameAction(s,action){
+  if(s.ended)return;
+  if(s.kind==='drive'||s.kind==='catch'){if(action==='left'||action==='right')steer(s,action==='left'?-1:1);}
+  else if(s.kind==='blocks'){if(action==='left'||action==='right')moveBlock(s,action==='left'?-1:1);else if(action==='rotate')rotateBlock(s);else if(action==='drop')dropBlock(s,true);else if(action==='down')dropBlock(s);}
+  else if(s.kind==='photo'&&action==='snap')snapPhoto(s);
+  else if(s.kind==='rhythm'&&(action==='left'||action==='right'))tapRhythm(s,action==='left'?0:1);
+}

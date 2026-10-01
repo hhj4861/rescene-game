@@ -1,3 +1,6 @@
 node_modules/
 dist-arcade-room/
 .DS_Store
+artifacts/
+playwright-report/
+test-results/
