@@ -1,4 +1,4 @@
-import {COLS,ROWS,ghostRow,photoPosition} from './model.js';
+import {COLS,ROWS,ghostRow,photoPosition,photoWindows} from './model.js';
 import {drawDoll} from './cast.js';
 export const COLORS=['','#91c6ba','#f3bc77','#d0b7e0','#f09791','#7bb5d4','#eccd77','#b3c986'];
 function box(c,x,y,w,h,color,r=8){c.fillStyle=color;c.beginPath();c.roundRect(x,y,w,h,r);c.fill();}
@@ -38,7 +38,8 @@ export function drawPhoto(c,s){
   c.fillStyle='#fff6';c.beginPath();c.arc(235,190,112,0,7);c.fill();
   if(!s.preview)drawDoll(c,'zena',240,332,265,s.shots%3);label(c,'오늘의 우리, 찰칵!',240,373,22);
   for(let i=0;i<5;i++){const grade=s.album[i];box(c,80+i*66,417,55,48,'#fffcf2',4);if(grade==='perfect')star(c,107+i*66,441,14,'#d2a14a');else label(c,grade==='good'?'♡':grade==='miss'?'↺':'·',107+i*66,449,24,'#986d76');}
-  box(c,48,496,384,44,'#e4cbd0',22);box(c,182,496,116,44,'#f4d475',15);box(c,221,496,38,44,'#fff4c7',10);
+  const windows=photoWindows(s);
+  box(c,48,496,384,44,'#e4cbd0',22);box(c,240-windows.good*384,496,windows.good*768,44,'#f4d475',15);box(c,240-windows.perfect*384,496,windows.perfect*768,44,'#fff4c7',10);
   c.strokeStyle='#234454';c.lineWidth=3;c.beginPath();c.arc(48+photoPosition(s)*384,518,17,0,7);c.fillStyle='#fffaf0';c.fill();c.stroke();
   label(c,'가운데 노란 칸에서 찰칵!',240,576,18,'#845967');
   if(s.flash>0){c.fillStyle=`rgba(255,255,245,${Math.min(.45,s.flash*2)})`;c.fillRect(0,0,480,600);}
@@ -49,7 +50,7 @@ export function drawRhythm(c,s){
   label(c,'왼쪽',145,155,18);label(c,'오른쪽',335,155,18);
   box(c,65,173,160,355,'#e0d3e9',16);box(c,255,173,160,355,'#d1e0e7',16);
   c.strokeStyle='#8b709c';c.lineWidth=2;c.setLineDash([4,8]);for(const x of [145,335]){c.beginPath();c.moveTo(x,180);c.lineTo(x,500);c.stroke();}c.setLineDash([]);
-  const beat=Math.abs((s.elapsed-2)% .75);const glow=beat<.12||beat>.63;
+  const glow=s.notes.some(note=>Math.abs(s.elapsed-note.at)<.1);
   for(const [i,x] of [145,335].entries()){box(c,x-70,479,140,42,glow?'#f4d475':'#fff9ee',12);label(c,i?'→':'←',x,509,28);}
   c.save();c.beginPath();c.rect(60,169,360,360);c.clip();
   for(const note of s.notes){const y=500+(s.elapsed-note.at)*180;if(note.status!=='waiting'||y<165||y>540)continue;box(c,(note.lane?335:145)-42,y-18,84,36,note.lane?'#679baa':'#9e80b2',11);label(c,note.lane?'→':'←',note.lane?335:145,y+9,25,'#fffaf1');}
