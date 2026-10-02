@@ -1,153 +1,53 @@
-export const DURATION=60;
-export const INITIAL_LIVES=3;
-export const validStage=n=>Number.isSafeInteger(n)&&n>=1;
-export function stageSpeed(s){const stage=validStage(s.stage)?s.stage:1;return stage<=5?1+(stage-1)*.12:1.48+1.52*(1-1/(1+(stage-5)*.07));}
-function loseLife(s){if(s.stage){s.hearts=Math.max(0,s.hearts-1);if(!s.hearts)s.ended=true;}}
-function settleFailure(s){
-  if(!s.stage||!s.ended||s.endReason)return;
-  if(!s.hearts)s.endReason='lives';else{s.endReason=s.remaining<=0?'timeout':'blocked';loseLife(s);}
-}
-// Keep the first ten seconds steady, then ramp smoothly through the round.
-function pressure(elapsed){return Math.max(0,Math.min(1,(elapsed-10)/(DURATION-10)));}
-export const COLS=8,ROWS=12;
-export const SHAPES=[[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]];
-export function makeDrive(random=Math.random){return {kind:'drive',remaining:DURATION,elapsed:0,score:0,lane:1,hearts:3,objects:[],spawn:0.6,invincible:0,ended:false,stars:0,random,event:null};}
-export function steer(s,direction){if(!s.ended)s.lane=Math.max(0,Math.min(2,s.lane+direction));}
-export function stepDrive(s,dt){
-  if(s.ended)return;s.event=null;dt=Math.min(Math.max(dt,0),s.remaining);s.remaining=Math.max(0,s.remaining-dt);s.elapsed+=dt;s.invincible=Math.max(0,s.invincible-dt);s.spawn-=dt;
-  if(s.spawn<=0){
-    // At most one obstacle in a row, always leaving two safe lanes.
-    const lane=Math.floor(s.random()*3);s.objects.push({lane,y:-.08,kind:s.random()<.42?'star':'cone',hit:false});
-    s.spawn=(.8-.22*pressure(s.elapsed))/stageSpeed(s);
-  }
-  for(const o of s.objects){
-    const before=o.y;o.y+=dt*(.32+.14*pressure(s.elapsed))*stageSpeed(s);
-    if(!o.hit&&o.lane===s.lane&&before<=.91&&o.y>=.73){
-      o.hit=true;
-      if(o.kind==='star'){s.stars++;s.event='star';}
-      else if(!s.invincible){s.hearts--;s.invincible=1.4;s.event='bump';}
-    }
-  }
-  s.objects=s.objects.filter(o=>o.y<1.12&&!o.hit);s.score=Math.floor(s.elapsed*10)+s.stars*100;
-  s.ended=s.hearts<=0||s.remaining<=0;
-}
-function piece(s){const index=Math.floor(s.random()*SHAPES.length),cells=SHAPES[index].map(row=>[...row]);return {cells,color:index+1,x:Math.floor((COLS-cells[0].length)/2),y:0};}
-export function makeBlocks(random=Math.random){const s={kind:'blocks',remaining:DURATION,score:0,lines:0,board:Array.from({length:ROWS},()=>Array(COLS).fill(0)),fall:0,ended:false,random,event:null};s.active=piece(s);s.next=piece(s);return s;}
-export function fits(s,p){return p.cells.every((row,dy)=>row.every((cell,dx)=>!cell||(p.x+dx>=0&&p.x+dx<COLS&&p.y+dy>=0&&p.y+dy<ROWS&&!s.board[p.y+dy][p.x+dx])));}
-export function moveBlock(s,dx){if(s.ended)return false;const p={...s.active,x:s.active.x+dx};if(!fits(s,p))return false;s.active=p;return true;}
-export function rotateBlock(s){
-  if(s.ended)return false;
-  const cells=s.active.cells[0].map((_,x)=>s.active.cells.map(row=>row[x]).reverse());
-  for(const shift of [0,-1,1,-2,2]){const p={...s.active,cells,x:s.active.x+shift};if(fits(s,p)){s.active=p;return true;}}
-  return false;
-}
-function lock(s){
-  s.active.cells.forEach((row,dy)=>row.forEach((cell,dx)=>{if(cell)s.board[s.active.y+dy][s.active.x+dx]=s.active.color;}));
-  const rest=s.board.filter(row=>row.some(cell=>!cell)),count=ROWS-rest.length;
-  s.board=[...Array.from({length:count},()=>Array(COLS).fill(0)),...rest];s.lines+=count;s.score+=count?[0,100,250,450,700][count]:10;s.event=count?'line':'place';
-  s.active=s.next;s.next=piece(s);s.fall=0;if(!fits(s,s.active))s.ended=true;
-}
-export function dropBlock(s,hard=false){
-  if(s.ended)return;
-  if(hard){while(fits(s,{...s.active,y:s.active.y+1})){s.active.y++;s.score++;}lock(s);return;}
-  if(fits(s,{...s.active,y:s.active.y+1}))s.active.y++;else lock(s);
-}
-export function ghostRow(s){let y=s.active.y;while(fits(s,{...s.active,y:y+1}))y++;return y;}
-export function stepBlocks(s,dt){
-  if(s.ended)return;s.remaining=Math.max(0,s.remaining-Math.max(0,dt));
-  if(!s.remaining){s.ended=true;return;}s.fall+=dt;
-  const interval=Math.max(.4,.95-.35*pressure(DURATION-s.remaining)-s.lines*.025)/stageSpeed(s);while(s.fall>=interval&&!s.ended){s.fall-=interval;dropBlock(s);}
-}
-export const RECORD_KEY='rescene.small-arcade.v1';
+export const DURATION=60,INITIAL_LIVES=3;
 export const GAME_IDS=['drive','blocks','photo','rhythm','catch'];
-export function readRecords(storage){
-  let data;try{data=JSON.parse(storage?.getItem(RECORD_KEY));}catch{/* Missing or denied storage starts with empty records. */}
-  return Object.fromEntries(GAME_IDS.map(k=>[k,Number.isSafeInteger(data?.[k])&&data[k]>=0?data[k]:0]));
-}
-export function saveRecord(storage,kind,score){const records=readRecords(storage);if(!GAME_IDS.includes(kind)||!Number.isSafeInteger(score)||score<0)return {records,saved:false};records[kind]=Math.max(records[kind],score);try{storage.setItem(RECORD_KEY,JSON.stringify(records));return {records,saved:true};}catch{return {records,saved:false};}}
-
-function advance(s,dt){
-  if(s.ended)return 0;
-  const delta=Math.min(Number.isFinite(dt)?Math.max(0,dt):0,s.remaining);
-  s.elapsed+=delta;s.remaining=Math.max(0,DURATION-s.elapsed);
-  if(s.remaining===0)s.ended=true;
-  return delta;
-}
-function timed(kind){return {kind,elapsed:0,remaining:DURATION,score:0,ended:false,event:null};}
-export function makePhoto(){return {...timed('photo'),shots:0,perfect:0,combo:0,cooldown:0,flash:0,album:[]};}
-export function photoPosition(s){
-  // Integrate the increasing speed so the cursor never jumps at a tempo change.
-  const ramp=Math.max(0,s.elapsed-10);
-  const phase=s.elapsed/1.4+ramp*ramp*(1/1.05-1/1.4)/(2*(DURATION-10));
-  return .5+Math.sin(phase*Math.PI*stageSpeed(s))*.43;
-}
-export function photoWindows(s){const p=pressure(s.elapsed),factor=1+(stageSpeed(s)-1)*.5;return {perfect:(.045-.01*p)/factor,good:(.13-.03*p)/factor};}
-export function stepPhoto(s,dt){const delta=advance(s,dt);s.cooldown=Math.max(0,s.cooldown-delta);s.flash=Math.max(0,s.flash-delta);}
-export function snapPhoto(s){
-  if(s.ended||s.cooldown>0)return false;
-  s.cooldown=.65;s.shots++;const distance=Math.abs(photoPosition(s)-.5);
-  const windows=photoWindows(s),grade=distance<=windows.perfect?'perfect':distance<=windows.good?'good':'miss';
-  s.combo=grade==='miss'?0:s.combo+1;
-  if(grade!=='miss'){s.photos=(s.photos||0)+1;s.score+=(grade==='perfect'?100:60)+Math.min(5,s.combo)*10;s.flash=.2;if(grade==='perfect')s.perfect++;}
-  if(grade==='miss')loseLife(s);
-  s.album.push(grade);s.album=s.album.slice(-5);s.event=grade==='miss'?'photo-miss':`photo-${grade}`;return true;
-}
-export const BEAT_SECONDS=.7;
-export const RHYTHM_WINDOW=.19;
-function rhythmWindow(at,stage=1){return RHYTHM_WINDOW-.04*pressure(at)-Math.min(.075,(stageSpeed({stage})-1)*(.032/.48));}
-const PATTERN=[0,1,0,0,1,1,0,1];
-export function makeRhythm(offsetMs=0,stage=1){
-  const offset=Number.isFinite(offsetMs)?Math.max(-200,Math.min(200,offsetMs))/1000:0;
-  const notes=[];
-  // Leave enough time for the final note, even with +200ms calibration.
-  for(let at=2,i=0;at<=DURATION-.4;i++){
-    notes.push({at,lane:PATTERN[i%PATTERN.length],status:'waiting'});
-    at+=(BEAT_SECONDS-.18*pressure(at))/stageSpeed({stage});
-  }
-  return {...timed('rhythm'),offset,combo:0,bestCombo:0,hits:0,misses:0,lastTap:-1,
-    notes};
-}
-export function stepRhythm(s,dt){
-  if(s.ended)return;advance(s,dt);
-  for(const note of s.notes)if(note.status==='waiting'&&s.elapsed-s.offset-note.at>rhythmWindow(note.at,s.stage)){note.status='miss';s.misses++;s.combo=0;s.event='rhythm-miss';loseLife(s);if(s.stage&&!s.hearts)break;}
-}
-export function tapRhythm(s,lane){
-  if(s.ended||![0,1].includes(lane)||s.elapsed-s.lastTap<.1)return false;
-  s.lastTap=s.elapsed;
-  const note=s.notes.filter(n=>n.status==='waiting'&&n.lane===lane).sort((a,b)=>Math.abs(a.at-s.elapsed+s.offset)-Math.abs(b.at-s.elapsed+s.offset))[0];
-  const delta=note?Math.abs(s.elapsed-s.offset-note.at):Infinity;
-  if(!note||delta>rhythmWindow(note.at,s.stage)){s.combo=0;s.event='rhythm-early';return false;}
-  note.status='hit';s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);
-  const perfect=delta<=.08-.015*pressure(note.at);
-  s.score+=(perfect?100:60)+Math.min(10,s.combo)*5;s.event=perfect?'rhythm-perfect':'rhythm-good';return true;
-}
-export function makeCatch(random=Math.random){return {...timed('catch'),lane:1,stars:0,misses:0,objects:[],spawn:.6,random};}
-export function stepCatch(s,dt){
-  if(s.ended)return;const delta=advance(s,dt);s.spawn-=delta;
-  if(s.spawn<=0){s.objects.push({lane:Math.floor(s.random()*3),y:-.06,blue:s.random()<.2,hit:false});s.spawn=(.78-.22*pressure(s.elapsed))/stageSpeed(s);}
-  for(const o of s.objects){
-    const before=o.y;o.y+=delta*(.38+.14*pressure(s.elapsed))*stageSpeed(s);
-    if(!o.hit&&before<=.88&&o.y>=.73&&o.lane===s.lane){o.hit=true;s.stars++;s.score+=o.blue?200:100;s.event=o.blue?'blue-star':'catch-star';}
-    if(!o.hit&&before<=1&&o.y>1){s.misses++;s.event='catch-miss';loseLife(s);if(s.stage&&!s.hearts)break;}
-  }
-  s.objects=s.objects.filter(o=>o.y<=1.1&&!o.hit);
-}
+export const validStage=n=>Number.isSafeInteger(n)&&n>=1;
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+export function stageSpeed(s){return 1+1.4*(1-1/(1+((validStage(s.stage)?s.stage:1)-1)*.1));}
+const GOALS={drive:[[12,16,20,24,28],48],blocks:[[3,4,5,6,7],12],photo:[[18,24,30,36,42],72],rhythm:[[16,22,28,34,40],80],catch:[[6,8,10,12,14],28]};
+export function stageTarget(kind,stage=1){const [first,cap]=GOALS[kind];stage=validStage(stage)?stage:1;return stage<=5?first[stage-1]:first[4]+Math.floor((cap-first[4])*(1-1/(1+(stage-5)*.1)));}
+function loseLife(s){s.hearts=Math.max(0,s.hearts-1);if(!s.hearts){s.ended=true;s.endReason='lives';}}
+function failRound(s,reason){if(s.ended)return;loseLife(s);s.ended=true;s.endReason=reason;}
+export const PLATFORMS=[{x:0,y:536,w:480},{x:35,y:422,w:170},{x:267,y:330,w:178},{x:48,y:224,w:168}];
+function enemy(s,home){const p=PLATFORMS[home];return {x:p.x+35+s.random()*(p.w-70),y:p.y,home,dir:s.random()<.5?-1:1,trapped:0};}
+export const RHYTHM_WINDOW=.2,BEAT_SECONDS=.72;
+export function rhythmWindow(s){return Math.max(.09,.2-(stageSpeed(s)-1)*.045-s.elapsed*.0004);}
+export function makeRhythmNotes(stage){const pattern=[0,2,4,1,3,2,0,4,2,1,3,2],notes=[],gap=BEAT_SECONDS/Math.sqrt(stageSpeed({stage}));let i=0;for(let at=2;at<59.5;at+=gap,i++){const lane=pattern[i%pattern.length];notes.push({at,lane,status:'waiting'});if(stage>=3&&i%12===11)notes.push({at,lane:(lane+2)%5,status:'waiting'});}return notes;}
 export function createGame(kind,options={}){
-  const stage=validStage(options.stage)?options.stage:1;
-  let seed=(options.seed??Math.floor(Math.random()*4294967296))>>>0;
-  const next=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-  const random=options.random||(options.stage?next:Math.random);
-  const s=({drive:()=>makeDrive(random),blocks:()=>makeBlocks(random),photo:makePhoto,rhythm:()=>makeRhythm(options.offsetMs,stage),catch:()=>makeCatch(random)})[kind]?.();
-  if(s&&options.stage){s.stage=stage;s.hearts=Number.isInteger(options.hearts)?Math.max(1,Math.min(INITIAL_LIVES,options.hearts)):INITIAL_LIVES;s.rngState=seed;if(!options.random)s.random=()=>{s.rngState=(Math.imul(s.rngState,1664525)+1013904223)>>>0;return s.rngState/4294967296;};}
-  if(s?.kind==='photo')s.photos=0;
-  return s;
+ if(!GAME_IDS.includes(kind))return undefined;
+ const s={schema:3,kind,stage:validStage(options.stage)?options.stage:1,elapsed:0,remaining:DURATION,score:0,hearts:Number.isInteger(options.hearts)?clamp(options.hearts,1,3):3,ended:false,event:null,rngState:(options.seed??Math.floor(Math.random()*4294967296))>>>0};
+ s.random=options.random||(()=>{s.rngState=(Math.imul(s.rngState,1664525)+1013904223)>>>0;return s.rngState/4294967296;});
+ if(kind==='drive')Object.assign(s,{hits:0,combo:0,bestCombo:0,misses:0,spawn:.6,holes:Array.from({length:9},()=>({ttl:0,total:0,gold:false,flash:0}))});
+ if(kind==='blocks'){Object.assign(s,{player:{x:90,y:536,vy:0,facing:1,walk:0,dir:0},popped:0,combo:0,enemies:[enemy(s,0),enemy(s,1),enemy(s,2)],bubbles:[],invincible:1.2,cooldown:0,spawn:2,flash:0});s.enemies[0].x=340;}
+ if(kind==='photo'){Object.assign(s,{board:playableBoard(s),selected:-1,collected:0,combo:0,moves:Math.max(10,18-Math.floor((stageSpeed(s)-1)*6)),shuffles:2,flash:0,clearedCells:[],hint:[]});s.hint=availableSwap(s.board)||[];}
+ if(kind==='rhythm')Object.assign(s,{notes:makeRhythmNotes(s.stage),offset:clamp(Number(options.offsetMs)||0,-200,200)/1000,hits:0,misses:0,combo:0,bestCombo:0,lastTaps:Array(5).fill(-1),feedback:Array(5).fill(''),glows:Array(5).fill(0)});
+ if(kind==='catch')Object.assign(s,{towers:Array.from({length:6},()=>({level:0,cooldown:0})),enemies:[],shots:[],energy:6,energyClock:0,defeated:0,spawn:2,nextEnemy:0,burst:0,burstCooldown:0});
+ return s;
 }
-export function stepGame(s,dt){if(s.ended)return;({drive:stepDrive,blocks:stepBlocks,photo:stepPhoto,rhythm:stepRhythm,catch:stepCatch})[s.kind](s,dt);settleFailure(s);}
-export function gameAction(s,action){
-  if(s.ended)return;
-  if(s.kind==='drive'||s.kind==='catch'){if(action==='left'||action==='right')steer(s,action==='left'?-1:1);}
-  else if(s.kind==='blocks'){if(action==='left'||action==='right')moveBlock(s,action==='left'?-1:1);else if(action==='rotate')rotateBlock(s);else if(action==='drop')dropBlock(s,true);else if(action==='down')dropBlock(s);}
-  else if(s.kind==='photo'&&action==='snap')snapPhoto(s);
-  else if(s.kind==='rhythm'&&(action==='left'||action==='right'))tapRhythm(s,action==='left'?0:1);
-  settleFailure(s);
-}
+function whack(s,i){if(!Number.isInteger(i)||i<0||i>8)return;const h=s.holes[i];if(!h.ttl){s.combo=0;return;}s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);s.score+=(h.gold?200:100)+Math.min(10,s.combo)*10;h.ttl=0;h.flash=.3;s.event=h.gold?'whack-gold':'whack-hit';}
+function stepWhack(s,dt){for(const h of s.holes){h.flash=Math.max(0,h.flash-dt);if(h.ttl>0){h.ttl=Math.max(0,h.ttl-dt);if(!h.ttl){s.misses++;s.combo=0;s.event='whack-miss';loseLife(s);if(s.ended)return;}}}s.spawn=Math.max(0,s.spawn-dt);if(!s.spawn){const free=s.holes.filter(h=>!h.ttl&&!h.flash);if(free.length&&s.holes.filter(h=>h.ttl>0).length<(s.stage<4?1:2)){const h=free[Math.floor(s.random()*free.length)];h.ttl=h.total=1.7/Math.sqrt(stageSpeed(s));h.gold=s.random()<.16;}s.spawn=1.05/stageSpeed(s)+.18;}}
+function popEnemy(s,e){s.enemies.splice(s.enemies.indexOf(e),1);s.popped++;s.combo++;s.score+=100+Math.min(5,s.combo)*50;s.flash=.25;s.event='bubble-pop';}
+function bubbleAction(s,action){const p=s.player;if(action==='left'||action==='right'){p.dir=action==='left'?-1:1;p.facing=p.dir;p.walk=.18;}else if(action==='stop'){p.dir=0;p.walk=0;}else if(action==='jump'&&Math.abs(p.vy)<.01)p.vy=-550;else if(action==='bubble'&&!s.cooldown){s.cooldown=.25;const near=s.enemies.filter(e=>e.trapped&&Math.hypot(e.x-p.x,e.y-p.y)<130);if(near.length)near.forEach(e=>popEnemy(s,e));else if(s.bubbles.length<8)s.bubbles.push({x:p.x+p.facing*20,y:p.y-24,vx:p.facing*260,ttl:1.8});}}
+function stepBubbles(s,dt){const p=s.player;for(const k of ['invincible','cooldown','flash'])s[k]=Math.max(0,s[k]-dt);p.x=clamp(p.x+p.dir*190*Math.min(dt,p.walk),18,462);p.walk=Math.max(0,p.walk-dt);const old=p.y;p.vy+=1200*dt;p.y+=p.vy*dt;if(p.vy>=0){for(const platform of [...PLATFORMS].sort((a,b)=>a.y-b.y)){if(p.x>=platform.x-6&&p.x<=platform.x+platform.w+6&&old<=platform.y&&p.y>=platform.y){p.y=platform.y;p.vy=0;break;}}}if(p.y>536){p.y=536;p.vy=0;}
+ for(const b of s.bubbles){b.x+=b.vx*dt;b.y-=18*dt;b.ttl-=dt;const hit=s.enemies.find(e=>!e.trapped&&Math.hypot(e.x-b.x,e.y-20-b.y)<30);if(hit){hit.trapped=5;b.ttl=0;s.event='bubble-trap';}}s.bubbles=s.bubbles.filter(b=>b.ttl>0&&b.x>-20&&b.x<500);
+ for(const e of [...s.enemies]){if(e.trapped){e.trapped=Math.max(0,e.trapped-dt);e.y=Math.max(70,e.y-12*dt);if(Math.hypot(e.x-p.x,e.y-p.y)<38){popEnemy(s,e);continue;}if(!e.trapped){e.y=PLATFORMS[e.home].y;s.combo=0;}}else{const platform=PLATFORMS[e.home];e.x+=e.dir*(32+18*stageSpeed(s))*dt;if(e.x<platform.x+18){e.x=platform.x+18;e.dir=1;}if(e.x>platform.x+platform.w-18){e.x=platform.x+platform.w-18;e.dir=-1;}if(!s.invincible&&Math.hypot(e.x-p.x,e.y-p.y)<31){loseLife(s);s.invincible=1.4;s.combo=0;s.event='bubble-miss';}}if(s.ended)return;}
+ s.spawn=Math.max(0,s.spawn-dt);if(!s.spawn){if(s.enemies.length<3&&s.popped+s.enemies.length<stageTarget(s.kind,s.stage))s.enemies.push(enemy(s,Math.floor(s.random()*4)));s.spawn=1.4;}}
+export function matches(board){const found=new Set();for(let row=0;row<6;row++)for(let col=0;col<6;col++){const i=row*6+col,color=board[i]%10;if(!color)continue;if(col<4&&board[i+1]%10===color&&board[i+2]%10===color){let c=col;while(c<6&&board[row*6+c]%10===color)found.add(row*6+c++);}if(row<4&&board[i+6]%10===color&&board[i+12]%10===color){let r=row;while(r<6&&board[r*6+col]%10===color)found.add(r++*6+col);}}return [...found];}
+const adjacent=(a,b)=>Number.isInteger(a)&&Number.isInteger(b)&&a>=0&&a<36&&b>=0&&b<36&&(Math.abs(a-b)===6||Math.floor(a/6)===Math.floor(b/6)&&Math.abs(a-b)===1);
+export function availableSwap(board){for(let i=0;i<36;i++)for(const j of [i+1,i+6]){if(!adjacent(i,j))continue;const b=[...board];[b[i],b[j]]=[b[j],b[i]];if(matches(b).length)return [i,j];}return null;}
+function playableBoard(s){for(let attempt=0;attempt<40;attempt++){const board=[];for(let i=0;i<36;i++){const colors=[1,2,3,4,5].filter(c=>!(i%6>=2&&board[i-1]===c&&board[i-2]===c)&&!(i>=12&&board[i-6]===c&&board[i-12]===c));board.push(colors[Math.floor(s.random()*colors.length)]);}if(availableSwap(board))return board;}return Array.from({length:36},(_,i)=>[1,2,1,3,4,5,3,1,4,5,2,3][i%12]);}
+export function swapBread(s,a,b){if(s.ended||s.flash||!adjacent(a,b))return false;[s.board[a],s.board[b]]=[s.board[b],s.board[a]];let found=matches(s.board);if(!found.length){[s.board[a],s.board[b]]=[s.board[b],s.board[a]];s.event='bread-invalid';s.selected=-1;return false;}s.moves--;s.combo=0;s.clearedCells=[];
+ while(found.length&&s.combo<12){s.combo++;const remove=new Set(found),queue=[...found];for(let n=0;n<queue.length;n++){const i=queue[n];if(s.board[i]>10){for(let k=0;k<6;k++)for(const j of [Math.floor(i/6)*6+k,k*6+i%6])if(!remove.has(j)){remove.add(j);queue.push(j);}}}const special=s.combo===1&&found.length>=4?(found.includes(b)?b:found[0]):-1,color=special>=0?s.board[special]%10:0;if(special>=0)remove.delete(special);s.collected+=remove.size;s.score+=remove.size*30*s.combo;s.clearedCells.push(...remove);for(const i of remove)s.board[i]=0;if(special>=0)s.board[special]=color+10;for(let col=0;col<6;col++){const values=[];for(let row=5;row>=0;row--)if(s.board[row*6+col])values.push(s.board[row*6+col]);for(let row=5;row>=0;row--)s.board[row*6+col]=values[5-row]||1+Math.floor(s.random()*5);}found=matches(s.board);}
+ if(found.length||!availableSwap(s.board))s.board=playableBoard(s);s.hint=availableSwap(s.board)||[];s.flash=.35;s.selected=-1;s.event=s.combo>1?'bread-chain':'bread-match';if(!s.moves&&s.collected<stageTarget(s.kind,s.stage))failRound(s,'moves');return true;}
+function breadAction(s,a){if(s.flash)return;if(a==='shuffle'){if(!s.shuffles)return;s.board=playableBoard(s);s.shuffles--;s.selected=-1;s.hint=availableSwap(s.board)||[];s.event='bread-shuffle';}else if(Number.isInteger(a)&&a>=0&&a<36){if(adjacent(s.selected,a))swapBread(s,s.selected,a);else s.selected=a;}}
+export function tapRhythm(s,lane){if(s.ended||!Number.isInteger(lane)||lane<0||lane>4||s.elapsed-s.lastTaps[lane]<.08)return;s.lastTaps[lane]=s.elapsed;const waiting=s.notes.filter(n=>n.lane===lane&&n.status==='waiting').sort((a,b)=>Math.abs(a.at+s.offset-s.elapsed)-Math.abs(b.at+s.offset-s.elapsed)),n=waiting[0],delta=n?Math.abs(n.at+s.offset-s.elapsed):Infinity;s.glows[lane]=.25;if(delta>rhythmWindow(s)){s.combo=0;s.feedback[lane]='WAIT';s.event='rhythm-early';return;}n.status='hit';s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);const perfect=delta<.075;s.feedback[lane]=perfect?'PERFECT':'GOOD';s.score+=(perfect?100:60)+Math.min(10,s.combo)*5;s.event=perfect?'rhythm-perfect':'rhythm-good';}
+function stepPump(s,dt){s.glows=s.glows.map(n=>Math.max(0,n-dt));for(const n of s.notes)if(n.status==='waiting'&&s.elapsed-s.offset-n.at>rhythmWindow(s)){n.status='miss';s.misses++;s.combo=0;s.feedback[n.lane]='MISS';s.glows[n.lane]=.25;s.event='rhythm-miss';loseLife(s);if(s.ended)return;}}
+function defenseAction(s,a){if(Number.isInteger(a)&&a>=0&&a<6){const t=s.towers[a],cost=t.level?3:2;if(t.level>=3||s.energy<cost)return;s.energy-=cost;t.level++;s.event='defense-build';}else if(a==='burst'&&!s.burstCooldown){s.burst=.35;s.burstCooldown=12;for(const e of s.enemies)e.hp-=3;s.event='defense-burst';}}
+function stepDefense(s,dt){s.energyClock+=dt;while(s.energyClock>=2.5){s.energyClock-=2.5;s.energy=Math.min(20,s.energy+1);}s.burst=Math.max(0,s.burst-dt);s.burstCooldown=Math.max(0,s.burstCooldown-dt);s.spawn=Math.max(0,s.spawn-dt);if(!s.spawn&&s.enemies.length<10&&s.defeated+s.enemies.length<stageTarget(s.kind,s.stage)){const id=s.nextEnemy++,hp=2+Math.floor((stageSpeed(s)-1)*2);s.enemies.push({id,lane:id<3?id:Math.floor(s.random()*3),x:465,hp,maxHp:hp});s.spawn=2.4/Math.sqrt(stageSpeed(s));}
+ s.towers.forEach((t,i)=>{t.cooldown=Math.max(0,t.cooldown-dt);const lane=Math.floor(i/2),x=115+i%2*95;if(t.level&&!t.cooldown&&s.enemies.some(e=>e.lane===lane&&e.hp>0&&e.x>=x-15)){s.shots.push({x:x+15,lane,power:t.level});t.cooldown=.9/Math.sqrt(t.level);}});
+ for(const b of s.shots){const old=b.x;b.x+=350*dt;const hit=s.enemies.filter(e=>e.hp>0&&e.lane===b.lane&&e.x>=old-15&&e.x<=b.x+15).sort((a,b)=>a.x-b.x)[0];if(hit){hit.hp-=b.power;b.x=600;}}s.shots=s.shots.filter(b=>b.x<500);
+ for(let i=s.enemies.length-1;i>=0;i--){const e=s.enemies[i];if(e.hp<=0){s.enemies.splice(i,1);s.defeated++;s.score+=100;s.energy=Math.min(20,s.energy+1);s.event='defense-hit';}else{e.x-=(18+8*stageSpeed(s))*dt;if(e.x<35){s.enemies.splice(i,1);loseLife(s);s.event='defense-miss';if(s.ended)return;}}}}
+export function stepGame(s,dt){if(s.ended||!Number.isFinite(dt)||dt<=0)return;s.event=null;let remaining=Math.min(dt,s.remaining);while(remaining>1e-9&&!s.ended){const step=Math.min(.025,remaining);s.elapsed+=step;s.remaining=Math.max(0,DURATION-s.elapsed);remaining-=step;({drive:stepWhack,blocks:stepBubbles,photo:(s,dt)=>{s.flash=Math.max(0,s.flash-dt);},rhythm:stepPump,catch:stepDefense})[s.kind](s,step);}if(!s.ended&&s.remaining<1e-7){s.remaining=0;s.elapsed=DURATION;failRound(s,'timeout');}}
+export function gameAction(s,action){if(s.ended)return;({drive:whack,blocks:bubbleAction,photo:breadAction,rhythm:tapRhythm,catch:defenseAction})[s.kind](s,action);}
+export const RECORD_KEY='rescene.small-arcade.v1';
+export function readRecords(storage){let data;try{data=JSON.parse(storage?.getItem(RECORD_KEY));}catch{/* Optional storage. */}return Object.fromEntries(GAME_IDS.map(k=>[k,Number.isSafeInteger(data?.[k])&&data[k]>=0?data[k]:0]));}
+export function saveRecord(storage,kind,score){const records=readRecords(storage);if(!GAME_IDS.includes(kind)||!Number.isSafeInteger(score)||score<0)return {records,saved:false};records[kind]=Math.max(records[kind],score);try{storage.setItem(RECORD_KEY,JSON.stringify(records));return {records,saved:true};}catch{return {records,saved:false};}}

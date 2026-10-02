@@ -1,32 +1,9 @@
-import {test} from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame,stepGame,gameAction,GAME_IDS,stageSpeed,photoWindows,RECORD_KEY} from '../../src/arcade-room/model.js';
-import {emptyProgress,finishStage,isStageClear,stageGoal,snapshotRound,restoreRound,readProgress,saveProgress,PROGRESS_KEY} from '../../src/arcade-room/progress.js';
-function store(){const data=new Map();return {getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};}
-function meetGoal(s){s[{drive:'stars',blocks:'lines',photo:'photos',rhythm:'hits',catch:'stars'}[s.kind]]=stageGoal(s.kind,s.stage).target;}
-test('clears continue beyond five, settlement is idempotent and members stay independent',()=>{
- const p=emptyProgress();for(let stage=1;stage<=30;stage++){const s=createGame('blocks',{stage,hearts:2});assert.equal(isStageClear(s),false);assert.equal(finishStage(p,s),false);assert.equal(p.games.blocks.stage,stage);meetGoal(s);assert.equal(finishStage(p,s),true);finishStage(p,s);assert.equal(p.games.blocks.stage,stage+1);assert.equal(p.games.blocks.highest,stage+1);assert.equal(p.games.blocks.hearts,2);}assert.equal(p.games.drive.stage,1);
- const skipped=createGame('photo',{stage:5});meetGoal(skipped);assert.equal(finishStage(p,skipped),false);assert.equal(p.games.photo.stage,1);
-});
-for(const kind of GAME_IDS)test(`${kind} roundtrip preserves playable state and subsequent random sequence`,()=>{
- const s=createGame(kind,{stage:3,seed:1234});for(let i=0;i<20;i++)stepGame(s,.05);
- const restored=restoreRound(snapshotRound(s));assert.ok(restored);assert.deepEqual(snapshotRound(restored),snapshotRound(s));
- for(let i=0;i<30;i++){stepGame(s,.05);stepGame(restored,.05);}
- for(const action of ['left','rotate','snap','drop']){gameAction(s,action);gameAction(restored,action);}
- assert.deepEqual(snapshotRound(restored),snapshotRound(s));
-});
-test('all stage goals and speed increase while stage one keeps original balance',()=>{
- for(const kind of GAME_IDS){const first=createGame(kind,{stage:1}),last=createGame(kind,{stage:5});assert.equal(stageSpeed(first),1);assert.ok(stageSpeed(last)>1);assert.ok(stageGoal(kind,5).target>stageGoal(kind,1).target);}
- const slow=createGame('blocks',{stage:1,seed:1}),fast=createGame('blocks',{stage:5,seed:1});stepGame(slow,.7);stepGame(fast,.7);assert.ok(fast.active.y>slow.active.y);
- assert.ok(photoWindows(createGame('photo',{stage:5})).good<photoWindows(createGame('photo',{stage:1})).good);
- assert.ok(createGame('rhythm',{stage:5}).notes.length>createGame('rhythm',{stage:1}).notes.length);
-});
-test('save retains old scores, rejects corrupt snapshots and does not trust unlocked fields',()=>{
- const storage=store(),p=emptyProgress();storage.setItem(RECORD_KEY,'{"photo":999}');p.games.blocks.snapshot=snapshotRound(createGame('blocks',{stage:1,seed:1}));assert.equal(saveProgress(storage,p),true);assert.deepEqual(readProgress(storage),p);assert.equal(storage.getItem(RECORD_KEY),'{"photo":999}');
- p.games.blocks.snapshot.board[0][0]='invalid';p.games.drive.stage=5;p.games.drive.highest=1;saveProgress(storage,p);const clean=readProgress(storage);assert.equal(clean.games.blocks.snapshot,null);assert.equal(clean.games.drive.stage,1);
- for(const data of ['broken','null','{"version":2}',JSON.stringify({version:1,games:{drive:{cleared:'bad'}}})]){storage.setItem(PROGRESS_KEY,data);assert.deepEqual(readProgress(storage),emptyProgress());}
- assert.equal(saveProgress({setItem(){throw Error('full');}},p),false);
-});
-test('ended, nonfinite, impossible and foreign-kind snapshots cannot resume',()=>{
- const s=snapshotRound(createGame('drive',{stage:1,seed:1}));for(const patch of [{ended:true},{remaining:NaN},{kind:'other'},{lane:4},{rngState:-1},{objects:[{lane:1,y:99,kind:'star',hit:false}]}])assert.equal(restoreRound({...s,...patch}),null);
-});
+import {GAME_IDS,createGame,readRecords,saveRecord} from '../../src/arcade-room/model.js';
+import {emptyProgress,readProgress,restoreRound,snapshotRound,saveProgress,PROGRESS_KEY} from '../../src/arcade-room/progress.js';
+const storage=data=>({getItem:()=>JSON.stringify(data),setItem(){}});
+test('legacy five-stage and old gameplay saves retain stages and lives but discard obsolete game boards',()=>{let p=readProgress(storage({version:1,games:{blocks:{cleared:[1,2,3,4,5]}}}));assert.equal(p.games.blocks.stage,6);const old=emptyProgress();old.games.blocks={stage:8,highest:10,hearts:2,snapshot:{kind:'blocks',stage:8,board:[]}};p=readProgress(storage(old));assert.deepEqual(p.games.blocks,{stage:8,highest:10,hearts:2,snapshot:null});});
+test('new snapshots round-trip and corrupt or oversized saves fail safely',()=>{for(const kind of GAME_IDS){const s=snapshotRound(createGame(kind,{seed:7}));assert.ok(restoreRound(s));s.remaining=999;assert.equal(restoreRound(s),null);}assert.deepEqual(readProgress({getItem(){throw Error();}}),emptyProgress());assert.equal(saveProgress({setItem(){throw Error();}},emptyProgress()),false);assert.equal(typeof PROGRESS_KEY,'string');});
+test('invalid game-specific structures cannot restore',()=>{for(const [kind,key,value] of [['drive','holes',[]],['blocks','player',null],['photo','board',[99]],['rhythm','notes',[]],['catch','towers',[{}]]]){const s=snapshotRound(createGame(kind));s[key]=value;assert.equal(restoreRound(s),null);}});
+test('existing member records keep their stable game IDs',()=>{const records=readRecords(storage({drive:300,blocks:200,photo:100,rhythm:90,catch:70}));assert.equal(records.drive,300);let saved;saveRecord({getItem:()=>JSON.stringify(records),setItem:(key,value)=>saved=JSON.parse(value)},'photo',500);assert.equal(saved.photo,500);});

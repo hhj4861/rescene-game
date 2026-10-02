@@ -1,7 +1,7 @@
 /* global window */
 // Original game tones and short source recordings; timing never depends on audio.
 export class ArcadeAudio {
-  constructor(){this.enabled=false;this.voiceEnabled=false;this.context=null;this.nodes=new Set();this.scheduled=new Set();this.voice=null;this.voiceReport=null;this.voiceRequest=0;}
+  constructor(){this.enabled=true;this.voiceEnabled=true;this.context=null;this.nodes=new Set();this.scheduled=new Set();this.voice=null;this.voiceReport=null;this.voiceRequest=0;}
   async enable(value){
     this.enabled=value;if(!value){this.stop();return false;}
     try{this.context??=new (window.AudioContext||window.webkitAudioContext)();await this.context.resume();return true;}
@@ -15,7 +15,7 @@ export class ArcadeAudio {
   }
   tick(state){
     if(!this.enabled||state.kind!=='rhythm')return;
-    state.notes.forEach((n,i)=>{const delay=n.at-state.elapsed;if(delay>=0&&delay<.12&&!this.scheduled.has(i)){this.scheduled.add(i);this.tone(n.lane?660:440,delay,.12);}});
+    state.notes.forEach((n,i)=>{const delay=n.at-state.elapsed;if(delay>=0&&delay<.12&&!this.scheduled.has(i)){this.scheduled.add(i);this.tone([392,494,587,659,784][n.lane],delay,.12);}});
   }
   cancelVoice(){
     this.voiceRequest++;
