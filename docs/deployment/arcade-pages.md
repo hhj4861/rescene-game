@@ -2,6 +2,17 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+## 다섯 게임 개편·소리 기본 켜짐 운영 배포 — 2026-10-02
+
+- 사용자 명시 승인 후 [PR #12](https://github.com/hhj4861/rescene-game/pull/12)를 머지했다. 운영 소스는 `56c637393ee60b49a2fa00d583a07e4e06e4c55d`다.
+- [PR CI 36873421239](https://github.com/hhj4861/rescene-game/actions/runs/36873421239)의 단위 테스트 22개·브라우저 86개(데스크톱 터치 전용 1개 제외)·린트·빌드가 통과했다. 해당 커밋 `b6c2c40`과 머지 커밋의 전체 Git 트리가 `233ab0c718e7b84cbcc57e6754fd4aa6471fc3fa`로 동일함을 확인하고, 이 실행의 `arcade-static-site` 산출물을 기존 Wrangler 로그인으로 배포했다. 배포 시 main의 중복 CI는 브라우저 의존성 설치가 지연되고 있었다.
+- Pages 배포 `be9fb440-875c-40db-848b-de380aba5f0d`: **Production / main / source `56c6373`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://be9fb440.rescene-arcade.pages.dev).
+- 기존 멤버 캐릭터를 유지하며 원이 파이리 팡팡·메이 보글보글 공방·제나 신라빵·미나미 펌프 댄스타임·리브 별빛 디펜스로 교체했다. 효과음·실제 멤버 음성은 기본 켜짐이며 게임 시작 입력으로 오디오를 활성화한다. 목숨 3개·무한 스테이지·단계별 난이도·저장 기록을 유지한다. [게임 규칙과 저장 이전](../design/arcade-refresh.md).
+- **실제 공개 주소에서 브라우저 검증 86개 통과, 데스크톱 터치 전용 1개 제외.** 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 다섯 게임 입력·저장 복원·5→6단계·목숨 소진·동시 이동/점프·320×568 조작부·기본 효과음·다섯 MP3 신호와 재생/정지를 확인했다. 모바일은 에뮬레이션이며 실기기 청음 검증은 아니다.
+- 공개 HTML·JS·CSS·캐릭터·파이리·음성 등 **전체 12개 파일의 SHA-256이 CI 배포 산출물과 일치**했다. 증적은 사용자 지정 iCloud 작업 루트 `rescene-game/arcade-deploy-20261002/`의 `production-asset-hashes.json`, `public-browser/`, `site/`에 보관한다.
+- 기존 로그인으로 배포했으며 CI 배포 인증·자동 배포 설정을 추가하지 않았다. 별도 PR #8은 머지하지 않았다.
+- 머지 후 [main CI 36952001379](https://github.com/hhj4861/rescene-game/actions/runs/36952001379)도 최종 성공했다. 브라우저 의존성 설치 지연 후 단위 테스트·린트·빌드·브라우저 검증·산출물 업로드를 모두 완료했다.
+
 ## 무한 스테이지·목숨 저장·무음 수정 운영 배포 — 2026-10-01
 
 - 사용자 명시 승인 후 [PR #11](https://github.com/hhj4861/rescene-game/pull/11)을 머지했다. 운영 소스는 `394a305a782510f7f46b23dee450f9de913689d6`이다.
