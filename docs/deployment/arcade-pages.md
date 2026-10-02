@@ -2,6 +2,17 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+## 메이 뒤돌기·자체 BGM·펌프 박자·리브 진격대 운영 배포 — 2026-10-02
+
+- 사용자 명시 승인 후 [PR #13](https://github.com/hhj4861/rescene-game/pull/13)을 머지했다. 운영 소스는 `f8f4c4a3b08ee8b830a7359cbdff4a7b6f100b7c`다.
+- [PR CI 36955711764](https://github.com/hhj4861/rescene-game/actions/runs/36955711764)의 단위 29개·브라우저 95개(데스크톱 터치 전용 1개 제외)·린트·빌드가 통과했다. PR 커밋 `0ef129e`와 머지 커밋의 전체 Git 트리가 `a181b95fa625b89bcf55237136c1f5dfb1fc9d71`로 동일함을 확인하고 해당 `arcade-static-site` 산출물을 기존 Wrangler 로그인으로 배포했다. [머지 후 main CI 36971748473](https://github.com/hhj4861/rescene-game/actions/runs/36971748473)도 최종 성공했다.
+- Pages 배포 `c0ccc027-0f1d-47fb-8c97-80bcd6a88d77`: **Production / main / source `f8f4c4a`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://c0ccc027.rescene-arcade.pages.dev).
+- 메이는 이동 방향에 맞춰 캐릭터를 반전하고 X키·뒤돌기 버튼으로 제자리 반대쪽 공격을 지원한다. 게임별 자체 연주곡 5개를 기본 재생하며, 펌프는 120 BPM 음악과 같은 박자에 채보가 나온다. 리브는 숫자 게이트·대원 증가·자동 사격의 별빛 진격대로 교체했다. 지원 공격은 적 다섯 팀 격파 후에만 사용할 수 있다. [게임·음악 상세](../design/arcade-music.md).
+- 기존 캐릭터·멤버 음성·단계·목숨·최고 기록은 유지한다. 이전 리브 설치 보드와 펌프 채보는 새 규칙으로 현재 단계부터 시작한다. 이번 BGM에는 상용 음원이나 외부 음악 샘플을 추가하지 않았다.
+- 공개 HTML·JS·CSS·캐릭터·파이리·음성 등 **전체 12개 파일의 SHA-256이 배포한 CI 산출물과 일치**했다. 증적은 사용자 지정 iCloud 작업 루트 `rescene-game/arcade-music-deploy-20261002/`의 `site/`, `production-asset-hashes.json`, `public-browser/`에 보관한다.
+- **실제 공개 주소에서 브라우저 95개 통과, 데스크톱 터치 전용 1개 제외.** 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 메이 뒤돌기·양방향 발사, BGM 실제 출력 신호·정지·재개, 펌프 박자 판정, 리브 게이트·자동 사격·지원 제한, 320×568 조작부와 기존 저장·목숨·멤버 음성을 확인했다. 모바일은 에뮬레이션이며 실기기 청음 검증은 아니다.
+- 기존 로그인 배포이며 CI 배포 인증·자동 배포 설정은 변경하지 않았다. 별도 PR #8은 머지하지 않았다.
+
 ## 다섯 게임 개편·소리 기본 켜짐 운영 배포 — 2026-10-02
 
 - 사용자 명시 승인 후 [PR #12](https://github.com/hhj4861/rescene-game/pull/12)를 머지했다. 운영 소스는 `56c637393ee60b49a2fa00d583a07e4e06e4c55d`다.
