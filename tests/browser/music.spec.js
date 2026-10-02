@@ -1,6 +1,18 @@
 /* global window */
 import {test,expect} from '@playwright/test';
 
+async function auditAudio(page){
+ await page.addInitScript(()=>{const Native=window.AudioContext||window.webkitAudioContext;window.trackAudio=[];window.AudioContext=class extends Native{constructor(){super();this.audit=this.createAnalyser();this.audit.connect(this.destination);window.trackAudio.push(this);}createGain(){const g=super.createGain(),connect=g.connect.bind(g);g.connect=t=>connect(t===this.destination?this.audit:t);return g;}};});
+}
+test('all five cabinets start their own audible BGM and silence it on leaving',async({page})=>{
+ await auditAudio(page);await page.goto('./');
+ for(const [id,title] of [['drive','반짝 꼬리 산책'],['blocks','방울 위의 스텝'],['photo','오븐 앞 오후'],['rhythm','Five Steps, One Stage'],['catch','별빛 전진']]){
+  await page.locator(`[data-slide="${id}"]`).click();await page.locator(`[data-start="${id}"].start`).click();await expect(page.locator('.music-credit')).toContainText(title);await expect(page.getByRole('button',{name:'BGM 끄기',exact:true})).toHaveAttribute('aria-pressed','true');
+  const rms=()=>page.evaluate(()=>{const c=window.trackAudio[0],d=new Float32Array(c.audit.fftSize);c.audit.getFloatTimeDomainData(d);return Math.sqrt(d.reduce((sum,x)=>sum+x*x,0)/d.length);});
+  await expect.poll(rms).toBeGreaterThan(.0001);await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();await page.getByRole('button',{name:'오락실로 돌아가기'}).click();await expect.poll(rms).toBeLessThan(.00001);
+ }
+});
+
 test('original BGM plays by default and stops on mute, pause, home and resume',async({page})=>{
  await page.addInitScript(()=>{
   const Native=window.AudioContext||window.webkitAudioContext;window.musicEvents=[];window.musicContexts=[];

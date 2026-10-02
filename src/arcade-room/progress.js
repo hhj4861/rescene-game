@@ -10,7 +10,7 @@ export function stageValue(s){return s.kind==='blocks'?s.popped:s.kind==='photo'
 export function isStageClear(s){return !!s.stage&&stageValue(s)>=stageGoal(s.kind,s.stage).target&&s.hearts>0&&!s.endReason;}
 export function emptyProgress(){return {version:2,games:Object.fromEntries(GAME_IDS.map(id=>[id,{stage:1,highest:1,hearts:INITIAL_LIVES,snapshot:null}]))};}
 export function newRun(progress,kind){Object.assign(progress.games[kind],{stage:1,hearts:INITIAL_LIVES,snapshot:null});}
-export function snapshotRound(s){if(!s||s.ended||!s.stage)return null;const copy=JSON.parse(JSON.stringify(s));delete copy.event;return copy;}
+export function snapshotRound(s){if(!s||s.ended||!s.stage)return null;const copy=JSON.parse(JSON.stringify(s));delete copy.event;delete copy.breadFrames;if(s.kind==='photo')copy.flash=0;return copy;}
 export function saveRound(progress,s){if(s&&!s.ended){const e=progress.games[s.kind];e.stage=s.stage;e.highest=Math.max(e.highest,s.stage);e.hearts=s.hearts;e.snapshot=snapshotRound(s);}}
 function validState(s){
  if(!number(s.elapsed,0,60)||Math.abs(s.elapsed+s.remaining-60)>.001||!integer(s.hearts,1,3))return false;
