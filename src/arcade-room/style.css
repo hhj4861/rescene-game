@@ -65,3 +65,7 @@
 .game-picker .machine[data-selected="false"]{filter:saturate(.7);opacity:.75}
 .game-picker button:focus-visible,.game-picker .machines:focus-visible{outline:3px solid #b65c30;outline-offset:-3px}
 @media(max-width:700px){.game-picker .machines{--cabinet-width:calc(100vw - 52px);gap:14px}.member-nav button{padding:8px 14px;font-size:12px}.game-picker .marquee{flex-wrap:wrap;gap:4px 7px}.game-picker .marquee h2{font-size:24px}.game-picker .machine-badge{font-size:9px;padding:3px 6px}.game-picker .speech{max-width:112px}.game-picker .control-deck{padding-left:2px;padding-right:2px}.picker-controls{margin-bottom:13px}.game-picker .host .doll{width:165px}.game-picker .member-nav{gap:5px;padding:0 10px}}
+
+/* Keep the chase lanes clear; Woni reacts beside the playfield. */
+#app[data-game="drive"] .signature-toast{display:none}
+#app[data-game="drive"][data-fever="true"] .game-cabinet{border-color:#b37432;box-shadow:0 8px 0 #b37432}

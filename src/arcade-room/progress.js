@@ -16,7 +16,7 @@ function validState(s){
  if(!number(s.elapsed,0,60)||Math.abs(s.elapsed+s.remaining-60)>.001||!integer(s.hearts,1,3))return false;
  for(const key of ['hits','combo','bestCombo','misses','popped','collected','defeated','nextEnemy'])if(key in s&&!integer(s[key],0,100000))return false;
  for(const key of ['spawn','invincible','cooldown','flash','burst','burstCooldown','energyClock'])if(key in s&&!number(s[key],0,15))return false;
- if(s.kind==='drive')return vector(s.holes,9,h=>h&&number(h.ttl,0,2)&&number(h.total,0,2)&&h.ttl<=h.total&&number(h.flash,0,.3)&&typeof h.gold==='boolean');
+ if(s.kind==='drive')return s.chaseVersion===1&&integer(s.heat,0,4)&&number(s.fever,0,6)&&vector(s.holes,9,h=>h&&number(h.ttl,0,4.8)&&number(h.total,0,4.8)&&h.ttl<=h.total&&number(h.flash,0,.3)&&typeof h.gold==='boolean'&&(h.hitAt===undefined||number(h.hitAt,0,1))&&(h.reward===undefined||integer(h.reward,0,600)));
  if(s.kind==='blocks'){const p=s.player;return p&&number(p.x,18,462)&&number(p.y,-50,536)&&number(p.vy,-550,1300)&&[-1,1].includes(p.facing)&&[-1,0,1].includes(p.dir)&&number(p.walk,0,.18)&&list(s.enemies,3,e=>e&&number(e.x,0,480)&&number(e.y,0,536)&&integer(e.home,0,3)&&[-1,1].includes(e.dir)&&number(e.trapped,0,5))&&list(s.bubbles,8,b=>b&&number(b.x,-20,500)&&number(b.y,-100,600)&&[-260,260].includes(b.vx)&&number(b.ttl,0,1.8));}
  if(s.kind==='photo')return vector(s.board,36,n=>integer(n,1,5)||integer(n,11,15))&&integer(s.selected,-1,35)&&integer(s.moves,0,18)&&integer(s.shuffles,0,2)&&list(s.clearedCells,432,n=>integer(n,0,35))&&list(s.hint,2,n=>integer(n,0,35));
  if(s.kind==='rhythm'){const notes=createGame('rhythm',{stage:s.stage}).notes;return number(s.offset,-.2,.2)&&vector(s.lastTaps,5,n=>number(n,-1,60))&&vector(s.feedback,5,n=>['','WAIT','MISS','GOOD','PERFECT'].includes(n))&&vector(s.glows,5,n=>number(n,0,.25))&&vector(s.notes,notes.length,(n,i)=>n&&n.at===notes[i].at&&n.lane===notes[i].lane&&['waiting','hit','miss'].includes(n.status));}
@@ -25,8 +25,13 @@ function validState(s){
 export function restoreRound(data){try{
  if(!data||data.schema!==3||!GAME_IDS.includes(data.kind)||!validStage(data.stage)||data.ended!==false||!number(data.remaining,.000001,DURATION)||!integer(data.score,0,10000000)||!integer(data.rngState,0,4294967295))return null;
  const s=createGame(data.kind,{stage:data.stage,seed:data.rngState,hearts:data.hearts,offsetMs:(data.offset||0)*1000});
- for(const key of Object.keys(s)){if(key==='random'||key==='event')continue;if(!(key in data))return null;s[key]=structuredClone(data[key]);}
- if(!validState(s))return null;s.event=null;return s;
+ for(const key of Object.keys(s)){if(key==='random'||key==='event')continue;if(!(key in data)){if(s.kind==='drive'&&data.chaseVersion===undefined&&['chaseVersion','heat','fever'].includes(key))continue;return null;}s[key]=structuredClone(data[key]);}
+ if(!validState(s))return null;
+ if(s.kind==='drive'&&data.chaseVersion===undefined){
+  const active=s.holes.map((h,i)=>h.ttl>0?i:-1).filter(i=>i>=0),lanes=new Set();if(active.length>3)return null;
+  for(const i of active){let lane=Math.floor(i/3);if(lanes.has(lane)){lane=[0,1,2].find(n=>!lanes.has(n)&&!s.holes.slice(n*3,n*3+3).some(h=>h.ttl>0));if(lane===undefined)return null;[s.holes[i],s.holes[lane*3]]=[s.holes[lane*3],s.holes[i]];}lanes.add(lane);}
+ }
+ s.event=null;return s;
  }catch{return null;}}
 export function readProgress(storage){const progress=emptyProgress();let data;try{const raw=storage?.getItem(PROGRESS_KEY);if(raw?.length>200000)return progress;data=JSON.parse(raw);}catch{return progress;}if(![1,2].includes(data?.version))return progress;
  for(const id of GAME_IDS){const source=data.games?.[id],entry=progress.games[id];if(!source)continue;if(data.version===1){let cleared=0;while(cleared<5&&Array.isArray(source.cleared)&&source.cleared.includes(cleared+1))cleared++;entry.stage=entry.highest=cleared+1;const old=source.snapshot;if(old?.kind===id&&validStage(old.stage)&&old.stage<=entry.highest){entry.stage=old.stage;if(integer(old.hearts,1,3))entry.hearts=old.hearts;}}else{if(!validStage(source.highest)||!validStage(source.stage)||source.stage>source.highest||!integer(source.hearts,0,3))continue;entry.stage=source.stage;entry.highest=source.highest;entry.hearts=source.hearts;}const restored=restoreRound(source.snapshot);if(restored?.kind===id&&restored.stage===entry.stage&&restored.hearts===entry.hearts)entry.snapshot=snapshotRound(restored);}return progress;}
