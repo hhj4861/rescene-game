@@ -1,3 +1,5 @@
+import {createRunner,runnerAction,stepRunner} from './runner.js';
+import {PUMP_BEAT} from './music.js';
 export const DURATION=60,INITIAL_LIVES=3;
 export const GAME_IDS=['drive','blocks','photo','rhythm','catch'];
 export const validStage=n=>Number.isSafeInteger(n)&&n>=1;
@@ -9,9 +11,21 @@ function loseLife(s){s.hearts=Math.max(0,s.hearts-1);if(!s.hearts){s.ended=true;
 function failRound(s,reason){if(s.ended)return;loseLife(s);s.ended=true;s.endReason=reason;}
 export const PLATFORMS=[{x:0,y:536,w:480},{x:35,y:422,w:170},{x:267,y:330,w:178},{x:48,y:224,w:168}];
 function enemy(s,home){const p=PLATFORMS[home];return {x:p.x+35+s.random()*(p.w-70),y:p.y,home,dir:s.random()<.5?-1:1,trapped:0};}
-export const RHYTHM_WINDOW=.2,BEAT_SECONDS=.72;
+export const RHYTHM_WINDOW=.2,BEAT_SECONDS=PUMP_BEAT;
 export function rhythmWindow(s){return Math.max(.09,.2-(stageSpeed(s)-1)*.045-s.elapsed*.0004);}
-export function makeRhythmNotes(stage){const pattern=[0,2,4,1,3,2,0,4,2,1,3,2],notes=[],gap=BEAT_SECONDS/Math.sqrt(stageSpeed({stage}));let i=0;for(let at=2;at<59.5;at+=gap,i++){const lane=pattern[i%pattern.length];notes.push({at,lane,status:'waiting'});if(stage>=3&&i%12===11)notes.push({at,lane:(lane+2)%5,status:'waiting'});}return notes;}
+export function makeRhythmNotes(stage){
+ const pattern=[0,2,4,1,3,2,0,4,2,1,3,2,4,0,3,1],notes=[];
+ // Four intro beats, then steps on the score's beat grid. Higher stages add
+ // offbeats and chords, rather than drifting the chart away from the song.
+ for(let beat=4;beat<119;beat++){
+  const i=beat-4,lane=pattern[i%pattern.length];
+  if(stage===1&&i%2)continue;
+  notes.push({at:beat*PUMP_BEAT,lane,status:'waiting'});
+  if(stage>=3&&i%8===7)notes.push({at:beat*PUMP_BEAT,lane:(lane+2)%5,status:'waiting'});
+  if(stage>=4&&i%4===(stage>=7?1:3))notes.push({at:(beat+.5)*PUMP_BEAT,lane:pattern[(i+1)%pattern.length],status:'waiting'});
+ }
+ return notes;
+}
 export function createGame(kind,options={}){
  if(!GAME_IDS.includes(kind))return undefined;
  const s={schema:3,kind,stage:validStage(options.stage)?options.stage:1,elapsed:0,remaining:DURATION,score:0,hearts:Number.isInteger(options.hearts)?clamp(options.hearts,1,3):3,ended:false,event:null,rngState:(options.seed??Math.floor(Math.random()*4294967296))>>>0};
@@ -20,13 +34,13 @@ export function createGame(kind,options={}){
  if(kind==='blocks'){Object.assign(s,{player:{x:90,y:536,vy:0,facing:1,walk:0,dir:0},popped:0,combo:0,enemies:[enemy(s,0),enemy(s,1),enemy(s,2)],bubbles:[],invincible:1.2,cooldown:0,spawn:2,flash:0});s.enemies[0].x=340;}
  if(kind==='photo'){Object.assign(s,{board:playableBoard(s),selected:-1,collected:0,combo:0,moves:Math.max(10,18-Math.floor((stageSpeed(s)-1)*6)),shuffles:2,flash:0,clearedCells:[],hint:[]});s.hint=availableSwap(s.board)||[];}
  if(kind==='rhythm')Object.assign(s,{notes:makeRhythmNotes(s.stage),offset:clamp(Number(options.offsetMs)||0,-200,200)/1000,hits:0,misses:0,combo:0,bestCombo:0,lastTaps:Array(5).fill(-1),feedback:Array(5).fill(''),glows:Array(5).fill(0)});
- if(kind==='catch')Object.assign(s,{towers:Array.from({length:6},()=>({level:0,cooldown:0})),enemies:[],shots:[],energy:6,energyClock:0,defeated:0,spawn:2,nextEnemy:0,burst:0,burstCooldown:0});
+ if(kind==='catch')Object.assign(s,createRunner());
  return s;
 }
 function whack(s,i){if(!Number.isInteger(i)||i<0||i>8)return;const h=s.holes[i];if(!h.ttl){s.combo=0;return;}s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);s.score+=(h.gold?200:100)+Math.min(10,s.combo)*10;h.ttl=0;h.flash=.3;s.event=h.gold?'whack-gold':'whack-hit';}
 function stepWhack(s,dt){for(const h of s.holes){h.flash=Math.max(0,h.flash-dt);if(h.ttl>0){h.ttl=Math.max(0,h.ttl-dt);if(!h.ttl){s.misses++;s.combo=0;s.event='whack-miss';loseLife(s);if(s.ended)return;}}}s.spawn=Math.max(0,s.spawn-dt);if(!s.spawn){const free=s.holes.filter(h=>!h.ttl&&!h.flash);if(free.length&&s.holes.filter(h=>h.ttl>0).length<(s.stage<4?1:2)){const h=free[Math.floor(s.random()*free.length)];h.ttl=h.total=1.7/Math.sqrt(stageSpeed(s));h.gold=s.random()<.16;}s.spawn=1.05/stageSpeed(s)+.18;}}
 function popEnemy(s,e){s.enemies.splice(s.enemies.indexOf(e),1);s.popped++;s.combo++;s.score+=100+Math.min(5,s.combo)*50;s.flash=.25;s.event='bubble-pop';}
-function bubbleAction(s,action){const p=s.player;if(action==='left'||action==='right'){p.dir=action==='left'?-1:1;p.facing=p.dir;p.walk=.18;}else if(action==='stop'){p.dir=0;p.walk=0;}else if(action==='jump'&&Math.abs(p.vy)<.01)p.vy=-550;else if(action==='bubble'&&!s.cooldown){s.cooldown=.25;const near=s.enemies.filter(e=>e.trapped&&Math.hypot(e.x-p.x,e.y-p.y)<130);if(near.length)near.forEach(e=>popEnemy(s,e));else if(s.bubbles.length<8)s.bubbles.push({x:p.x+p.facing*20,y:p.y-24,vx:p.facing*260,ttl:1.8});}}
+function bubbleAction(s,action){const p=s.player;if(action==='left'||action==='right'){p.dir=action==='left'?-1:1;p.facing=p.dir;p.walk=.18;}else if(action==='turn'){p.facing*=-1;p.dir=0;p.walk=0;}else if(action==='stop'){p.dir=0;p.walk=0;}else if(action==='jump'&&Math.abs(p.vy)<.01)p.vy=-550;else if(action==='bubble'&&!s.cooldown){s.cooldown=.25;const near=s.enemies.filter(e=>e.trapped&&Math.hypot(e.x-p.x,e.y-p.y)<130);if(near.length)near.forEach(e=>popEnemy(s,e));else if(s.bubbles.length<8)s.bubbles.push({x:p.x+p.facing*20,y:p.y-24,vx:p.facing*260,ttl:1.8});}}
 function stepBubbles(s,dt){const p=s.player;for(const k of ['invincible','cooldown','flash'])s[k]=Math.max(0,s[k]-dt);p.x=clamp(p.x+p.dir*190*Math.min(dt,p.walk),18,462);p.walk=Math.max(0,p.walk-dt);const old=p.y;p.vy+=1200*dt;p.y+=p.vy*dt;if(p.vy>=0){for(const platform of [...PLATFORMS].sort((a,b)=>a.y-b.y)){if(p.x>=platform.x-6&&p.x<=platform.x+platform.w+6&&old<=platform.y&&p.y>=platform.y){p.y=platform.y;p.vy=0;break;}}}if(p.y>536){p.y=536;p.vy=0;}
  for(const b of s.bubbles){b.x+=b.vx*dt;b.y-=18*dt;b.ttl-=dt;const hit=s.enemies.find(e=>!e.trapped&&Math.hypot(e.x-b.x,e.y-20-b.y)<30);if(hit){hit.trapped=5;b.ttl=0;s.event='bubble-trap';}}s.bubbles=s.bubbles.filter(b=>b.ttl>0&&b.x>-20&&b.x<500);
  for(const e of [...s.enemies]){if(e.trapped){e.trapped=Math.max(0,e.trapped-dt);e.y=Math.max(70,e.y-12*dt);if(Math.hypot(e.x-p.x,e.y-p.y)<38){popEnemy(s,e);continue;}if(!e.trapped){e.y=PLATFORMS[e.home].y;s.combo=0;}}else{const platform=PLATFORMS[e.home];e.x+=e.dir*(32+18*stageSpeed(s))*dt;if(e.x<platform.x+18){e.x=platform.x+18;e.dir=1;}if(e.x>platform.x+platform.w-18){e.x=platform.x+platform.w-18;e.dir=-1;}if(!s.invincible&&Math.hypot(e.x-p.x,e.y-p.y)<31){loseLife(s);s.invincible=1.4;s.combo=0;s.event='bubble-miss';}}if(s.ended)return;}
@@ -41,13 +55,8 @@ export function swapBread(s,a,b){if(s.ended||s.flash||!adjacent(a,b))return fals
 function breadAction(s,a){if(s.flash)return;if(a==='shuffle'){if(!s.shuffles)return;s.board=playableBoard(s);s.shuffles--;s.selected=-1;s.hint=availableSwap(s.board)||[];s.event='bread-shuffle';}else if(Number.isInteger(a)&&a>=0&&a<36){if(adjacent(s.selected,a))swapBread(s,s.selected,a);else s.selected=a;}}
 export function tapRhythm(s,lane){if(s.ended||!Number.isInteger(lane)||lane<0||lane>4||s.elapsed-s.lastTaps[lane]<.08)return;s.lastTaps[lane]=s.elapsed;const waiting=s.notes.filter(n=>n.lane===lane&&n.status==='waiting').sort((a,b)=>Math.abs(a.at+s.offset-s.elapsed)-Math.abs(b.at+s.offset-s.elapsed)),n=waiting[0],delta=n?Math.abs(n.at+s.offset-s.elapsed):Infinity;s.glows[lane]=.25;if(delta>rhythmWindow(s)){s.combo=0;s.feedback[lane]='WAIT';s.event='rhythm-early';return;}n.status='hit';s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);const perfect=delta<.075;s.feedback[lane]=perfect?'PERFECT':'GOOD';s.score+=(perfect?100:60)+Math.min(10,s.combo)*5;s.event=perfect?'rhythm-perfect':'rhythm-good';}
 function stepPump(s,dt){s.glows=s.glows.map(n=>Math.max(0,n-dt));for(const n of s.notes)if(n.status==='waiting'&&s.elapsed-s.offset-n.at>rhythmWindow(s)){n.status='miss';s.misses++;s.combo=0;s.feedback[n.lane]='MISS';s.glows[n.lane]=.25;s.event='rhythm-miss';loseLife(s);if(s.ended)return;}}
-function defenseAction(s,a){if(Number.isInteger(a)&&a>=0&&a<6){const t=s.towers[a],cost=t.level?3:2;if(t.level>=3||s.energy<cost)return;s.energy-=cost;t.level++;s.event='defense-build';}else if(a==='burst'&&!s.burstCooldown){s.burst=.35;s.burstCooldown=12;for(const e of s.enemies)e.hp-=3;s.event='defense-burst';}}
-function stepDefense(s,dt){s.energyClock+=dt;while(s.energyClock>=2.5){s.energyClock-=2.5;s.energy=Math.min(20,s.energy+1);}s.burst=Math.max(0,s.burst-dt);s.burstCooldown=Math.max(0,s.burstCooldown-dt);s.spawn=Math.max(0,s.spawn-dt);if(!s.spawn&&s.enemies.length<10&&s.defeated+s.enemies.length<stageTarget(s.kind,s.stage)){const id=s.nextEnemy++,hp=2+Math.floor((stageSpeed(s)-1)*2);s.enemies.push({id,lane:id<3?id:Math.floor(s.random()*3),x:465,hp,maxHp:hp});s.spawn=2.4/Math.sqrt(stageSpeed(s));}
- s.towers.forEach((t,i)=>{t.cooldown=Math.max(0,t.cooldown-dt);const lane=Math.floor(i/2),x=115+i%2*95;if(t.level&&!t.cooldown&&s.enemies.some(e=>e.lane===lane&&e.hp>0&&e.x>=x-15)){s.shots.push({x:x+15,lane,power:t.level});t.cooldown=.9/Math.sqrt(t.level);}});
- for(const b of s.shots){const old=b.x;b.x+=350*dt;const hit=s.enemies.filter(e=>e.hp>0&&e.lane===b.lane&&e.x>=old-15&&e.x<=b.x+15).sort((a,b)=>a.x-b.x)[0];if(hit){hit.hp-=b.power;b.x=600;}}s.shots=s.shots.filter(b=>b.x<500);
- for(let i=s.enemies.length-1;i>=0;i--){const e=s.enemies[i];if(e.hp<=0){s.enemies.splice(i,1);s.defeated++;s.score+=100;s.energy=Math.min(20,s.energy+1);s.event='defense-hit';}else{e.x-=(18+8*stageSpeed(s))*dt;if(e.x<35){s.enemies.splice(i,1);loseLife(s);s.event='defense-miss';if(s.ended)return;}}}}
-export function stepGame(s,dt){if(s.ended||!Number.isFinite(dt)||dt<=0)return;s.event=null;let remaining=Math.min(dt,s.remaining);while(remaining>1e-9&&!s.ended){const step=Math.min(.025,remaining);s.elapsed+=step;s.remaining=Math.max(0,DURATION-s.elapsed);remaining-=step;({drive:stepWhack,blocks:stepBubbles,photo:(s,dt)=>{s.flash=Math.max(0,s.flash-dt);},rhythm:stepPump,catch:stepDefense})[s.kind](s,step);}if(!s.ended&&s.remaining<1e-7){s.remaining=0;s.elapsed=DURATION;failRound(s,'timeout');}}
-export function gameAction(s,action){if(s.ended)return;({drive:whack,blocks:bubbleAction,photo:breadAction,rhythm:tapRhythm,catch:defenseAction})[s.kind](s,action);}
+export function stepGame(s,dt){if(s.ended||!Number.isFinite(dt)||dt<=0)return;s.event=null;let remaining=Math.min(dt,s.remaining);while(remaining>1e-9&&!s.ended){const step=Math.min(.025,remaining);s.elapsed+=step;s.remaining=Math.max(0,DURATION-s.elapsed);remaining-=step;({drive:stepWhack,blocks:stepBubbles,photo:(s,dt)=>{s.flash=Math.max(0,s.flash-dt);},rhythm:stepPump,catch:(s,dt)=>stepRunner(s,dt,stageSpeed(s),loseLife)})[s.kind](s,step);}if(!s.ended&&s.remaining<1e-7){s.remaining=0;s.elapsed=DURATION;failRound(s,'timeout');}}
+export function gameAction(s,action){if(s.ended)return;({drive:whack,blocks:bubbleAction,photo:breadAction,rhythm:tapRhythm,catch:runnerAction})[s.kind](s,action);}
 export const RECORD_KEY='rescene.small-arcade.v1';
 export function readRecords(storage){let data;try{data=JSON.parse(storage?.getItem(RECORD_KEY));}catch{/* Optional storage. */}return Object.fromEntries(GAME_IDS.map(k=>[k,Number.isSafeInteger(data?.[k])&&data[k]>=0?data[k]:0]));}
 export function saveRecord(storage,kind,score){const records=readRecords(storage);if(!GAME_IDS.includes(kind)||!Number.isSafeInteger(score)||score<0)return {records,saved:false};records[kind]=Math.max(records[kind],score);try{storage.setItem(RECORD_KEY,JSON.stringify(records));return {records,saved:true};}catch{return {records,saved:false};}}
