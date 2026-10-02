@@ -1,11 +1,16 @@
 import {chasePosition} from './chase.js';
 import {breadFrame} from './model.js';
-/* global Image, window */
+/* global Image, window, document */
 import {PLATFORMS} from './model.js';
 import {RUNNER_X} from './runner.js';
 import {drawDoll} from './cast.js';
-let charmander;
-export function loadGameArt(){return new Promise((resolve,reject)=>{charmander=new Image();charmander.onload=resolve;charmander.onerror=reject;charmander.src='./charmander.png';});}
+let charmander,charmanderFake;
+export function loadGameArt(){return new Promise((resolve,reject)=>{charmander=new Image();charmander.onload=()=>{try{
+ // Build the in-game decoy tint once; the approved source PNG stays unchanged.
+ charmanderFake=document.createElement('canvas');charmanderFake.width=charmander.naturalWidth;charmanderFake.height=charmander.naturalHeight;
+ const ctx=charmanderFake.getContext('2d');ctx.drawImage(charmander,0,0);const pixels=ctx.getImageData(0,0,charmanderFake.width,charmanderFake.height);
+ for(let i=0;i<pixels.data.length;i+=4){const grey=Math.round(pixels.data[i]*.299+pixels.data[i+1]*.587+pixels.data[i+2]*.114);pixels.data[i]=grey;pixels.data[i+1]=grey;pixels.data[i+2]=grey;}
+ ctx.putImageData(pixels,0,0);resolve();}catch(error){reject(error);}};charmander.onerror=reject;charmander.src='./charmander.png';});}
 const INK='#244655',PAPER='#fff8e8';
 const reducedMotion=typeof window!=='undefined'?window.matchMedia('(prefers-reduced-motion: reduce)'):null;
 function box(c,x,y,w,h,color,r=12){c.fillStyle=color;c.beginPath();c.roundRect(x,y,w,h,r);c.fill();}
@@ -24,7 +29,7 @@ function drawWhack(c,s){
  text(c,'원이의 불꽃 추격전',240,36,23,'#3e6c57');
  text(c,fever?`불꽃 피버 ×2 · ${Math.ceil(s.fever)}초`:s.combo?`${s.combo} COMBO · 한 번 더!`:'달리는 파이리를 따라 톡!',240,70,25,fever?'#9c521c':INK);
  box(c,45,89,390,12,'#fff8e899',6);box(c,45,89,390*(fever?s.fever/6:s.heat/5),12,fever?'#e89d3b':'#54896c',6);
- text(c,fever?'놓쳐도 괜찮아! 마음껏 달려봐!':`피버까지 ${5-s.heat}번 연속 성공`,240,122,15,'#537560');
+ text(c,fever?'놓쳐도 안전! × 가짜를 누르면 감점':`피버까지 ${5-s.heat}번 연속 성공`,240,122,15,'#537560');
  for(let row=0;row<3;row++){
   const y=263+row*148;box(c,15,y-37,450,40,fever?'#e8c28a88':'#84ad8766',20);
   for(let n=0;n<9;n++){const x=25+(n*57+(quiet?0:s.elapsed*19*(row%2?-1:1))+5700)%450;ellipse(c,x,y-3,6,2,'#fff8e866');}
@@ -34,14 +39,15 @@ function drawWhack(c,s){
   if(h.ttl){
    const ground=263+Math.floor(i/3)*148;ellipse(c,p.x,ground,33,8,'#355b4933');
    if(!quiet)for(let n=3;n>0;n--){const old=chasePosition({...h,ttl:Math.min(h.total,h.ttl+n*.1)},i);c.globalAlpha=.07;ellipse(c,old.x,old.y+16,30,34,fever?'#fa8f25':'#f0b353');}c.globalAlpha=1;
-   if(h.gold||fever){ellipse(c,p.x,p.y-5,49,54,'#fff1a04d');star(c,p.x+38,p.y-49,10,'#e7a53a');}
-   c.save();c.translate(p.x,p.y);c.scale(p.direction,1);if(!quiet)c.rotate(Math.sin(p.p*Math.PI*8)*.06);if(charmander?.complete)c.drawImage(charmander,-52,-62,104,104);c.restore();
+   if(!h.fake&&(h.gold||fever)){ellipse(c,p.x,p.y-5,49,54,'#fff1a04d');star(c,p.x+38,p.y-49,10,'#e7a53a');}
+   c.save();c.translate(p.x,p.y);c.scale(p.direction,1);if(!quiet)c.rotate(Math.sin(p.p*Math.PI*8)*.06);if(charmander?.complete)c.drawImage(h.fake?charmanderFake:charmander,-52,-62,104,104);c.restore();
+   if(h.fake){ellipse(c,p.x+32,p.y-43,17,17,'#755481');text(c,'×',p.x+32,p.y-35,27,'#fff8e8');}
    box(c,p.x-32,p.y+44,64,5,'#fff8e8',3);box(c,p.x-32,p.y+44,64*h.ttl/h.total,5,h.ttl<1?'#c8784e':'#56866b',3);
    box(c,p.x-11,p.y+24,22,20,'#fff8e8e6',8);text(c,String(i+1),p.x,p.y+40,14,'#3e6c57');
   }
-  if(h.flash){const t=1-h.flash/.3;c.globalAlpha=1-t;for(let k=0;k<7;k++){const angle=k*Math.PI*2/7;star(c,p.x+Math.cos(angle)*(20+t*45),p.y+Math.sin(angle)*(20+t*40),6,'#fff1a2');}c.globalAlpha=1;text(c,`+${h.reward||100}`,p.x,p.y-18-t*30,27,'#9c521c');}
+  if(h.flash){const t=1-h.flash/.3;c.globalAlpha=1-t;for(let k=0;k<7;k++){const angle=k*Math.PI*2/7;star(c,p.x+Math.cos(angle)*(20+t*45),p.y+Math.sin(angle)*(20+t*40),6,h.fake?'#b99ac4':'#fff1a2');}c.globalAlpha=1;text(c,h.fake?'−150':`+${h.reward||100}`,p.x,p.y-18-t*30,27,h.fake?'#755481':'#9c521c');}
  }
- text(c,fever?'피버 보너스! 불꽃처럼 몰아쳐!':'금빛은 보너스 · 화면 밖으로 놓치지 마!',240,580,17,'#3e6c57');
+ text(c,'× 가짜는 누르면 −150점 · 그냥 보내요!',240,580,17,'#3e6c57');
 }
 function drawBubbles(c,s){background(c,'#efe2e5','#b5d4da');for(let i=0;i<13;i++)bubble(c,20+(i*83)%450,55+(i*79)%480,9+i%4*5,'#e2d2ed77');text(c,'MAY’S BUBBLE WORKSHOP',240,43,19,'#87667b');text(c,s.combo>1?`${s.combo} CHAIN!`:'가두고 · 가까이서 팡!',240,80,22);
  for(const [i,p] of PLATFORMS.entries()){box(c,p.x,p.y,p.w,20,'#917d98',8);box(c,p.x,p.y,p.w,9,['#b4d99f','#f0bdc6','#f1d182','#b4d99f'][i],6);for(let x=p.x+12;x<p.x+p.w;x+=25)ellipse(c,x,p.y+4,4,2,'#fff9');}
