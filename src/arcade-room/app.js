@@ -41,7 +41,7 @@ function home(){
  decorate();app.querySelectorAll('[data-preview]').forEach(c=>{c.width=480;c.height=600;const s=createGame(c.dataset.preview,{seed:17});s.preview=true;if(s.kind==='drive'){s.holes[1]={ttl:1,total:1.7,gold:false,flash:0};s.holes[5]={ttl:1,total:1.7,gold:true,flash:0};}if(s.kind==='catch'){s.squad=8;s.enemies=[{id:0,lane:1,y:140,hp:6,maxHp:6,boss:false}];}if(s.kind==='rhythm')s.elapsed=1;drawGame(c.getContext('2d'),s);});
 }
 function controls(kind){
- if(kind==='drive')return '<span class="tap-instruction">구멍을 직접 눌러요 · 1~9</span>';
+ if(kind==='drive')return '<span class="tap-instruction">달리는 파이리를 직접 눌러요 · 1~9</span>';
  if(kind==='photo')return '<button data-act="shuffle" class="skill-button">빵 섞기 · 2회</button>';
  if(kind==='catch')return '<button data-act="left" aria-label="왼쪽 길로 이동">◀</button><button data-act="burst" class="skill-button">✦ 지원 0/5</button><button data-act="right" aria-label="오른쪽 길로 이동">▶</button>';
  if(kind==='rhythm')return `<div class="pump-pad">${PUMP_ARROWS.map((arrow,i)=>`<button data-act="${i}" class="pad-${i}" aria-label="${['왼쪽 아래','왼쪽 위','가운데','오른쪽 위','오른쪽 아래'][i]} 발판">${arrow}<small>${['Z','Q','S','E','C'][i]}</small></button>`).join('')}</div>`;
@@ -57,7 +57,7 @@ function start(kind,fresh=false){
 }
 function react(){
  if(!state.event)return;const event=state.event;state.event=null;const lines=REACTIONS[event];if(!lines)return;
- const line=lines[reactions++%lines.length];app.querySelector('#reaction').textContent=line;app.querySelector('#announce').textContent=line;const positive=!/miss|bump|early|invalid/.test(event);if(positive&&event!=='place')celebrate();else if(!positive)decorate(2);if(positive&&event!=='place'&&state.kind!=='rhythm')audio.tone(720);
+ const line=lines[reactions++%lines.length];app.querySelector('#reaction').textContent=line;app.querySelector('#announce').textContent=line;const positive=!/miss|bump|early|invalid/.test(event);if(positive&&event!=='place')celebrate();else if(!positive)decorate(2);if(positive&&event!=='place'&&state.kind!=='rhythm')audio.tone(720);if(event==='whack-fever'){audio.tone(880,.08);audio.tone(1320,.16);}
 }
 function advanceTo(now){
  if(mode==='play'&&!paused){let remaining=Math.max(0,(now-last)/1000);while(remaining>0&&!state.ended){const dt=Math.min(.05,remaining);stepGame(state,dt);remaining-=dt;react();goalReached();if(held&&!state.ended){held.wait-=dt;if(held.wait<=0){gameAction(state,held.action);held.wait+=.085;react();goalReached();}}}if(state.ended)finish();}last=now;
@@ -66,8 +66,9 @@ function act(action){if(mode!=='play'||paused)return;advanceTo(performance.now()
 function draw(){if(mode!=='play')return;drawGame(app.querySelector('#game').getContext('2d'),state);app.querySelector('#score').textContent=state.score.toLocaleString();app.querySelector('#time').innerHTML=`${Math.ceil(state.remaining)}<em>초</em>`;app.querySelector('#extra').textContent=extraValue(state);const lives=app.querySelector('#lives');lives.textContent='♥'.repeat(state.hearts)+'♡'.repeat(INITIAL_LIVES-state.hearts);lives.setAttribute('aria-label',`남은 목숨 ${state.hearts}개`);const goal=stageGoal(state.kind,state.stage);app.querySelector('#goal').textContent=`${Math.min(stageValue(state),goal.target)} / ${goal.target} ${goal.unit}`;syncControls();}
 function syncControls(){
  if(state.kind==='photo')app.dataset.breadPhase=breadFrame(state)?.kind||'idle';
- const buttons=app.querySelectorAll('.field-controls button');
- buttons.forEach((b,i)=>{if(state.kind==='drive'){const active=state.holes[i].ttl>0;b.dataset.active=String(active);b.setAttribute('aria-label',`${i+1}번 파이리 구멍${active?' · 파이리 나타남':''}`);}if(state.kind==='photo')b.setAttribute('aria-pressed',String(state.selected===i));if(state.kind==='catch'){b.setAttribute('aria-label',`${i+1}번 길로 이동`);b.setAttribute('aria-pressed',String(state.lane===i));}});
+ const buttons=app.querySelectorAll('.field-controls button'),moving=state.kind==='drive'?targets(state):null;
+ if(moving)app.dataset.fever=String(state.fever>0);
+ buttons.forEach((b,i)=>{if(state.kind==='drive'){const active=state.holes[i].ttl>0;b.dataset.active=String(active);b.hidden=!active;b.disabled=!active||state.ended;const t=moving[i];b.style.left=`${t.x/4.8}%`;b.style.top=`${t.y/6}%`;b.setAttribute('aria-label',`${i+1}번 달리는 ${state.holes[i].gold?'금빛 ':''}파이리`);}if(state.kind==='photo')b.setAttribute('aria-pressed',String(state.selected===i));if(state.kind==='catch'){b.setAttribute('aria-label',`${i+1}번 길로 이동`);b.setAttribute('aria-pressed',String(state.lane===i));}});
  const skill=app.querySelector('.skill-button');if(skill&&state.kind==='photo'){skill.textContent=`빵 섞기 · ${state.shuffles}회`;skill.disabled=state.shuffles===0||state.ended;}if(skill&&state.kind==='catch'){skill.textContent=state.charge===5?'✦ 별빛 지원':`✦ 지원 ${state.charge}/5`;skill.disabled=state.charge<5||state.ended;}
  if(state.kind==='rhythm')app.querySelectorAll('.pump-pad button').forEach((b,i)=>b.classList.toggle('lit',state.glows[i]>0));
 }
