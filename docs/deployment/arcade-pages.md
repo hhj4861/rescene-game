@@ -2,6 +2,17 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+## 파이리 불꽃추격 운영 배포 — 2026-10-02
+
+- 사용자 명시 승인 후 [PR #15](https://github.com/hhj4861/rescene-game/pull/15)를 머지했다. 운영 소스는 `82358d69c664f31263fc4f83d63cab3fcf43f3c4`다.
+- [PR CI 37018460369](https://github.com/hhj4861/rescene-game/actions/runs/37018460369)에서 Node 37개·브라우저 124개(환경별 5개 제외)·린트·빌드가 통과했다. PR 커밋 `dcb6bf3`와 머지 커밋의 Git 트리 `c6c332e1ebff84daf6249666e733c15332ecca14`가 동일함을 확인하고 해당 `arcade-static-site` 산출물을 기존 Wrangler 로그인으로 배포했다.
+- Pages 배포 `735b0139-25e7-4663-a66c-b93efb78df28`: **Production / main / source `82358d6`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://735b0139.rescene-arcade.pages.dev).
+- 원이는 좌우로 달리고 점프하는 파이리를 직접 탭해 잡는다. 5연속 성공하면 6초 피버가 열려 점수가 두 배이고 출현이 빨라지며 놓쳐도 목숨을 잃지 않는다. 기존 캐릭터·BGM·멤버 음성·무한 스테이지·저장 기록을 유지한다. [규칙과 저장 호환](../design/woni-flame-chase.md).
+- 공개 HTML·JS·CSS·캐릭터·파이리·멤버 음성 등 **전체 12개 파일의 SHA-256이 CI 산출물과 일치**했다. 증적은 사용자 지정 iCloud 작업 루트 `rescene-game/woni-chase-deploy-20261002/`의 `site/`, `production-asset-hashes.json`, `public-browser/`에 보관한다.
+- **실제 공개 주소에서 브라우저 124개 통과, 환경별 5개 제외.** 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 이동하는 터치 영역·피버·중복 타격 방지·일시정지/저장/복원·목숨, 기존 네 게임·선택 슬라이드·다섯 BGM·멤버 음성을 확인했다. 데스크톱·모바일 WebKit 공개 피버 화면도 확인했다. 제외 항목은 환경별 CDP 터치 주입과 데스크톱 멀티터치이며, 모바일 에뮬레이션은 실기기 청음 검증이 아니다.
+- [머지 후 main CI 37019813008](https://github.com/hhj4861/rescene-game/actions/runs/37019813008)도 최종 성공했다.
+- 기존 로그인 배포이며 CI 인증·자동 배포 설정은 변경하지 않았다. 별도 PR #8은 머지하지 않았다.
+
 ## 게임 슬라이드·신라빵 드래그와 낙하 운영 배포 — 2026-10-02
 
 - 사용자 명시 승인 후 [PR #14](https://github.com/hhj4861/rescene-game/pull/14)를 머지했다. 운영 소스는 `5d0b8f281302a027d1fa5768629f6bdabdf9ca5d`다.
