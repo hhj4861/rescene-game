@@ -2,6 +2,17 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+## 게임 슬라이드·신라빵 드래그와 낙하 운영 배포 — 2026-10-02
+
+- 사용자 명시 승인 후 [PR #14](https://github.com/hhj4861/rescene-game/pull/14)를 머지했다. 운영 소스는 `5d0b8f281302a027d1fa5768629f6bdabdf9ca5d`다.
+- [PR CI 37010468337](https://github.com/hhj4861/rescene-game/actions/runs/37010468337)에서 Node 33개·브라우저 115개(환경별 5개 제외)·린트·빌드가 통과했다. PR 커밋 `399ac04`와 머지 커밋의 Git 트리 `e000743307a551c96a6a3b437b32c7fd84f6c7e5`가 동일함을 확인하고 해당 `arcade-static-site` 산출물을 기존 Wrangler 로그인으로 배포했다. [main CI 37011460166](https://github.com/hhj4861/rescene-game/actions/runs/37011460166)도 성공했다.
+- Pages 배포 `0c1469f0-77f0-41f1-abda-e4fb55391eaa`: **Production / main / source `5d0b8f2`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://0c1469f0.rescene-arcade.pages.dev).
+- 게임 선택은 좌우 스와이프·이전/다음·멤버 바로가기·방향키로 조작한다. 제나 신라빵은 드래그/두 번 터치 교환과 팡 터짐 → 위에서 낙하 → 연쇄 연출을 지원한다. 잘못된 교환은 되돌리고, 진행 중 저장 시 확정된 판과 점수를 보존한다. 기존 캐릭터·단계·목숨·기록·멤버 음성은 유지한다. [동작 상세](../design/arcade-carousel.md).
+- 다섯 게임의 기존 오리지널 BGM은 기본 켜짐이며 게임을 시작하는 사용자 입력으로 활성화한다. 명시적인 음소거 설정을 유지하고 일시정지·홈 이동에서는 이전 음악을 정지한다.
+- 공개 HTML·JS·CSS·캐릭터·파이리·멤버 음성 등 **전체 12개 파일의 SHA-256이 CI 산출물과 일치**했다. 증적은 사용자 지정 iCloud 작업 루트 `rescene-game/game-carousel-deploy-20261002/`의 `site/`, `production-asset-hashes.json`, `public-browser/`에 보관한다.
+- **실제 공개 주소에서 브라우저 115개 통과, 환경별 5개 제외.** 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 선택 슬라이드·신라빵 드래그/낙하/연쇄·제한시간 직전 클리어·중간 저장/복원·다섯 BGM 실제 출력과 정지/재개·기존 목숨/단계/멤버 음성을 확인했다. 모바일 Chromium은 CDP 터치 입력도 검증했다. 제외 항목은 CDP 터치 주입을 지원하지 않는 환경과 데스크톱 멀티터치 검사이며, 모바일 에뮬레이션은 실제 휴대폰 청음 검증을 의미하지 않는다.
+- 기존 로그인 배포이며 CI 인증·자동 배포 설정은 변경하지 않았다. 별도 PR #8은 머지하지 않았다.
+
 ## 메이 뒤돌기·자체 BGM·펌프 박자·리브 진격대 운영 배포 — 2026-10-02
 
 - 사용자 명시 승인 후 [PR #13](https://github.com/hhj4861/rescene-game/pull/13)을 머지했다. 운영 소스는 `f8f4c4a3b08ee8b830a7359cbdff4a7b6f100b7c`다.
