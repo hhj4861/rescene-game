@@ -2,6 +2,17 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+## 가짜 파이리·감점 운영 배포 — 2026-10-03
+
+- 사용자 명시 승인 후 [PR #16](https://github.com/hhj4861/rescene-game/pull/16)을 머지했다. 운영 소스는 `50c69559482e38ff15dca7fe61fdea28e986b67b`다.
+- [PR CI 37022976748](https://github.com/hhj4861/rescene-game/actions/runs/37022976748)에서 Node 40개·브라우저 133개(환경별 5개 제외)·린트·빌드가 통과했다. PR 커밋 `3f0fc6b`와 머지 커밋의 Git 트리 `3e005ab193abd8120822019157f4c874e918a92a`가 동일함을 확인하고 해당 `arcade-static-site` 산출물을 기존 Wrangler 로그인으로 배포했다.
+- Pages 배포 `56e5c52e-58ee-4c12-8249-fd5f1911de6a`: **Production / main / source `50c6955`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://56e5c52e.rescene-arcade.pages.dev).
+- 진짜 두 마리를 잡은 뒤 회색 몸·보라색 ×의 가짜가 최대 한 마리씩 섞인다. 누르면 150점 감점(최저 0점)과 콤보/충전 초기화, 그냥 보내면 불이익이 없다. 피버 중에도 감점되지만 목숨·진짜 포획 수·피버 남은 시간은 유지한다. 이전 저장과 등장 중 가짜·감점 후 저장을 이어받는다. [규칙과 디자인](../design/woni-decoys.md).
+- 공개 HTML·JS·CSS·캐릭터·파이리·멤버 음성 등 **전체 12개 파일의 SHA-256이 CI 산출물과 일치**했다. 증적은 사용자 지정 iCloud 작업 루트 `rescene-game/woni-decoys-deploy-20261003/`의 `site/`, `production-asset-hashes.json`, `public-browser/`에 보관한다.
+- **실제 공개 주소에서 브라우저 133개 통과, 환경별 5개 제외.** 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 가짜 표시·일반/피버 감점·콤보 초기화·목숨 유지·가짜 무시·중복 감점 방지·저장 복원과 기존 네 게임·BGM·멤버 음성을 확인했다. 데스크톱 감점 화면과 모바일 WebKit 가짜 화면도 확인했다. 제외 항목은 환경별 CDP 터치 주입과 데스크톱 멀티터치이며 모바일은 에뮬레이션 검증이다.
+- [머지 후 main CI 37073520190](https://github.com/hhj4861/rescene-game/actions/runs/37073520190)도 최종 성공했다.
+- 기존 로그인 배포이며 CI 인증·자동 배포 설정은 변경하지 않았다. 별도 PR #8은 머지하지 않았다.
+
 ## 파이리 불꽃추격 운영 배포 — 2026-10-02
 
 - 사용자 명시 승인 후 [PR #15](https://github.com/hhj4861/rescene-game/pull/15)를 머지했다. 운영 소스는 `82358d69c664f31263fc4f83d63cab3fcf43f3c4`다.
