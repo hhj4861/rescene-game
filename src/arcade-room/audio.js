@@ -1,7 +1,8 @@
 /* global window */
-// Original game tones and short source recordings; timing never depends on audio.
+import {TRACKS,musicStep} from './music.js';
+// Score and chart share the game timeline; Web Audio schedules notes precisely.
 export class ArcadeAudio {
-  constructor(){this.enabled=true;this.voiceEnabled=true;this.context=null;this.nodes=new Set();this.scheduled=new Set();this.voice=null;this.voiceReport=null;this.voiceRequest=0;}
+  constructor(){this.enabled=true;this.musicEnabled=true;this.voiceEnabled=true;this.context=null;this.nodes=new Set();this.musicNodes=new Set();this.transport=null;this.voice=null;this.voiceReport=null;this.voiceRequest=0;}
   async enable(value){
     this.enabled=value;if(!value){this.stop();return false;}
     try{this.context??=new (window.AudioContext||window.webkitAudioContext)();await this.context.resume();return true;}
@@ -14,9 +15,34 @@ export class ArcadeAudio {
     o.connect(v);v.connect(c.destination);this.nodes.add(o);o.onended=()=>{this.nodes.delete(o);o.disconnect();v.disconnect();};o.start(at);o.stop(at+duration+.01);
   }
   tick(state){
-    if(!this.enabled||state.kind!=='rhythm')return;
-    state.notes.forEach((n,i)=>{const delay=n.at-state.elapsed;if(delay>=0&&delay<.12&&!this.scheduled.has(i)){this.scheduled.add(i);this.tone([392,494,587,659,784][n.lane],delay,.12);}});
+    const c=this.context,track=TRACKS[state.kind];
+    if(!this.enabled||!this.musicEnabled||!track||c?.state!=='running'||state.ended)return;
+    // Keep one anchor across frames. Resuming or a stalled frame gets a new
+    // anchor at the saved game time, never a burst of missed musical events.
+    if(this.transport?.state!==state||Math.abs(c.currentTime-this.transport.origin-state.elapsed)>.12){
+      this.stopMusic();this.transport={state,origin:c.currentTime-state.elapsed,next:Math.ceil((state.elapsed-.025)/(30/track.bpm))};
+    }
+    const t=this.transport,step=30/track.bpm;
+    while(t.next*step<state.elapsed+.2){
+      for(const n of musicStep(state.kind,t.next)){
+        const at=t.origin+n.at;if(at<c.currentTime-.03)continue;
+        this.musicNote(n,Math.max(c.currentTime,at));
+      }
+      t.next++;
+    }
   }
+  musicNote(n,at){
+    const c=this.context,o=c.createOscillator(),v=c.createGain(),frequency=440*2**((n.pitch-69)/12);
+    o.type=n.wave;o.frequency.setValueAtTime(frequency,at);
+    if(n.drum)o.frequency.exponentialRampToValueAtTime(Math.max(30,frequency*.3),at+n.duration);
+    v.gain.setValueAtTime(.0001,at);v.gain.linearRampToValueAtTime(n.volume,at+.006);v.gain.exponentialRampToValueAtTime(.0001,at+n.duration);
+    o.connect(v);v.connect(c.destination);this.musicNodes.add(o);o.onended=()=>{this.musicNodes.delete(o);o.disconnect();v.disconnect();};o.start(at);o.stop(at+n.duration+.01);
+  }
+  stopMusic(){
+    for(const o of this.musicNodes){try{o.stop();}catch{/* Already ended. */}}
+    this.musicNodes.clear();this.transport=null;
+  }
+  setMusic(value){this.musicEnabled=value;if(!value)this.stopMusic();}
   cancelVoice(){
     this.voiceRequest++;
     if(this.voice){this.voice.onplaying=null;this.voice.onended=null;this.voice.onerror=null;this.voice.pause();this.voice.removeAttribute('src');this.voice.load();this.voice=null;}
@@ -36,5 +62,5 @@ export class ArcadeAudio {
     }catch{if(current()){report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}return false;}
   }
   cancelVoiceQuietly(){this.voiceReport=null;this.cancelVoice();}
-  stop(){this.cancelVoice();for(const o of this.nodes){try{o.stop();}catch{/* Already ended. */}}this.nodes.clear();this.scheduled.clear();}
+  stop(){this.cancelVoice();this.stopMusic();for(const o of this.nodes){try{o.stop();}catch{/* Already ended. */}}this.nodes.clear();}
 }

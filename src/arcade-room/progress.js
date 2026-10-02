@@ -5,7 +5,7 @@ const integer=(n,min,max)=>Number.isInteger(n)&&n>=min&&n<=max;
 const number=(n,min,max)=>Number.isFinite(n)&&n>=min&&n<=max;
 const vector=(a,len,test)=>Array.isArray(a)&&a.length===len&&a.every(test);
 const list=(a,max,test)=>Array.isArray(a)&&a.length<=max&&a.every(test);
-export function stageGoal(kind,stage){return {target:stageTarget(kind,stage),unit:{drive:'파이리',blocks:'방울',photo:'빵',rhythm:'박자',catch:'수비'}[kind]};}
+export function stageGoal(kind,stage){return {target:stageTarget(kind,stage),unit:{drive:'파이리',blocks:'방울',photo:'빵',rhythm:'박자',catch:'격파'}[kind]};}
 export function stageValue(s){return s.kind==='blocks'?s.popped:s.kind==='photo'?s.collected:s.kind==='catch'?s.defeated:s.hits;}
 export function isStageClear(s){return !!s.stage&&stageValue(s)>=stageGoal(s.kind,s.stage).target&&s.hearts>0&&!s.endReason;}
 export function emptyProgress(){return {version:2,games:Object.fromEntries(GAME_IDS.map(id=>[id,{stage:1,highest:1,hearts:INITIAL_LIVES,snapshot:null}]))};}
@@ -20,7 +20,7 @@ function validState(s){
  if(s.kind==='blocks'){const p=s.player;return p&&number(p.x,18,462)&&number(p.y,-50,536)&&number(p.vy,-550,1300)&&[-1,1].includes(p.facing)&&[-1,0,1].includes(p.dir)&&number(p.walk,0,.18)&&list(s.enemies,3,e=>e&&number(e.x,0,480)&&number(e.y,0,536)&&integer(e.home,0,3)&&[-1,1].includes(e.dir)&&number(e.trapped,0,5))&&list(s.bubbles,8,b=>b&&number(b.x,-20,500)&&number(b.y,-100,600)&&[-260,260].includes(b.vx)&&number(b.ttl,0,1.8));}
  if(s.kind==='photo')return vector(s.board,36,n=>integer(n,1,5)||integer(n,11,15))&&integer(s.selected,-1,35)&&integer(s.moves,0,18)&&integer(s.shuffles,0,2)&&list(s.clearedCells,432,n=>integer(n,0,35))&&list(s.hint,2,n=>integer(n,0,35));
  if(s.kind==='rhythm'){const notes=createGame('rhythm',{stage:s.stage}).notes;return number(s.offset,-.2,.2)&&vector(s.lastTaps,5,n=>number(n,-1,60))&&vector(s.feedback,5,n=>['','WAIT','MISS','GOOD','PERFECT'].includes(n))&&vector(s.glows,5,n=>number(n,0,.25))&&vector(s.notes,notes.length,(n,i)=>n&&n.at===notes[i].at&&n.lane===notes[i].lane&&['waiting','hit','miss'].includes(n.status));}
- return integer(s.energy,0,20)&&vector(s.towers,6,t=>t&&integer(t.level,0,3)&&number(t.cooldown,0,.9))&&list(s.enemies,10,e=>e&&integer(e.id,0,100000)&&integer(e.lane,0,2)&&number(e.x,0,465)&&integer(e.hp,-10,4)&&integer(e.maxHp,2,4))&&list(s.shots,50,b=>b&&integer(b.lane,0,2)&&number(b.x,0,500)&&integer(b.power,1,3));
+ return s.runnerVersion===1&&integer(s.lane,0,2)&&number(s.x,95,385)&&integer(s.squad,1,60)&&integer(s.gatesTaken,0,1000)&&number(s.gateSpawn,0,6)&&number(s.shotClock,0,.28)&&integer(s.charge,0,5)&&number(s.gateFlash,0,.8)&&typeof s.lastGate==='string'&&s.lastGate.length<=8&&list(s.gates,3,g=>g&&number(g.y,0,480)&&vector(g.options,3,o=>o&&(o.op==='add'&&integer(o.value,-6,6)||o.op==='multiply'&&o.value===2)))&&list(s.enemies,9,e=>e&&integer(e.id,0,100000)&&integer(e.lane,0,2)&&number(e.y,0,480)&&integer(e.hp,-12,1000)&&integer(e.maxHp,1,1000)&&typeof e.boss==='boolean')&&list(s.shots,20,b=>b&&number(b.x,95,385)&&number(b.y,40,455)&&integer(b.power,1,15));
 }
 export function restoreRound(data){try{
  if(!data||data.schema!==3||!GAME_IDS.includes(data.kind)||!validStage(data.stage)||data.ended!==false||!number(data.remaining,.000001,DURATION)||!integer(data.score,0,10000000)||!integer(data.rngState,0,4294967295))return null;
