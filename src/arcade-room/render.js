@@ -1,3 +1,4 @@
+import {breadFrame} from './model.js';
 /* global Image */
 import {PLATFORMS} from './model.js';
 import {RUNNER_X} from './runner.js';
@@ -21,9 +22,22 @@ function drawBubbles(c,s){background(c,'#efe2e5','#b5d4da');for(let i=0;i<13;i++
  for(const e of s.enemies){if(e.trapped)bubble(c,e.x,e.y-22,29,'#c9e7ec');critter(c,e.x,e.y-22,e.trapped?'#b9b6d7':'#a88dc5');if(e.trapped)text(c,'POP',e.x,e.y-58,12,'#80518b');}for(const b of s.bubbles)bubble(c,b.x,b.y,21);
  c.save();if(s.invincible&&Math.floor(s.invincible*10)%2)c.globalAlpha=.5;c.translate(s.player.x,s.player.y);c.scale(s.player.facing,1);drawDoll(c,'may',0,0,65,s.flash>0?1:0);text(c,'›',39,-22,28,'#80518b');c.restore();if(s.flash>0)for(let i=0;i<8;i++)star(c,s.player.x+Math.cos(i*.785)*65,s.player.y-35+Math.sin(i*.785)*50,8,'#fff1a4');text(c,'방울 버튼으로 가까운 방울도 터뜨려요',240,579,17,'#6e627f');}
 export function bread(c,x,y,value,size=48){const k=value%10;c.save();c.translate(x,y);const a=size/48;c.scale(a,a);ellipse(c,1,19,24,6,'#8a52311d');if(k===1){box(c,-21,-18,42,41,'#b77639',12);box(c,-17,-15,34,34,'#f1c888',10);c.strokeStyle='#d39951';c.lineWidth=3;for(const dx of [-7,3]){c.beginPath();c.moveTo(dx,-10);c.lineTo(dx+5,12);c.stroke();}}else if(k===2){ellipse(c,0,0,23,21,'#b97846');ellipse(c,0,-2,22,19,'#e9a6b6');ellipse(c,0,-2,8,7,'#fff2db');for(let i=0;i<6;i++)box(c,Math.cos(i)*16-2,Math.sin(i)*13-3,4,2,'#fff6df',1);}else if(k===3){box(c,-20,-5,40,26,'#dfae7e',6);ellipse(c,0,-8,23,18,'#b48ec9');ellipse(c,0,-22,5,5,'#cb7688');}else if(k===4){ellipse(c,0,0,24,21,'#edcf80');c.strokeStyle='#b99448';c.lineWidth=2;for(let i=-12;i<=12;i+=8){c.beginPath();c.moveTo(i,-15);c.lineTo(i+4,14);c.stroke();}}else{box(c,-21,-18,42,39,'#769983',10);box(c,-16,-14,32,29,'#bad0a6',8);ellipse(c,-5,-2,3,3,'#6e8664');ellipse(c,8,7,3,3,'#6e8664');}if(value>10){star(c,16,-18,11,'#fff1a2');text(c,'✦',0,7,24,'#fff9ed');}c.restore();}
-function drawBakery(c,s){background(c,'#f5e1d7','#efcabb');for(let i=0;i<8;i++)box(c,i*60,0,30,74,i%2?'#e8b9ba':'#fff2dc',0);box(c,73,25,334,63,PAPER,15);text(c,'제나의 신라빵',240,57,25,'#94624d');text(c,s.combo>1&&s.flash>0?`${s.combo}연쇄 · 갓 구웠어요!`:`교환 ${s.moves}번 · 반짝 빵은 십자 폭발`,240,81,15,'#956551');box(c,21,103,438,438,'#c4957c',17);
- for(let i=0;i<36;i++){const x=65+i%6*70,y=147+Math.floor(i/6)*70;box(c,x-33,y-33,66,66,s.selected===i?'#fff0a0':'#fff6e4',10);bread(c,x,y,s.board[i],48);if(s.elapsed%7>5&&s.hint.includes(i)&&s.selected<0){c.strokeStyle='#cf9256';c.lineWidth=3;c.strokeRect(x-29,y-29,58,58);}if(s.flash>0&&s.clearedCells.includes(i)){c.globalAlpha=s.flash/.35;star(c,x,y,26,'#fff0aa');c.globalAlpha=1;}}
- text(c,'같은 빵 3개 · 4개 이상은 특별한 빵!',240,576,17,'#8c5e4b');}
+function drawBakery(c,s){
+ const f=breadFrame(s),board=f?.board||s.board,t=f?.progress||0;
+ background(c,'#f5e1d7','#efcabb');for(let i=0;i<8;i++)box(c,i*60,0,30,74,i%2?'#e8b9ba':'#fff2dc',0);box(c,73,25,334,63,PAPER,15);text(c,'제나의 신라빵',240,57,25,'#94624d');text(c,f?.combo>1?`${f.combo}연쇄 · 갓 구웠어요!`:`교환 ${s.moves}번 · 반짝 빵은 십자 폭발`,240,81,15,'#956551');box(c,21,103,438,438,'#c4957c',17);
+ for(let i=0;i<36;i++){const x=65+i%6*70,y=147+Math.floor(i/6)*70;box(c,x-33,y-33,66,66,s.selected===i?'#fff0a0':'#fff6e4',10);if(!f&&s.elapsed%7>5&&s.hint.includes(i)&&s.selected<0){c.strokeStyle='#cf9256';c.lineWidth=3;c.strokeRect(x-29,y-29,58,58);}}
+ c.save();c.beginPath();c.rect(30,112,420,420);c.clip();
+ for(let i=0;i<36;i++){
+  let col=i%6,row=Math.floor(i/6),size=48;
+  if(f?.kind==='swap'&&(i===f.a||i===f.b)){const j=i===f.a?f.b:f.a,e=t*t*(3-2*t);col+=(j%6-col)*e;row+=(Math.floor(j/6)-row)*e;}
+  if(f?.kind==='fall'){const e=1-Math.pow(1-t,3);row=f.fromRows[i]+(row-f.fromRows[i])*e;}
+  const x=65+col*70,y=147+row*70,popping=f?.kind==='pop'&&f.removed.includes(i);
+  if(popping){size*=1+.2*Math.sin(t*Math.PI);c.globalAlpha=1-t;}
+  bread(c,x,y,board[i],size);c.globalAlpha=1;
+  if(popping){c.globalAlpha=1-t;for(let k=0;k<6;k++){const angle=k*Math.PI/3;star(c,x+Math.cos(angle)*(12+t*30),y+Math.sin(angle)*(12+t*30),5*(1-t)+2,'#fff4b3');}c.globalAlpha=1;}
+ }
+ c.restore();text(c,'빵을 밀어서 교환 · 같은 빵 3개면 팡!',240,576,17,'#8c5e4b');
+}
 function drawPump(c,s){background(c,'#3c3e68','#252a4b');for(let i=0;i<5;i++)box(c,36+i*82,110,78,440,i%2?'#6683a220':'#a766a520',8);text(c,'MINAMI · FIVE STEP',240,39,20,'#ece5ff');text(c,s.combo?`${s.combo} COMBO`:'READY, DANCE!',240,75,23,'#f4d786');
  for(let i=0;i<5;i++){const x=75+i*82;box(c,x-34,108,68,56,s.glows[i]>0?PUMP_COLORS[i]:'#ffffff15',13);text(c,PUMP_ARROWS[i],x,151,39,s.glows[i]>0?'#303552':PUMP_COLORS[i]);if(s.glows[i]>0)text(c,s.feedback[i],x,192,12,'#fff7ce');}c.save();c.beginPath();c.rect(30,110,420,450);c.clip();for(const n of s.notes){const y=136+(n.at+s.offset-s.elapsed)*205;if(n.status!=='waiting'||y<100||y>560)continue;box(c,43+n.lane*82,y-25,64,50,PUMP_COLORS[n.lane],11);text(c,PUMP_ARROWS[n.lane],75+n.lane*82,y+14,38,'#303552');}c.restore();text(c,'Z        Q        S        E        C',240,582,20,'#d1cbe5');}
 function drawDefense(c,s){

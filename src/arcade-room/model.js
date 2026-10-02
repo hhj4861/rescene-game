@@ -49,13 +49,46 @@ export function matches(board){const found=new Set();for(let row=0;row<6;row++)f
 const adjacent=(a,b)=>Number.isInteger(a)&&Number.isInteger(b)&&a>=0&&a<36&&b>=0&&b<36&&(Math.abs(a-b)===6||Math.floor(a/6)===Math.floor(b/6)&&Math.abs(a-b)===1);
 export function availableSwap(board){for(let i=0;i<36;i++)for(const j of [i+1,i+6]){if(!adjacent(i,j))continue;const b=[...board];[b[i],b[j]]=[b[j],b[i]];if(matches(b).length)return [i,j];}return null;}
 function playableBoard(s){for(let attempt=0;attempt<40;attempt++){const board=[];for(let i=0;i<36;i++){const colors=[1,2,3,4,5].filter(c=>!(i%6>=2&&board[i-1]===c&&board[i-2]===c)&&!(i>=12&&board[i-6]===c&&board[i-12]===c));board.push(colors[Math.floor(s.random()*colors.length)]);}if(availableSwap(board))return board;}return Array.from({length:36},(_,i)=>[1,2,1,3,4,5,3,1,4,5,2,3][i%12]);}
-export function swapBread(s,a,b){if(s.ended||s.flash||!adjacent(a,b))return false;[s.board[a],s.board[b]]=[s.board[b],s.board[a]];let found=matches(s.board);if(!found.length){[s.board[a],s.board[b]]=[s.board[b],s.board[a]];s.event='bread-invalid';s.selected=-1;return false;}s.moves--;s.combo=0;s.clearedCells=[];
- while(found.length&&s.combo<12){s.combo++;const remove=new Set(found),queue=[...found];for(let n=0;n<queue.length;n++){const i=queue[n];if(s.board[i]>10){for(let k=0;k<6;k++)for(const j of [Math.floor(i/6)*6+k,k*6+i%6])if(!remove.has(j)){remove.add(j);queue.push(j);}}}const special=s.combo===1&&found.length>=4?(found.includes(b)?b:found[0]):-1,color=special>=0?s.board[special]%10:0;if(special>=0)remove.delete(special);s.collected+=remove.size;s.score+=remove.size*30*s.combo;s.clearedCells.push(...remove);for(const i of remove)s.board[i]=0;if(special>=0)s.board[special]=color+10;for(let col=0;col<6;col++){const values=[];for(let row=5;row>=0;row--)if(s.board[row*6+col])values.push(s.board[row*6+col]);for(let row=5;row>=0;row--)s.board[row*6+col]=values[5-row]||1+Math.floor(s.random()*5);}found=matches(s.board);}
- if(found.length||!availableSwap(s.board))s.board=playableBoard(s);s.hint=availableSwap(s.board)||[];s.flash=.35;s.selected=-1;s.event=s.combo>1?'bread-chain':'bread-match';if(!s.moves&&s.collected<stageTarget(s.kind,s.stage))failRound(s,'moves');return true;}
-function breadAction(s,a){if(s.flash)return;if(a==='shuffle'){if(!s.shuffles)return;s.board=playableBoard(s);s.shuffles--;s.selected=-1;s.hint=availableSwap(s.board)||[];s.event='bread-shuffle';}else if(Number.isInteger(a)&&a>=0&&a<36){if(adjacent(s.selected,a))swapBread(s,s.selected,a);else s.selected=a;}}
+// Resolve the deterministic board once, then replay each swap/pop/fall in order.
+// A saved game keeps the settled board; cosmetic frames never alter its RNG.
+export function swapBread(s,a,b){
+ if(s.ended||s.flash||!adjacent(a,b))return false;
+ const frames=[],before=[...s.board];
+ frames.push({kind:'swap',duration:.16,board:before,a,b});
+ [s.board[a],s.board[b]]=[s.board[b],s.board[a]];
+ let found=matches(s.board);
+ if(!found.length){frames.push({kind:'swap',duration:.16,board:[...s.board],a,b});s.board=before;s.breadFrames=frames;s.flash=.32;s.event='bread-invalid';s.selected=-1;return false;}
+ s.moves--;s.combo=0;s.clearedCells=[];
+ while(found.length&&s.combo<12){
+  s.combo++;const remove=new Set(found),queue=[...found];
+  for(let n=0;n<queue.length;n++){const i=queue[n];if(s.board[i]>10)for(let k=0;k<6;k++)for(const j of [Math.floor(i/6)*6+k,k*6+i%6])if(!remove.has(j)){remove.add(j);queue.push(j);}}
+  const special=s.combo===1&&found.length>=4?(found.includes(b)?b:found[0]):-1,color=special>=0?s.board[special]%10:0;
+  if(special>=0)remove.delete(special);
+  frames.push({kind:'pop',duration:.24,board:[...s.board],removed:[...remove],combo:s.combo});
+  s.collected+=remove.size;s.score+=remove.size*30*s.combo;s.clearedCells.push(...remove);
+  for(const i of remove)s.board[i]=0;if(special>=0)s.board[special]=color+10;
+  const fromRows=Array(36);
+  for(let col=0;col<6;col++){
+   const values=[];for(let row=5;row>=0;row--)if(s.board[row*6+col])values.push({value:s.board[row*6+col],row});
+   const missing=6-values.length;
+   for(let row=5;row>=0;row--){const item=values[5-row],i=row*6+col;s.board[i]=item?.value||1+Math.floor(s.random()*5);fromRows[i]=item?.row??row-missing;}
+  }
+  frames.push({kind:'fall',duration:.42,board:[...s.board],fromRows,combo:s.combo});found=matches(s.board);
+ }
+ if(found.length||!availableSwap(s.board)){s.board=playableBoard(s);frames.push({kind:'fall',duration:.42,board:[...s.board],fromRows:Array.from({length:36},(_,i)=>Math.floor(i/6)-6),combo:0});}
+ s.hint=availableSwap(s.board)||[];s.breadFrames=frames;s.flash=frames.reduce((sum,f)=>sum+f.duration,0);s.selected=-1;s.event=s.combo>1?'bread-chain':'bread-match';return true;
+}
+export function breadFrame(s){
+ if(!s.flash||!s.breadFrames?.length)return null;
+ let t=s.breadFrames.reduce((sum,f)=>sum+f.duration,0)-s.flash;
+ for(const frame of s.breadFrames){if(t<frame.duration)return {...frame,progress:Math.max(0,t/frame.duration)};t-=frame.duration;}
+ return null;
+}
+function stepBread(s,dt){s.flash=Math.max(0,s.flash-dt);if(!s.flash){s.breadFrames=null;if(!s.moves&&s.collected<stageTarget(s.kind,s.stage))failRound(s,'moves');}}
+function breadAction(s,a){if(s.flash)return;if(a&&typeof a==='object'){swapBread(s,a.from,a.to);return;}if(a==='shuffle'){if(!s.shuffles)return;s.board=playableBoard(s);s.shuffles--;s.selected=-1;s.hint=availableSwap(s.board)||[];s.event='bread-shuffle';}else if(Number.isInteger(a)&&a>=0&&a<36){if(adjacent(s.selected,a))swapBread(s,s.selected,a);else s.selected=a;}}
 export function tapRhythm(s,lane){if(s.ended||!Number.isInteger(lane)||lane<0||lane>4||s.elapsed-s.lastTaps[lane]<.08)return;s.lastTaps[lane]=s.elapsed;const waiting=s.notes.filter(n=>n.lane===lane&&n.status==='waiting').sort((a,b)=>Math.abs(a.at+s.offset-s.elapsed)-Math.abs(b.at+s.offset-s.elapsed)),n=waiting[0],delta=n?Math.abs(n.at+s.offset-s.elapsed):Infinity;s.glows[lane]=.25;if(delta>rhythmWindow(s)){s.combo=0;s.feedback[lane]='WAIT';s.event='rhythm-early';return;}n.status='hit';s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);const perfect=delta<.075;s.feedback[lane]=perfect?'PERFECT':'GOOD';s.score+=(perfect?100:60)+Math.min(10,s.combo)*5;s.event=perfect?'rhythm-perfect':'rhythm-good';}
 function stepPump(s,dt){s.glows=s.glows.map(n=>Math.max(0,n-dt));for(const n of s.notes)if(n.status==='waiting'&&s.elapsed-s.offset-n.at>rhythmWindow(s)){n.status='miss';s.misses++;s.combo=0;s.feedback[n.lane]='MISS';s.glows[n.lane]=.25;s.event='rhythm-miss';loseLife(s);if(s.ended)return;}}
-export function stepGame(s,dt){if(s.ended||!Number.isFinite(dt)||dt<=0)return;s.event=null;let remaining=Math.min(dt,s.remaining);while(remaining>1e-9&&!s.ended){const step=Math.min(.025,remaining);s.elapsed+=step;s.remaining=Math.max(0,DURATION-s.elapsed);remaining-=step;({drive:stepWhack,blocks:stepBubbles,photo:(s,dt)=>{s.flash=Math.max(0,s.flash-dt);},rhythm:stepPump,catch:(s,dt)=>stepRunner(s,dt,stageSpeed(s),loseLife)})[s.kind](s,step);}if(!s.ended&&s.remaining<1e-7){s.remaining=0;s.elapsed=DURATION;failRound(s,'timeout');}}
+export function stepGame(s,dt){if(s.ended||!Number.isFinite(dt)||dt<=0)return;s.event=null;if(s.kind==='photo'&&s.collected>=stageTarget(s.kind,s.stage)){const advance=Math.min(dt,Math.max(0,s.remaining-.001));s.elapsed+=advance;s.remaining=DURATION-s.elapsed;stepBread(s,dt);return;}let remaining=Math.min(dt,s.remaining);while(remaining>1e-9&&!s.ended){const step=Math.min(.025,remaining);s.elapsed+=step;s.remaining=Math.max(0,DURATION-s.elapsed);remaining-=step;({drive:stepWhack,blocks:stepBubbles,photo:stepBread,rhythm:stepPump,catch:(s,dt)=>stepRunner(s,dt,stageSpeed(s),loseLife)})[s.kind](s,step);}if(!s.ended&&s.remaining<1e-7){s.remaining=0;s.elapsed=DURATION;failRound(s,'timeout');}}
 export function gameAction(s,action){if(s.ended)return;({drive:whack,blocks:bubbleAction,photo:breadAction,rhythm:tapRhythm,catch:runnerAction})[s.kind](s,action);}
 export const RECORD_KEY='rescene.small-arcade.v1';
 export function readRecords(storage){let data;try{data=JSON.parse(storage?.getItem(RECORD_KEY));}catch{/* Optional storage. */}return Object.fromEntries(GAME_IDS.map(k=>[k,Number.isSafeInteger(data?.[k])&&data[k]>=0?data[k]:0]));}

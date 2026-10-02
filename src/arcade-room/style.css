@@ -47,3 +47,21 @@
 @media(max-width:700px){#app[data-game="catch"] .playfield{max-width:calc((100svh - 300px)*.8);min-width:215px}}
 
 #app[data-game="catch"] .game-controls{display:grid;grid-template-columns:1fr 2fr 1fr}#app[data-game="catch"] .skill-button{width:auto;font-size:13px;white-space:nowrap}
+
+/* A row of familiar cabinets: centered selection, visible neighboring games. */
+.game-picker{max-width:1180px;margin:auto;overflow:hidden}
+.game-picker .member-nav{gap:8px;margin-bottom:12px}
+.member-nav button{min-height:44px;padding:10px 21px;border:1px solid #b3c8bd;border-radius:30px;background:var(--paper);font-size:13px}
+.member-nav button[aria-current="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.picker-controls{display:flex;align-items:center;justify-content:center;gap:25px;margin:0 0 15px}
+.picker-controls button{width:44px;height:44px;background:var(--paper);border:1px solid #b3c8bd;border-radius:50%;font:30px 'Jua',sans-serif}
+.picker-controls button:disabled{opacity:.35;cursor:default}
+.picker-controls p{min-width:120px;text-align:center;margin:0}
+.picker-controls strong{display:block;font:18px 'Jua',sans-serif;letter-spacing:.06em}
+.picker-controls small{display:block;font-size:11px;color:#658079;margin-top:5px}
+.game-picker .machines{--cabinet-width:490px;display:flex;position:relative;gap:26px;max-width:none;padding:0 calc((100% - var(--cabinet-width))/2) 28px;margin:0;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none}
+.game-picker .machines::-webkit-scrollbar{display:none}
+.game-picker .machine,.game-picker .machine:last-child{flex:0 0 var(--cabinet-width);width:var(--cabinet-width);scroll-snap-align:center;scroll-snap-stop:always}
+.game-picker .machine[data-selected="false"]{filter:saturate(.7);opacity:.75}
+.game-picker button:focus-visible,.game-picker .machines:focus-visible{outline:3px solid #b65c30;outline-offset:-3px}
+@media(max-width:700px){.game-picker .machines{--cabinet-width:calc(100vw - 52px);gap:14px}.member-nav button{padding:8px 14px;font-size:12px}.game-picker .marquee{flex-wrap:wrap;gap:4px 7px}.game-picker .marquee h2{font-size:24px}.game-picker .machine-badge{font-size:9px;padding:3px 6px}.game-picker .speech{max-width:112px}.game-picker .control-deck{padding-left:2px;padding-right:2px}.picker-controls{margin-bottom:13px}.game-picker .host .doll{width:165px}.game-picker .member-nav{gap:5px;padding:0 10px}}
