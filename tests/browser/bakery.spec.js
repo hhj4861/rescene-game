@@ -6,7 +6,7 @@ async function open(page,overrides={}){const s=Object.assign(createGame('photo',
 async function center(page,i){const b=await page.locator('.field-controls button').nth(i).boundingBox();return {x:b.x+b.width/2,y:b.y+b.height/2};}
 test('drag swaps once, pops, falls and can save/reload the settled board',async({page},info)=>{
  const s=await open(page),pair=availableSwap(s.board),a=await center(page,pair[0]),b=await center(page,pair[1]);
- await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:6});await page.mouse.up();
+ await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:6});await expect(page.locator('#extra')).toHaveText('17');await expect(page.locator('#app')).toHaveAttribute('data-bread-phase','swap');await page.mouse.up();
  await expect(page.locator('#extra')).toHaveText('17');await expect(page.locator('#app')).toHaveAttribute('data-bread-phase','swap');await page.clock.runFor(200);await expect(page.locator('#app')).toHaveAttribute('data-bread-phase','pop');await page.clock.runFor(240);await expect(page.locator('#app')).toHaveAttribute('data-bread-phase','fall');await page.screenshot({path:info.outputPath('bread-falling.png')});
  await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).games.photo.snapshot,PROGRESS_KEY);expect(saved.flash).toBe(0);expect(saved.moves).toBe(17);
  // The fixture initializer is removed by creating a fresh page in the same context.
@@ -18,7 +18,7 @@ test('cancelled and outward edge drags never spend a move',async({page})=>{
 });
 test('native touch swipe exchanges adjacent bread',async({page,context,browserName,isMobile})=>{
  test.skip(!isMobile||browserName!=='chromium','CDP touch injection is Chromium-only');const s=await open(page),pair=availableSwap(s.board),a=await center(page,pair[0]),b=await center(page,pair[1]),session=await context.newCDPSession(page);
- await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[a]});await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[b]});await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await expect(page.locator('#extra')).toHaveText('17');await expect(page.locator('#score')).not.toHaveText('0');
+ await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[a]});await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[b]});await expect(page.locator('#extra')).toHaveText('17');await expect(page.locator('#score')).not.toHaveText('0');await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await expect(page.locator('#extra')).toHaveText('17');await expect(page.locator('#score')).not.toHaveText('0');
 });
 
 test('a winning last-second swap finishes falling before showing clear',async({page})=>{
