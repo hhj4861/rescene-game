@@ -1,8 +1,8 @@
-/* global window */
+/* global window, performance */
 import {TRACKS,musicStep} from './music.js';
 // Score and chart share the game timeline; Web Audio schedules notes precisely.
 export class ArcadeAudio {
-  constructor(){this.enabled=true;this.musicEnabled=true;this.voiceEnabled=true;this.context=null;this.nodes=new Set();this.musicNodes=new Set();this.transport=null;this.voice=null;this.voiceReport=null;this.voiceRequest=0;}
+  constructor({now=()=>performance.now()}={}){this.now=now;this.voiceStartedAt=new Map();this.enabled=true;this.musicEnabled=true;this.voiceEnabled=true;this.context=null;this.nodes=new Set();this.musicNodes=new Set();this.transport=null;this.voice=null;this.voiceReport=null;this.voiceRequest=0;}
   async enable(value){
     this.enabled=value;if(!value){this.stop();return false;}
     try{this.context??=new (window.AudioContext||window.webkitAudioContext)();await this.context.resume();return true;}
@@ -48,11 +48,16 @@ export class ArcadeAudio {
     if(this.voice){this.voice.onplaying=null;this.voice.onended=null;this.voice.onerror=null;this.voice.pause();this.voice.removeAttribute('src');this.voice.load();this.voice=null;}
     this.voiceReport?.('음성 재생을 멈췄어요.');this.voiceReport=null;
   }
-  async playVoice(source,report=()=>{}){
+  async playVoice(source,report=()=>{},{minIntervalMs=0}={}){
+    // Drop frequent automatic rewards; never queue or restart the active clip.
+    // Keep timestamps across stop/pause and stage changes. Explicit replay bypasses this.
+    const now=this.now();
+    if(minIntervalMs>0&&(this.voice||now-(this.voiceStartedAt.get(source?.file)??-Infinity)<minIntervalMs))return false;
     this.cancelVoice();const request=this.voiceRequest;
     const current=()=>request===this.voiceRequest;
     if(!source?.file){report('연결된 음성이 없어요. 자막으로 확인해 주세요.');return false;}
     try{
+      this.voiceStartedAt.set(source.file,now);
       const voice=new window.Audio(source.file);this.voice=voice;this.voiceReport=report;voice.volume=.85;
       const failed=()=>{if(current()){report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}};
       voice.onplaying=()=>{if(current())report('실제 멤버 음성 재생 중');};

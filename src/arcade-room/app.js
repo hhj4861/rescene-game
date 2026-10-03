@@ -58,7 +58,7 @@ function start(kind,fresh=false){
 }
 let lastItemPickups=0;
 function react(){
- if(state.itemPickups!==lastItemPickups){lastItemPickups=state.itemPickups;if(audio.voiceEnabled)void audio.playVoice(VOICES[GAMES[state.kind].member]);}
+ if(state.itemPickups!==lastItemPickups){lastItemPickups=state.itemPickups;if(audio.voiceEnabled&&!(state.kind==='drive'&&isStageClear(state)))void audio.playVoice(VOICES[GAMES[state.kind].member],undefined,{minIntervalMs:state.kind==='drive'?15000:0});}
  if(!state.event)return;const event=state.event;state.event=null;const lines=REACTIONS[event];if(!lines)return;
  const line=lines[reactions++%lines.length];app.querySelector('#reaction').textContent=line;app.querySelector('#announce').textContent=line;const positive=!/miss|bump|early|invalid|fake/.test(event);if(positive&&event!=='place')celebrate();else if(!positive)decorate(2);if(positive&&event!=='place'&&state.kind!=='rhythm')audio.tone(720);if(event==='whack-fake')audio.tone(180,0,.16);if(event==='whack-fever'){audio.tone(880,.08);audio.tone(1320,.16);}
 }
