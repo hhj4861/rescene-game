@@ -1,8 +1,8 @@
 /* global window, performance */
-import {TRACKS,musicStep} from './music.js';
+import {trackFor,musicStep,pumpSong} from './music.js';
 // Score and chart share the game timeline; Web Audio schedules notes precisely.
 export class ArcadeAudio {
-  constructor({now=()=>performance.now()}={}){this.now=now;this.voiceStartedAt=new Map();this.reactionTurns=new Map();this.reactionAt=new Map();this.musicBus=null;this.enabled=true;this.musicEnabled=true;this.voiceEnabled=true;this.context=null;this.nodes=new Set();this.musicNodes=new Set();this.transport=null;this.voice=null;this.voiceReport=null;this.voiceRequest=0;}
+  constructor({now=()=>performance.now()}={}){this.now=now;this.voiceStartedAt=new Map();this.reactionTurns=new Map();this.reactionAt=new Map();this.song=null;this.songState=null;this.songSource=null;this.songRequest=0;this.musicBus=null;this.enabled=true;this.musicEnabled=true;this.voiceEnabled=true;this.context=null;this.nodes=new Set();this.musicNodes=new Set();this.transport=null;this.voice=null;this.voiceReport=null;this.voiceRequest=0;}
   async enable(value){
     this.enabled=value;if(!value){this.stop();return false;}
     try{this.context??=new (window.AudioContext||window.webkitAudioContext)();if(!this.musicBus){this.musicBus=this.context.createGain();this.musicBus.connect(this.context.destination);this.musicBus.gain.value=this.voice?.paused===false?.2:1;}await this.context.resume();return true;}
@@ -15,8 +15,9 @@ export class ArcadeAudio {
     o.connect(v);v.connect(c.destination);this.nodes.add(o);o.onended=()=>{this.nodes.delete(o);o.disconnect();v.disconnect();};o.start(at);o.stop(at+duration+.01);
   }
   tick(state){
-    const c=this.context,track=TRACKS[state.kind];
+    const c=this.context,track=trackFor(state);
     if(!this.enabled||!this.musicEnabled||!track||c?.state!=='running'||state.ended)return;
+    if(state.kind==='rhythm'){if(this.songState===state&&this.song?.readyState>=2&&!this.song.seeking&&Math.abs(this.song.currentTime-state.elapsed)>.25)this.song.currentTime=state.elapsed;return;}
     // Keep one anchor across frames. Resuming or a stalled frame gets a new
     // anchor at the saved game time, never a burst of missed musical events.
     if(this.transport?.state!==state||Math.abs(c.currentTime-this.transport.origin-state.elapsed)>.12){
@@ -31,6 +32,17 @@ export class ArcadeAudio {
       t.next++;
     }
   }
+  async startSong(state,report=()=>{}){
+    this.stopMusic();if(!this.enabled||!this.musicEnabled||!this.context)return false;
+    const request=++this.songRequest,track=pumpSong(state.songId),song=new window.Audio(track.file);this.song=song;this.songState=state;song.volume=.7;song.preload='auto';
+    const current=()=>request===this.songRequest;
+    try{
+      this.songSource=this.context.createMediaElementSource(song);this.songSource.connect(this.musicBus||this.context.destination);
+      song.onloadedmetadata=()=>{if(current())song.currentTime=Math.min(state.elapsed,Math.max(0,song.duration-.05));};
+      song.onerror=()=>{if(current())report('음악을 불러오지 못했어요. 음악 다시 켜기를 눌러 주세요.');};
+      report('음악 준비 중…');await song.play();if(current()){report(`재생 중 · ${track.title}`);return true;}return false;
+    }catch{if(current())report('음악 재생이 막혔어요. 음악 다시 켜기를 눌러 주세요.');return false;}
+  }
   musicNote(n,at){
     const c=this.context,o=c.createOscillator(),v=c.createGain(),frequency=440*2**((n.pitch-69)/12);
     o.type=n.wave;o.frequency.setValueAtTime(frequency,at);
@@ -39,6 +51,7 @@ export class ArcadeAudio {
     o.connect(v);v.connect(this.musicBus||c.destination);this.musicNodes.add(o);o.onended=()=>{this.musicNodes.delete(o);o.disconnect();v.disconnect();};o.start(at);o.stop(at+n.duration+.01);
   }
   stopMusic(){
+    this.songRequest++;if(this.song){this.song.onloadedmetadata=null;this.song.onerror=null;this.song.pause();this.song.removeAttribute('src');this.song.load();this.song=null;}this.songSource?.disconnect();this.songSource=null;this.songState=null;
     for(const o of this.musicNodes){try{o.stop();}catch{/* Already ended. */}}
     this.musicNodes.clear();this.transport=null;
   }
