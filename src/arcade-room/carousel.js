@@ -1,4 +1,4 @@
-/* global ResizeObserver, requestAnimationFrame, cancelAnimationFrame */
+/* global window, requestAnimationFrame, cancelAnimationFrame */
 // Native scrolling handles touch and trackpads; buttons and keys offer the same choices.
 export function mountCarousel(root,initial,onChange){
  const track=root.querySelector('.machines'),cards=[...track.children],tabs=[...root.querySelectorAll('[data-slide]')];
@@ -12,8 +12,9 @@ export function mountCarousel(root,initial,onChange){
  function key(e){const move={ArrowLeft:index-1,ArrowRight:index+1,Home:0,End:cards.length-1}[e.key];if(move===undefined||e.altKey||e.metaKey||e.ctrlKey)return;e.preventDefault();select(move);if(e.target.closest('.machine'))cards[index].querySelector('.start').focus({preventScroll:true});}
  function focus(e){const card=e.target.closest('.machine');if(card)mark(cards.indexOf(card));}
  root.addEventListener('click',click);root.addEventListener('keydown',key);track.addEventListener('scroll',scroll,{passive:true});track.addEventListener('focusin',focus);
- // Resize delivery must not synchronously mutate the layout it observes.
- // Coalesce selection/scroll writes into the next frame (not the resize loop).
- const observer=new ResizeObserver(()=>{if(!resizeFrame)resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;if(track.isConnected){trackWidth=track.clientWidth;select(index);}});});observer.observe(track);select(index);
- return ()=>{observer.disconnect();cancelAnimationFrame(resizeFrame);resizeFrame=0;root.removeEventListener('click',click);root.removeEventListener('keydown',key);track.removeEventListener('scroll',scroll);track.removeEventListener('focusin',focus);};
+ // Cabinet widths depend only on the viewport (fixed desktop / vw mobile).
+ // Observe that input directly, avoiding ResizeObserver delivery during WebKit reflow.
+ function resize(){if(!resizeFrame)resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;if(track.isConnected){trackWidth=track.clientWidth;select(index);}});}
+ window.addEventListener('resize',resize,{passive:true});select(index);
+ return ()=>{window.removeEventListener('resize',resize);cancelAnimationFrame(resizeFrame);resizeFrame=0;root.removeEventListener('click',click);root.removeEventListener('keydown',key);track.removeEventListener('scroll',scroll);track.removeEventListener('focusin',focus);};
 }
