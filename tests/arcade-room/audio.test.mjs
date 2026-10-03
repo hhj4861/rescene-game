@@ -56,3 +56,37 @@ test('spacing survives pause and allows a new reward at the boundary; manual rep
   const manual=audio.playVoice(source);clips[2].resolve();assert.equal(await manual,true);assert.equal(clips[1].paused,true);
   const other=audio.playVoice({file:'may.mp3'});clips[3].resolve();assert.equal(await other,true);
 });
+
+
+test('member reactions rotate distinct clips, share a cooldown and do not consume suppressed turns',async t=>{
+  const {audio,clips,setTime}=fixture(t),pool=['a','b','c'].map(file=>({file}));
+  for(let i=0;i<4;i++){
+    setTime(i*4000);const playing=audio.playReaction('may',pool);clips[i].resolve();assert.equal(await playing,true);
+    assert.equal(clips[i].src,pool[i%3].file);
+    assert.equal(await audio.playReaction('may',pool),false);clips[i].onended();
+    setTime(i*4000+3999);assert.equal(await audio.playReaction('may',pool),false);
+  }
+  audio.voiceEnabled=false;setTime(20000);assert.equal(await audio.playReaction('may',pool),false);assert.equal(clips.length,4);
+});
+test('song rewards can replace a short reaction but never restart the same song during cooldown',async t=>{
+ const {audio,clips,setTime}=fixture(t),song={file:'liv-song.mp3'},options={minIntervalMs:12000,interrupt:true};
+ const reaction=audio.playReaction('liv',[{file:'liv-oh.mp3'}]);clips[0].resolve();await reaction;
+ const singing=audio.playVoice(song,undefined,options);clips[1].resolve();assert.equal(await singing,true);assert.equal(clips[0].paused,true);
+ assert.equal(await audio.playReaction('liv',[{file:'other.mp3'}]),false);
+ setTime(5000);assert.equal(await audio.playVoice(song,undefined,options),false);assert.equal(clips[1].paused,undefined);
+ audio.stop();setTime(11999);assert.equal(await audio.playVoice(song,undefined,options),false);
+ setTime(12000);const again=audio.playVoice(song,undefined,options);clips[2].resolve();assert.equal(await again,true);
+});
+test('voice ducks the music bus only while playing and restores it on end, error and pause',async t=>{
+ const {audio,clips}=fixture(t),ramps=[];
+ audio.context={currentTime:0};audio.musicBus={gain:{value:1,cancelScheduledValues(){},setValueAtTime(){},linearRampToValueAtTime(value){ramps.push(value);}}};
+ for(const end of ['onended','onerror','stop']){
+  const pending=audio.playVoice({file:'song.mp3'});const clip=clips.at(-1);clip.resolve();await pending;clip.onplaying();assert.equal(ramps.at(-1),.2);
+  if(end==='stop')audio.stop();else clip[end]();assert.equal(ramps.at(-1),1);
+ }
+});
+
+test('stopping an idle graph resets the music gain immediately, without waiting for rendering',async t=>{
+ const {audio,clips}=fixture(t),values=[];audio.context={currentTime:12};audio.musicBus={gain:{value:.2,cancelScheduledValues(){},setValueAtTime(value){values.push(value);},linearRampToValueAtTime(){}}};
+ const pending=audio.playVoice({file:'song.mp3'});clips[0].resolve();await pending;audio.stop();assert.equal(values.at(-1),1);
+});
