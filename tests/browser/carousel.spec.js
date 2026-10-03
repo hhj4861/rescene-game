@@ -1,3 +1,4 @@
+import {enterPump} from './pump-helpers.js';
 /* global document */
 import {test,expect} from '@playwright/test';
 
@@ -29,7 +30,7 @@ test('resizing and leaving the picker preserve selection without observer errors
  const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await expect(page.locator('[data-start="rhythm"].start')).toBeEnabled();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-slide="rhythm"]').click();
  for(const [width,height] of [[390,844],[844,390],[320,568]]){
   await page.setViewportSize({width,height});await page.clock.runFor(100);await expect(page.locator('[data-slide-status]')).toHaveText('4 / 5 · 미나미');
-  await page.locator('[data-start="rhythm"].start').click();if(await page.locator('#app').getAttribute('data-state')!=='paused')await page.locator('[data-pause]').click();await page.locator('[data-leave]').click();await page.clock.runFor(100);await expect(page.locator('[data-slide-status]')).toHaveText('4 / 5 · 미나미');
+  await page.locator('[data-start="rhythm"].start').click();await enterPump(page);if(await page.locator('#app').getAttribute('data-state')!=='paused')await page.locator('[data-pause]').click();await page.locator('[data-leave]').click();await page.clock.runFor(100);await expect(page.locator('[data-slide-status]')).toHaveText('4 / 5 · 미나미');
  }
  expect(errors).toEqual([]);
 });
