@@ -33,7 +33,9 @@ test('Liv note fairy sings, ducks BGM, stops on pause and never replays from a s
  await expect(page.locator('#powerup-status')).toContainText('음표 요정');await expect.poll(()=>page.evaluate(()=>window.songs.at(-1)?.currentTime||0)).toBeGreaterThan(0);
  expect(await page.evaluate(()=>window.songs.at(-1).currentSrc)).toContain('liv-song');await expect.poll(()=>page.evaluate(()=>window.bgmBus.gain.value)).toBeLessThan(.21);
  await expect(page.getByRole('link',{name:'원본 커버 ↗'})).toHaveAttribute('href',LIV_SONG.source);
- await page.locator('[data-pause]').click();expect(await page.evaluate(()=>window.songs.every(a=>a.paused))).toBe(true);await expect.poll(()=>page.evaluate(()=>window.bgmBus.gain.value)).toBeGreaterThan(.99);
- await page.locator('[data-resume]').click();await page.clock.runFor(100);expect(await page.evaluate(()=>window.songs.length)).toBe(1);
+ await page.locator('[data-pause]').click();expect(await page.evaluate(()=>window.songs.every(a=>a.paused))).toBe(true);
+ // WebKit may retain the last rendered AudioParam value while the graph is silent.
+ // Verify restoration when the BGM graph renders again, not an idle cached value.
+ await page.locator('[data-resume]').click();await page.clock.runFor(100);await expect.poll(()=>page.evaluate(()=>window.bgmBus.gain.value)).toBeGreaterThan(.99);expect(await page.evaluate(()=>window.songs.length)).toBe(1);
  await page.reload();await page.locator('[data-start="catch"].start').click();expect(await page.evaluate(()=>window.songs.length)).toBe(0);
 });

@@ -44,3 +44,5 @@
 - Playwright desktop Chromium / mobile Chromium / mobile WebKit: 181 통과, 플랫폼 전용 5 건너뜀. 처음 3개 환경에서 노래 정지 후 GainNode 보간 값이 남는 검증 실패를 발견했고, 정지 시 즉시 볼륨 1로 초기화하여 재실행에서 통과했다.
 - MP3 16개(반응 15 + 노래 1)의 실제 디코딩·유효 파형과 서로 다른 파일 해시를 확인했다. 이 수치 검증은 화자 식별이나 사람이 듣는 자연스러움의 최종 검수를 대신하지 않는다.
 - 산출물: 지정 iCloud 작업 루트의 `rescene-game/member-reactions-20261003/` (`unit.log`, `browser-fixed.log`, `browser-fixed/`, `build-fixed/`). 로컬 미리듣기는 `http://127.0.0.1:4350/voice-review.html`이며 서버 실행 중 이 Mac에서만 사용한다.
+
+Linux CI 첫 실행은 180 통과 / 1 실패 / 5 건너뜀이었다. 실패는 WebKit에서 모든 음원이 멈춘 뒤 마지막 렌더링된 AudioParam 값이 남아 있는 상태를 검사한 항목이다. 정지 시 실제 미디어가 멈추는 검사는 유지하고, 볼륨 1 복구 검사는 재개하여 BGM 그래프가 다시 렌더링되는 시점에 수행하도록 수정했다. 이 변경은 음원 재생을 스텁으로 바꾸거나 허용 오차를 완화하지 않는다.
