@@ -2,6 +2,17 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+## 아이템·보스·조작·획득 음성 운영 배포 — 2026-10-03
+
+- 사용자 명시 승인 후 [PR #17](https://github.com/hhj4861/rescene-game/pull/17)을 머지했다. 운영 소스는 `6dc800e165f5eb6f0f083108a63927d6f2fce4b7`다.
+- [PR CI 37083537376](https://github.com/hhj4861/rescene-game/actions/runs/37083537376)에서 Node 53개·브라우저 172개(환경별 5개 제외)·린트·빌드가 통과했다. PR 커밋 `fbd57140`과 머지 커밋의 Git 트리 `beb748e9e5964331d2247458c13369b49a227cf1`가 동일함을 확인하고 해당 `arcade-static-site` 산출물을 배포했다.
+- Pages 배포 `b24ecb67-8e32-4c6c-b515-348fa42a1708`: **Production / main / source `6dc800e`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://b24ecb67.rescene-arcade.pages.dev).
+- 메이 속도·방울 크기 강화, 리브 게이트 강화·구름왕 보스·네 종류 아이템, 원이 후기 가짜/속도 난이도, 제나 드래그 미리보기·밀대 아이템을 적용했다. 아이템 획득 시 해당 멤버의 기존 실제 녹음을 재생한다. 아이템이 없는 미나미는 기존 클리어 음성을 유지한다. 전 게임 키보드 조작 표시와 한글 입력 상태의 물리 키 처리, 1.4초 피해 보호로 동시 실패의 중복 목숨 차감도 수정했다. [동작 상세](../design/arcade-upgrades.md).
+- **실제 공개 주소에서 브라우저 172개 통과, 환경별 5개 제외.** 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 아이템/음성·보스·드래그·키보드·목숨·저장/복원과 기존 다섯 게임을 검증했다. 데스크톱 리브 보스·제나 드래그 및 모바일 WebKit 메이 강화 화면도 확인했다. 모바일은 에뮬레이션이며 실기기 청음 검증은 아니다.
+- 공개 HTML·JS·CSS·이미지·멤버 음성 등 **전체 12개 파일의 SHA-256이 CI 산출물과 일치**했다. 증거는 사용자 지정 iCloud 작업 루트 `rescene-game/arcade-upgrades-deploy-20261003/`의 `site/`, `production-asset-hashes.json`, `public-browser/`, `public-browser.log`에 보관한다.
+- [머지 후 main CI 37093119273](https://github.com/hhj4861/rescene-game/actions/runs/37093119273)도 최종 성공했다.
+- 기존 Wrangler 로그인으로 배포했으며 CI 인증·자동 배포 설정은 변경하지 않았다. 별도 PR #8은 머지하지 않았다.
+
 ## 가짜 파이리·감점 운영 배포 — 2026-10-03
 
 - 사용자 명시 승인 후 [PR #16](https://github.com/hhj4861/rescene-game/pull/16)을 머지했다. 운영 소스는 `50c69559482e38ff15dca7fe61fdea28e986b67b`다.
