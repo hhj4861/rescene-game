@@ -1,7 +1,7 @@
 /* global localStorage, window */
 import {test,expect} from '@playwright/test';
 import {createGame,gameAction,availableSwap} from '../../src/arcade-room/model.js';
-import {emptyProgress,snapshotRound,PROGRESS_KEY} from '../../src/arcade-room/progress.js';
+import {emptyProgress,snapshotRound,stageGoal,PROGRESS_KEY} from '../../src/arcade-room/progress.js';
 async function open(page,s){
  const p=emptyProgress();p.games[s.kind]={stage:s.stage,highest:s.stage,hearts:s.hearts,snapshot:snapshotRound(s)};
  await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);},{key:PROGRESS_KEY,value:JSON.stringify(p)});
@@ -47,8 +47,16 @@ test('Woni late-stage fake and real targets both remain keyboard operable',async
  const s=createGame('drive',{stage:15,seed:7});s.spawn=10;s.hits=3;s.score=500;s.holes[0]={ttl:1.6,total:1.6,gold:false,fake:true,flash:0};s.holes[3]={ttl:1.6,total:1.6,gold:false,fake:false,flash:0};await open(page,s);await page.screenshot({path:info.outputPath('woni-late-fake.png'),fullPage:true});await page.keyboard.press('1');await expect(page.locator('#score')).toHaveText('350');await page.keyboard.press('4');await expect(page.locator('#score')).toHaveText('460');await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 3개');
 });
 
-test('Woni gold pickup plays Woni voice and cancels the previous pickup clip',async({page})=>{
- await voiceSpy(page);const s=createGame('drive',{seed:7});s.spawn=10;for(const i of [0,3])s.holes[i]={ttl:4,total:4,gold:true,fake:false,flash:0};await open(page,s);await page.keyboard.press('1');await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);await page.keyboard.press('4');await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);expect(await page.evaluate(()=>window.itemClips.at(-1).currentSrc)).toContain('/voices/woni.mp3');expect(await page.evaluate(()=>window.itemClips[0].paused)).toBe(true);
+test('Woni gold rewards keep their score but space voice by 15 seconds across a pause',async({page})=>{
+ await voiceSpy(page);const s=createGame('drive',{seed:7});s.spawn=10;for(const i of [0,3,6])s.holes[i]={ttl:4,total:4,gold:true,fake:false,flash:0};await open(page,s);
+ await page.keyboard.press('1');await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
+ await page.keyboard.press('4');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(1);expect(await page.evaluate(()=>window.itemClips[0].getAttribute('src'))).toContain('woni.mp3');await expect(page.locator('#score')).toHaveText('430');
+ await page.locator('[data-pause]').click();expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).games.drive.snapshot.itemPickups,PROGRESS_KEY)).toBe(2);await page.clock.runFor(14900);expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(1);
+ await page.clock.runFor(200);expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(1);await page.locator('[data-resume]').click();await page.keyboard.press('7');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(2);await expect(page.locator('#score')).toHaveText('660');await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
+});
+test('Woni final gold plays only the clear clip and manual replay stays available',async({page})=>{
+ await voiceSpy(page);const s=createGame('drive',{seed:7});s.hits=stageGoal('drive',1).target-1;s.spawn=10;s.holes[0]={ttl:4,total:4,gold:true,fake:false,flash:0};await open(page,s);await page.keyboard.press('1');await expect(page.locator('#result-title')).toHaveText('스테이지 1 클리어!');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(1);await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
+ await page.getByRole('button',{name:'▶ 원이 실제 음성 듣기',exact:true}).click();expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(2);await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
 });
 test('Zena earns a rolling pin by a normal keyboard match and plays her recording',async({page})=>{
  await voiceSpy(page);let s,pair;for(let seed=1;seed<100;seed++){const candidate=createGame('photo',{stage:5,seed}),probe=createGame('photo',{stage:5,seed});const match=availableSwap(probe.board);gameAction(probe,{from:match[0],to:match[1]});if(probe.combo>1&&probe.collected<42){s=candidate;pair=match;break;}}expect(s).toBeTruthy();s.breadCharge=2;s.rollingPins=0;await open(page,s);
