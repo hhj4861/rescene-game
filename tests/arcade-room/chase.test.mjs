@@ -19,7 +19,7 @@ test('five catches start fever, double scores, protect lives and do not extend i
  for(const h of s.holes)h.ttl=0;s.fever=.01;s.spawn=10;stepGame(s,.02);target(s,3);s.holes[3].ttl=.01;stepGame(s,.02);assert.equal(s.hearts,2);assert.equal(s.combo,0);assert.equal(s.heat,0);
 });
 test('spawning respects one runner per lane and difficulty increases without unreachable targets',()=>{
- for(const stage of [1,8,1000]){const s=createGame('drive',{stage,seed:7});let count=0;for(let n=0;n<300;n++){stepGame(s,.02);const active=s.holes.map((h,i)=>h.ttl?i:-1).filter(i=>i>=0);assert.equal(new Set(active.map(i=>Math.floor(i/3))).size,active.length);for(const i of active){assert.ok(s.holes[i].total>=2.3&&s.holes[i].total<=4.8);if(s.holes[i].ttl<.3){gameAction(s,i);count++;}}}assert.ok(count>0);}
+ for(const stage of [1,8,1000]){const s=createGame('drive',{stage,seed:7});let count=0;for(let n=0;n<300;n++){stepGame(s,.02);const active=s.holes.map((h,i)=>h.ttl?i:-1).filter(i=>i>=0);assert.equal(new Set(active.map(i=>Math.floor(i/3))).size,active.length);for(const i of active){assert.ok(s.holes[i].total>=1.6&&s.holes[i].total<=4.8);if(s.holes[i].ttl<.3){gameAction(s,i);count++;}}}assert.ok(count>0);}
  const slow=createGame('drive',{seed:7}),fast=createGame('drive',{stage:30,seed:7});stepGame(slow,.4);stepGame(fast,.4);assert.ok(slow.holes.find(h=>h.ttl).total>fast.holes.find(h=>h.ttl).total);
 });
 test('fever and moving positions resume deterministically; legacy saves keep progress',()=>{
@@ -43,11 +43,11 @@ test('letting a decoy escape is harmless and saved decoys retain their identity'
  for(const invalid of ['yes',1,null]){const bad=structuredClone(old);bad.holes[0].fake=invalid;assert.equal(restoreRound(bad),null);}
  const bad=snapshotRound(s);Object.assign(bad.holes[0],{fake:true,gold:true});assert.equal(restoreRound(bad),null);
 });
-test('natural spawns introduce decoys after two catches, at most one alongside genuine targets',()=>{
+test('natural spawns introduce decoys after two catches, stage-bounded decoys alongside genuine targets',()=>{
  for(const stage of [1,8,1000]){
   const s=createGame('drive',{stage,seed:17});let decoys=0;
   for(let n=0;n<350;n++){
-   stepGame(s,.05);const active=s.holes.filter(h=>h.ttl>0),fakes=active.filter(h=>h.fake);assert.ok(fakes.length<=1);if(s.hits<2)assert.equal(fakes.length,0);
+   stepGame(s,.05);const active=s.holes.filter(h=>h.ttl>0),fakes=active.filter(h=>h.fake);assert.ok(fakes.length<=(stage>=8?2:1));if(s.hits<2)assert.equal(fakes.length,0);
    for(const h of fakes){assert.equal(h.gold,false);if(h.ttl===h.total)decoys++;}
    s.holes.forEach((h,i)=>{if(h.ttl&&!h.fake)gameAction(s,i);});
   }

@@ -69,3 +69,6 @@
 /* Keep the chase lanes clear; Woni reacts beside the playfield. */
 #app[data-game="drive"] .signature-toast{display:none}
 #app[data-game="drive"][data-fever="true"] .game-cabinet{border-color:#b37432;box-shadow:0 8px 0 #b37432}
+
+/* Keep upgrades readable beside the existing cabinet controls. */
+.game-controls .item-button{font-size:13px;background:#f6d782}.game-controls .item-button[aria-pressed="true"]{outline:3px solid #80518b;outline-offset:2px}.game-controls .jump small,.game-controls .bubble-button small{display:block;margin:3px 0 0}#powerup-status{font-weight:700;min-height:1.4em;line-height:1.5}#powerup-status:empty{display:none}

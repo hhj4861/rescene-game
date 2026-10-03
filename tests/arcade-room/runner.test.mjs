@@ -13,7 +13,7 @@ test('automatic shots earn support, which cannot fire before five kills or fire 
  assert.equal(s.defeated,5);assert.equal(s.charge,5);gameAction(s,'burst');assert.equal(s.charge,0);assert.ok(s.burst>0);stepGame(s,.4);gameAction(s,'burst');assert.equal(s.burst,0);
 });
 test('escaped enemies cost lives and runner snapshots preserve units, gates and projectiles',()=>{
- const s=createGame('catch',{seed:7});s.enemies=[{id:0,lane:0,y:479,hp:50,maxHp:50,boss:true}];stepGame(s,.1);assert.equal(s.hearts,2);
+ const s=createGame('catch',{seed:7});s.enemies=[{id:0,lane:0,y:479,hp:50,maxHp:50,boss:false}];stepGame(s,.1);assert.equal(s.hearts,2);
  const restored=restoreRound(snapshotRound(s));assert.ok(restored);assert.deepEqual(snapshotRound(restored),snapshotRound(s));
  const p=emptyProgress();p.games.catch.stage=p.games.catch.highest=7;p.games.catch.hearts=2;p.games.catch.snapshot={...snapshotRound(s),stage:7,runnerVersion:undefined,towers:[]};
  const legacy=readProgress({getItem:()=>JSON.stringify(p)});assert.equal(legacy.games.catch.stage,7);assert.equal(legacy.games.catch.hearts,2);assert.equal(legacy.games.catch.snapshot,null);

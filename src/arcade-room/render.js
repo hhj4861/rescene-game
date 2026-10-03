@@ -1,8 +1,8 @@
-import {chasePosition} from './chase.js';
+import {chasePosition,chaseDifficulty} from './chase.js';
 import {breadFrame} from './model.js';
 /* global Image, window, document */
 import {PLATFORMS} from './model.js';
-import {RUNNER_X} from './runner.js';
+import {RUNNER_X,LIV_ITEM_NAMES} from './runner.js';
 import {drawDoll} from './cast.js';
 let charmander,charmanderFake;
 export function loadGameArt(){return new Promise((resolve,reject)=>{charmander=new Image();charmander.onload=()=>{try{
@@ -40,18 +40,18 @@ function drawWhack(c,s){
    const ground=263+Math.floor(i/3)*148;ellipse(c,p.x,ground,33,8,'#355b4933');
    if(!quiet)for(let n=3;n>0;n--){const old=chasePosition({...h,ttl:Math.min(h.total,h.ttl+n*.1)},i);c.globalAlpha=.07;ellipse(c,old.x,old.y+16,30,34,fever?'#fa8f25':'#f0b353');}c.globalAlpha=1;
    if(!h.fake&&(h.gold||fever)){ellipse(c,p.x,p.y-5,49,54,'#fff1a04d');star(c,p.x+38,p.y-49,10,'#e7a53a');}
-   c.save();c.translate(p.x,p.y);c.scale(p.direction,1);if(!quiet)c.rotate(Math.sin(p.p*Math.PI*8)*.06);if(charmander?.complete)c.drawImage(h.fake?charmanderFake:charmander,-52,-62,104,104);c.restore();
+   c.save();c.translate(p.x,p.y);c.scale(p.direction,1);if(!quiet)c.rotate(Math.sin(p.p*Math.PI*8)*.06);if(charmander?.complete){c.drawImage(h.fake?charmanderFake:charmander,-52,-62,104,104);if(h.fake){c.globalAlpha=chaseDifficulty(s.stage).disguise;c.drawImage(charmander,-52,-62,104,104);}}c.restore();
    if(h.fake){ellipse(c,p.x+32,p.y-43,17,17,'#755481');text(c,'×',p.x+32,p.y-35,27,'#fff8e8');}
    box(c,p.x-32,p.y+44,64,5,'#fff8e8',3);box(c,p.x-32,p.y+44,64*h.ttl/h.total,5,h.ttl<1?'#c8784e':'#56866b',3);
    box(c,p.x-11,p.y+24,22,20,'#fff8e8e6',8);text(c,String(i+1),p.x,p.y+40,14,'#3e6c57');
   }
   if(h.flash){const t=1-h.flash/.3;c.globalAlpha=1-t;for(let k=0;k<7;k++){const angle=k*Math.PI*2/7;star(c,p.x+Math.cos(angle)*(20+t*45),p.y+Math.sin(angle)*(20+t*40),6,h.fake?'#b99ac4':'#fff1a2');}c.globalAlpha=1;text(c,h.fake?'−150':`+${h.reward||100}`,p.x,p.y-18-t*30,27,h.fake?'#755481':'#9c521c');}
  }
- text(c,'× 가짜는 누르면 −150점 · 그냥 보내요!',240,580,17,'#3e6c57');
+ text(c,s.stage>=8?'가짜 최대 2마리 · 색보다 ×를 확인해요!':'× 가짜는 누르면 −150점 · 그냥 보내요!',240,580,17,'#3e6c57');
 }
-function drawBubbles(c,s){background(c,'#efe2e5','#b5d4da');for(let i=0;i<13;i++)bubble(c,20+(i*83)%450,55+(i*79)%480,9+i%4*5,'#e2d2ed77');text(c,'MAY’S BUBBLE WORKSHOP',240,43,19,'#87667b');text(c,s.combo>1?`${s.combo} CHAIN!`:'가두고 · 가까이서 팡!',240,80,22);
+function drawBubbles(c,s){background(c,'#efe2e5','#b5d4da');for(let i=0;i<13;i++)bubble(c,20+(i*83)%450,55+(i*79)%480,9+i%4*5,'#e2d2ed77');text(c,'MAY’S BUBBLE WORKSHOP',240,43,19,'#87667b');text(c,s.speedBoost||s.sizeBoost?[s.speedBoost?`속도 ↑ ${Math.ceil(s.speedBoost)}초`:'',s.sizeBoost?`큰 방울 ${Math.ceil(s.sizeBoost)}초`:''].filter(Boolean).join(' · '):s.combo>1?`${s.combo} CHAIN!`:'아이템을 먹으면 더 강해져요!',240,80,20);
  for(const [i,p] of PLATFORMS.entries()){box(c,p.x,p.y,p.w,20,'#917d98',8);box(c,p.x,p.y,p.w,9,['#b4d99f','#f0bdc6','#f1d182','#b4d99f'][i],6);for(let x=p.x+12;x<p.x+p.w;x+=25)ellipse(c,x,p.y+4,4,2,'#fff9');}
- for(const e of s.enemies){if(e.trapped)bubble(c,e.x,e.y-22,29,'#c9e7ec');critter(c,e.x,e.y-22,e.trapped?'#b9b6d7':'#a88dc5');if(e.trapped)text(c,'POP',e.x,e.y-58,12,'#80518b');}for(const b of s.bubbles)bubble(c,b.x,b.y,21);
+ for(const e of s.enemies){if(e.trapped)bubble(c,e.x,e.y-22,29,'#c9e7ec');critter(c,e.x,e.y-22,e.trapped?'#b9b6d7':'#a88dc5');if(e.trapped)text(c,'POP',e.x,e.y-58,12,'#80518b');}for(const b of s.bubbles)bubble(c,b.x,b.y,b.radius||21);for(const item of s.items){bubble(c,item.x,item.y,19,item.kind==='speed'?'#f6d991':'#c9b2e6');text(c,item.kind==='speed'?'»':'○',item.x,item.y+8,25,'#644c78');text(c,item.kind==='speed'?'속도':'크기',item.x,item.y-26,13,'#644c78');}
  c.save();if(s.invincible&&Math.floor(s.invincible*10)%2)c.globalAlpha=.5;c.translate(s.player.x,s.player.y);c.scale(s.player.facing,1);drawDoll(c,'may',0,0,65,s.flash>0?1:0);text(c,'›',39,-22,28,'#80518b');c.restore();if(s.flash>0)for(let i=0;i<8;i++)star(c,s.player.x+Math.cos(i*.785)*65,s.player.y-35+Math.sin(i*.785)*50,8,'#fff1a4');text(c,'방울 버튼으로 가까운 방울도 터뜨려요',240,579,17,'#6e627f');}
 export function bread(c,x,y,value,size=48){const k=value%10;c.save();c.translate(x,y);const a=size/48;c.scale(a,a);ellipse(c,1,19,24,6,'#8a52311d');if(k===1){box(c,-21,-18,42,41,'#b77639',12);box(c,-17,-15,34,34,'#f1c888',10);c.strokeStyle='#d39951';c.lineWidth=3;for(const dx of [-7,3]){c.beginPath();c.moveTo(dx,-10);c.lineTo(dx+5,12);c.stroke();}}else if(k===2){ellipse(c,0,0,23,21,'#b97846');ellipse(c,0,-2,22,19,'#e9a6b6');ellipse(c,0,-2,8,7,'#fff2db');for(let i=0;i<6;i++)box(c,Math.cos(i)*16-2,Math.sin(i)*13-3,4,2,'#fff6df',1);}else if(k===3){box(c,-20,-5,40,26,'#dfae7e',6);ellipse(c,0,-8,23,18,'#b48ec9');ellipse(c,0,-22,5,5,'#cb7688');}else if(k===4){ellipse(c,0,0,24,21,'#edcf80');c.strokeStyle='#b99448';c.lineWidth=2;for(let i=-12;i<=12;i+=8){c.beginPath();c.moveTo(i,-15);c.lineTo(i+4,14);c.stroke();}}else{box(c,-21,-18,42,39,'#769983',10);box(c,-16,-14,32,29,'#bad0a6',8);ellipse(c,-5,-2,3,3,'#6e8664');ellipse(c,8,7,3,3,'#6e8664');}if(value>10){star(c,16,-18,11,'#fff1a2');text(c,'✦',0,7,24,'#fff9ed');}c.restore();}
 function drawBakery(c,s){
@@ -61,6 +61,7 @@ function drawBakery(c,s){
  c.save();c.beginPath();c.rect(30,112,420,420);c.clip();
  for(let i=0;i<36;i++){
   let col=i%6,row=Math.floor(i/6),size=48;
+  if(!f&&s.breadDrag){const d=s.breadDrag;if(i===d.from){col+=d.dx;row+=d.dy;}else if(i===d.to){col-=d.dx;row-=d.dy;}}
   if(f?.kind==='swap'&&(i===f.a||i===f.b)){const j=i===f.a?f.b:f.a,e=t*t*(3-2*t);col+=(j%6-col)*e;row+=(Math.floor(j/6)-row)*e;}
   if(f?.kind==='fall'){const e=1-Math.pow(1-t,3);row=f.fromRows[i]+(row-f.fromRows[i])*e;}
   const x=65+col*70,y=147+row*70,popping=f?.kind==='pop'&&f.removed.includes(i);
@@ -68,18 +69,19 @@ function drawBakery(c,s){
   bread(c,x,y,board[i],size);c.globalAlpha=1;
   if(popping){c.globalAlpha=1-t;for(let k=0;k<6;k++){const angle=k*Math.PI/3;star(c,x+Math.cos(angle)*(12+t*30),y+Math.sin(angle)*(12+t*30),5*(1-t)+2,'#fff4b3');}c.globalAlpha=1;}
  }
- c.restore();text(c,'빵을 밀어서 교환 · 같은 빵 3개면 팡!',240,576,17,'#8c5e4b');
+ c.restore();text(c,s.itemArmed?'밀대로 지울 줄의 빵을 골라요!':'빵을 밀어서 교환 · 같은 빵 3개면 팡!',240,576,17,'#8c5e4b');
 }
 function drawPump(c,s){background(c,'#3c3e68','#252a4b');for(let i=0;i<5;i++)box(c,36+i*82,110,78,440,i%2?'#6683a220':'#a766a520',8);text(c,'MINAMI · FIVE STEP',240,39,20,'#ece5ff');text(c,s.combo?`${s.combo} COMBO`:'READY, DANCE!',240,75,23,'#f4d786');
  for(let i=0;i<5;i++){const x=75+i*82;box(c,x-34,108,68,56,s.glows[i]>0?PUMP_COLORS[i]:'#ffffff15',13);text(c,PUMP_ARROWS[i],x,151,39,s.glows[i]>0?'#303552':PUMP_COLORS[i]);if(s.glows[i]>0)text(c,s.feedback[i],x,192,12,'#fff7ce');}c.save();c.beginPath();c.rect(30,110,420,450);c.clip();for(const n of s.notes){const y=136+(n.at+s.offset-s.elapsed)*205;if(n.status!=='waiting'||y<100||y>560)continue;box(c,43+n.lane*82,y-25,64,50,PUMP_COLORS[n.lane],11);text(c,PUMP_ARROWS[n.lane],75+n.lane*82,y+14,38,'#303552');}c.restore();text(c,'Z        Q        S        E        C',240,582,20,'#d1cbe5');}
 function drawDefense(c,s){
- background(c,'#213e58','#456b77');text(c,'LIV’S STAR RUNNERS',240,39,21,'#f8eed0');text(c,`대원 ${s.squad} · 격파 ${s.defeated}`,240,76,20,'#e2ece1');
+ background(c,'#213e58','#456b77');text(c,'LIV’S STAR RUNNERS',240,39,21,'#f8eed0');text(c,`연사 ${s.fireLevel}단계 · ${s.volley}발${s.item?' · '+LIV_ITEM_NAMES[s.item]:''}`,240,70,17,'#e2ece1');const boss=s.enemies.find(e=>e.boss);if(boss){text(c,'보스 · 별빛을 삼킨 구름왕',240,94,14,'#ffdc91');box(c,65,100,350,7,'#17384b',3);box(c,65,100,350*Math.max(0,boss.hp)/boss.maxHp,7,'#efb87c',3);}
  for(let i=0;i<3;i++){box(c,RUNNER_X[i]-68,101,136,444,i===s.lane?'#638c9455':'#17384b55',18);for(let y=100+(s.elapsed*80)%65;y<555;y+=65)text(c,'⌃',RUNNER_X[i],y,25,'#aec8c22d');}
- for(const g of s.gates)for(let i=0;i<3;i++){const o=g.options[i],positive=o.value>0;box(c,RUNNER_X[i]-61,g.y-25,122,55,positive?'#8dccc0':'#dc9ca1',9);text(c,o.op==='multiply'?`×${o.value}`:`${positive?'+':''}${o.value}`,RUNNER_X[i],g.y+10,30,'#244655');}
- for(const e of s.enemies){const x=RUNNER_X[e.lane];c.save();c.translate(x,e.y);if(e.boss)c.scale(1.5,1.5);critter(c,0,0,e.boss?'#d6a67e':'#b39bbd');c.restore();box(c,x-26,e.y-43,52,6,'#e5ddd455',3);box(c,x-26,e.y-43,52*Math.max(0,e.hp)/e.maxHp,6,'#f0bb77',3);text(c,String(Math.max(0,e.hp)),x,e.y-49,13,'#fff4cf');}
+ for(const g of s.gates)for(let i=0;i<3;i++){const o=g.options[i],positive=o.value>0;box(c,RUNNER_X[i]-61,g.y-25,122,55,positive?'#8dccc0':'#dc9ca1',9);text(c,o.op==='multiply'?`×${o.value}`:`${positive?'+':''}${o.value}`,RUNNER_X[i],g.y,26,'#244655');text(c,positive?(o.op==='multiply'?'탄 수 ↑':'연사 ↑'):'대원 감소',RUNNER_X[i],g.y+21,13,'#244655');}
+ for(const e of s.enemies){const x=RUNNER_X[e.lane];c.save();c.translate(x,e.y);if(e.boss){c.scale(2.1,1.7);star(c,0,-24,14,'#f5d684');}critter(c,0,0,e.boss?'#d6a67e':'#b39bbd');c.restore();box(c,x-26,e.y-43,52,6,'#e5ddd455',3);box(c,x-26,e.y-43,52*Math.max(0,e.hp)/e.maxHp,6,'#f0bb77',3);text(c,String(Math.max(0,e.hp)),x,e.y-49,13,'#fff4cf');}
+ for(const item of s.pickups){const x=RUNNER_X[item.lane];bubble(c,x,item.y,25,'#c8e1de');text(c,{wand:'✦',fairy:'♫',meteor:'☄',wings:'⋈'}[item.kind],x,item.y+8,28,'#34516d');text(c,LIV_ITEM_NAMES[item.kind],x,item.y-33,14,'#fff8e8');}
  for(const b of s.shots)star(c,b.x,b.y,5+Math.min(4,b.power),'#fff3a8');
  for(let i=0;i<Math.min(12,s.squad);i++){const x=s.x+(i%4-1.5)*18,y=493+Math.floor(i/4)*18;ellipse(c,x,y+7,8,8,'#83c0ba');ellipse(c,x,y,6,6,'#fff0c7');}
- drawDoll(c,'liv',s.x,498,57,0);box(c,s.x-34,550,68,28,'#fff4dc',10);text(c,`× ${s.squad}`,s.x,570,20);if(s.gateFlash)text(c,s.lastGate,s.x,439,28,'#ffdf82');
+ if(s.item){ellipse(c,s.x,494,45,18,'#b2eadd66');text(c,{wand:'✦',fairy:'♫',meteor:'☄',wings:'⋈'}[s.item],s.x-48,490,28,'#fff3a8');}c.save();if(s.damageCooldown&&Math.floor(s.damageCooldown*10)%2)c.globalAlpha=.5;drawDoll(c,'liv',s.x,498,57,0);c.restore();box(c,s.x-34,550,68,28,'#fff4dc',10);text(c,`× ${s.squad}`,s.x,570,20);if(s.gateFlash)text(c,s.lastGate,s.x,439,28,'#ffdf82');
  if(s.burst>0){c.globalAlpha=s.burst;c.fillStyle='#fffbd1';c.fillRect(0,100,480,440);c.globalAlpha=1;}
 }
 export function drawGame(c,s){({drive:drawWhack,blocks:drawBubbles,photo:drawBakery,rhythm:drawPump,catch:drawDefense})[s.kind](c,s);}
