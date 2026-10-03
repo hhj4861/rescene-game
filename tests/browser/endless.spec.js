@@ -8,7 +8,7 @@ async function open(page,progress){
   await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await expect(page.getByRole('button',{name})).toBeEnabled();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
 }
 test('stage five clears into six with the same lives, including a reload before continuing',async({page},info)=>{
-  const p=emptyProgress(),s=createGame('blocks',{stage:5,hearts:2,seed:7});s.popped=6;s.enemies=[{x:150,y:536,home:0,dir:1,trapped:4}];p.games.blocks={stage:5,highest:5,hearts:2,snapshot:snapshotRound(s)};
+  const p=emptyProgress(),s=createGame('blocks',{stage:5,hearts:2,seed:7});s.popped=13;s.enemies=[{x:150,y:536,home:0,dir:1,trapped:4}];p.games.blocks={stage:5,highest:5,hearts:2,snapshot:snapshotRound(s)};
   await open(page,p);await page.getByRole('button',{name}).click();await page.getByRole('button',{name:'계속하기 ▶'}).click();await page.getByRole('button',{name:'방울 ○'}).click();
   await expect(page.locator('#result-title')).toHaveText('스테이지 5 클리어!');await expect(page.getByRole('button',{name:'다음 스테이지 ▶'})).toBeVisible();await expect(page.locator('.result-lives')).toContainText('♥♥♡');
   await page.reload();await page.getByRole('button',{name}).click();await expect(page.locator('.stage-goal')).toContainText('STAGE 6');await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 2개');

@@ -1,3 +1,4 @@
+import {enterPump,waitPump} from './pump-helpers.js';
 /* global window, document, localStorage */
 import {test,expect} from '@playwright/test';
 import {createGame} from '../../src/arcade-room/model.js';
@@ -8,21 +9,21 @@ import {emptyProgress,snapshotRound,stageGoal,PROGRESS_KEY} from '../../src/arca
 async function readyToClear(page,kind){
   const state=createGame(kind,{stage:1,seed:7}),progress=emptyProgress();
   state[{drive:'hits',blocks:'popped',photo:'collected',rhythm:'hits',catch:'defeated'}[kind]]=stageGoal(kind,1).target;
-  if(kind==='catch'){state.bossSpawned=true;state.bossDefeated=1;}progress.games[kind].snapshot=snapshotRound(state);
+  if(kind==='rhythm'){state.elapsed=59.98;state.remaining=.02;state.notes.forEach(n=>n.status='hit');}if(kind==='catch'){state.bossSpawned=true;state.bossDefeated=1;}progress.games[kind].snapshot=snapshotRound(state);
   await page.addInitScript(({key,value})=>localStorage.setItem(key,value),{key:PROGRESS_KEY,value:JSON.stringify(progress)});
   await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});
   await page.goto('./');await expect(page.locator(`[data-start="${kind}"].start`)).toBeEnabled();
   await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
-  await page.locator(`[data-start="${kind}"].start`).click();
+  await page.locator(`[data-start="${kind}"].start`).click();await enterPump(page);
 }
 
 for(const [kind,game] of Object.entries(GAMES))test(`${game.member}: real recording decodes, clears, replays and stops`,async({page},info)=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{
     const NativeAudio=window.Audio;window.voiceElements=[];
-    window.Audio=function(src){const clip=new NativeAudio(src);window.voiceElements.push(clip);return clip;};
+    window.Audio=function(src){const clip=new NativeAudio(src);if(src.includes('voices/'))window.voiceElements.push(clip);return clip;};
   });
-  await readyToClear(page,kind);await page.getByRole('button',{name:'계속하기 ▶'}).click();
+  await readyToClear(page,kind);await page.getByRole('button',{name:'계속하기 ▶'}).click();await waitPump(page);
   await page.clock.runFor(50);
   await expect(page.locator('#app')).toHaveAttribute('data-cleared','true');
   await expect(page.locator('.result-message')).toHaveText(SIGNATURES[game.member].line);
@@ -51,7 +52,7 @@ for(const [kind,game] of Object.entries(GAMES))test(`${game.member}: real record
 test('default voice attempts playback; failed media keeps clear progress and retry usable',async({page})=>{
   await page.route('**/voices/*.mp3*',route=>route.abort());
   const requests=[];page.on('request',r=>{if(r.url().includes('/voices/'))requests.push(r.url());});
-  await readyToClear(page,'blocks');await page.getByRole('button',{name:'계속하기 ▶'}).click();await page.clock.runFor(50);
+  await readyToClear(page,'blocks');await page.getByRole('button',{name:'계속하기 ▶'}).click();await waitPump(page);await page.clock.runFor(50);
   await expect.poll(()=>requests.length).toBeGreaterThan(0);await expect(page.locator('#voice-status')).toContainText('다시 듣기');await expect(page.getByRole('button',{name:'다음 스테이지 ▶'})).toBeEnabled();
   await page.getByRole('button',{name:'▶ 메이 실제 음성 듣기',exact:true}).click();
   await expect(page.locator('#voice-status')).toContainText('다시 듣기');
@@ -60,7 +61,7 @@ test('default voice attempts playback; failed media keeps clear progress and ret
 
 test('backgrounding a result stops voice and source link stays in the keyboard focus loop',async({page})=>{
   await page.addInitScript(()=>{window.clips=[];window.Audio=class{constructor(){window.clips.push(this);}play(){return Promise.resolve();}pause(){this.paused=true;}removeAttribute(){}load(){}};});
-  await readyToClear(page,'blocks');await page.getByRole('button',{name:'계속하기 ▶'}).click();await page.clock.runFor(50);
+  await readyToClear(page,'blocks');await page.getByRole('button',{name:'계속하기 ▶'}).click();await waitPump(page);await page.clock.runFor(50);
   await page.getByRole('button',{name:'▶ 메이 실제 음성 듣기',exact:true}).click();
   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new window.Event('visibilitychange'));});
   expect(await page.evaluate(()=>window.clips.at(-1).paused)).toBe(true);

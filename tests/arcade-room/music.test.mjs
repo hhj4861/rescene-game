@@ -18,7 +18,7 @@ function fixture(){
  a.musicNote=(note,at)=>calls.push({...note,scheduledAt:at});return {a,calls};
 }
 test('music uses one clock anchor, avoids duplicate notes and resumes at the saved beat',()=>{
- const {a,calls}=fixture(),s={kind:'rhythm',elapsed:0};a.tick(s);const first=calls.length;a.tick(s);assert.equal(calls.length,first);
+ const {a,calls}=fixture(),s={kind:'drive',elapsed:0};a.tick(s);const first=calls.length;a.tick(s);assert.equal(calls.length,first);
  a.context.currentTime=10.1;s.elapsed=.1;a.tick(s);assert.equal(a.transport.origin,10);
  for(const n of calls)assert.ok(Math.abs(n.scheduledAt-(10+n.at))<1e-8);
  a.stop();a.context.currentTime=40;s.elapsed=8;a.tick(s);

@@ -1,3 +1,4 @@
+import {enterPump,waitPump} from './pump-helpers.js';
 /* global localStorage, window */
 import {test,expect} from '@playwright/test';
 import {createGame,gameAction,availableSwap} from '../../src/arcade-room/model.js';
@@ -5,7 +6,7 @@ import {emptyProgress,snapshotRound,stageGoal,PROGRESS_KEY} from '../../src/arca
 async function open(page,s){
  const p=emptyProgress();p.games[s.kind]={stage:s.stage,highest:s.stage,hearts:s.hearts,snapshot:snapshotRound(s)};
  await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);},{key:PROGRESS_KEY,value:JSON.stringify(p)});
- await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.locator(`[data-start="${s.kind}"].start`).click();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-resume]').click();
+ await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.locator(`[data-start="${s.kind}"].start`).click();await enterPump(page);await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-resume]').click();await waitPump(page);
 }
 test('one Liv breach with three overlapping enemies costs one life',async({page})=>{
  const s=createGame('catch',{seed:7});s.spawn=10;s.gates=[];s.enemies=[0,1,2].map(id=>({id,lane:0,y:479,hp:50,maxHp:50,boss:false}));await open(page,s);await page.clock.runFor(150);
@@ -15,7 +16,7 @@ test('May overlapping enemies cause one hit and timeout does not charge that hit
  const s=createGame('blocks',{seed:7});s.elapsed=59.95;s.remaining=.05;s.invincible=0;s.enemies=[0,1,2].map(()=>({x:90,y:536,home:0,dir:1,trapped:0}));await open(page,s);await page.clock.runFor(100);
  await expect(page.locator('.result-lives')).toContainText('♥♥♡');expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).games.blocks.hearts,PROGRESS_KEY)).toBe(2);
 });
-async function saved(page,kind){await page.locator('[data-pause]').click();const s=await page.evaluate(({key,kind})=>JSON.parse(localStorage.getItem(key)).games[kind].snapshot,{key:PROGRESS_KEY,kind});await page.locator('[data-resume]').click();return s;}
+async function saved(page,kind){await page.locator('[data-pause]').click();const s=await page.evaluate(({key,kind})=>JSON.parse(localStorage.getItem(key)).games[kind].snapshot,{key:PROGRESS_KEY,kind});await page.locator('[data-resume]').click();await waitPump(page);return s;}
 async function voiceSpy(page){await page.addInitScript(()=>{window.voiceFiles=[];window.itemClips=[];const Native=window.Audio;window.Audio=class extends Native{constructor(src){super(src);window.voiceFiles.push(src);window.itemClips.push(this);}};});}
 test('May collects both boosts, uses physical F in a Korean layout and reloads without replaying voice',async({page},info)=>{
  await voiceSpy(page);const s=createGame('blocks',{seed:7});s.enemies=[];s.spawn=10;s.items=[{x:90,y:514,kind:'speed',ttl:12},{x:125,y:514,kind:'size',ttl:12}];await open(page,s);await page.clock.runFor(50);await expect(page.locator('#powerup-status')).toContainText('속도 1.5배');await expect(page.locator('#powerup-status')).toContainText('큰 방울');await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);expect(await page.evaluate(()=>window.itemClips.at(-1).currentSrc)).toContain('/voices/may-reaction-');
@@ -52,7 +53,7 @@ test('Woni gold rewards keep their score but rotate short reactions across a pau
  await page.keyboard.press('1');await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
  await page.keyboard.press('4');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(1);expect(await page.evaluate(()=>window.itemClips[0].getAttribute('src'))).toContain('woni-reaction-');await expect(page.locator('#score')).toHaveText('430');
  await page.locator('[data-pause]').click();expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).games.drive.snapshot.itemPickups,PROGRESS_KEY)).toBe(2);await page.clock.runFor(3900);expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(1);
- await page.clock.runFor(200);expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(1);await page.locator('[data-resume]').click();await page.keyboard.press('7');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(2);const files=await page.evaluate(()=>window.voiceFiles);expect(files[0]).not.toBe(files[1]);expect(files.every(f=>f.includes('woni-reaction-'))).toBe(true);await expect(page.locator('#score')).toHaveText('660');await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
+ await page.clock.runFor(200);expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(1);await page.locator('[data-resume]').click();await waitPump(page);await page.keyboard.press('7');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(2);const files=await page.evaluate(()=>window.voiceFiles);expect(files[0]).not.toBe(files[1]);expect(files.every(f=>f.includes('woni-reaction-'))).toBe(true);await expect(page.locator('#score')).toHaveText('660');await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
 });
 test('Woni final gold plays only the clear clip and manual replay stays available',async({page})=>{
  await voiceSpy(page);const s=createGame('drive',{seed:7});s.hits=stageGoal('drive',1).target-1;s.spawn=10;s.holes[0]={ttl:4,total:4,gold:true,fake:false,flash:0};await open(page,s);await page.keyboard.press('1');await expect(page.locator('#result-title')).toHaveText('스테이지 1 클리어!');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(1);await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
