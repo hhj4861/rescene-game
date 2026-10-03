@@ -4,6 +4,16 @@
 
 
 
+## 메이 방울 전투·펌프 곡 선택 운영 배포 — 2026-10-04
+
+- 사용자 운영 반영 승인 후 [PR #21](https://github.com/hhj4861/rescene-game/pull/21)을 머지했다. 운영 소스는 `ca5222a3f00b3dfa1f509cb7fbc251ff02f8c193`다.
+- [PR CI 37126549457](https://github.com/hhj4861/rescene-game/actions/runs/37126549457)의 단위 76개·브라우저 196개(환경별 5개 제외)·린트·빌드가 통과했다. PR head `435e435`와 머지 결과의 차이는 이전 배포 기록뿐이며 게임 소스·자산·빌드 입력·검사는 동일함을 확인한 뒤 CI `arcade-static-site`를 그대로 배포했다.
+- Pages 배포 `0ee52a0d-a594-44ec-b265-db42495a2d6c`: **Production / main / source `ca5222a`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://0ee52a0d.rescene-arcade.pages.dev).
+- 메이는 발판 추격·근접/연쇄 팡·포획 탈출 강화·단계별 적 증가를 적용했다. 미나미는 자체 제작 연주곡 3곡과 난이도 선택·미리 듣기·60초 완주·저장 이어하기·재생 실패 복구를 적용했다. 기존 승인 캐릭터와 저장 호환을 유지한다. [동작 상세](../design/may-pump-arcade.md).
+- 실제 운영 주소에서 **브라우저 196개 통과, 환경 전용 5개 제외**. Desktop Chromium·Mobile Chromium·Mobile WebKit에서 실제 MP3 출력 신호, 곡/난이도 선택·저장 복원·실패 복구, 메이 연쇄 및 기존 게임 회귀를 확인했다. 모바일 검사는 에뮬레이션이며 실기기 스피커 청음 검증은 아니다.
+- 공개 **31개 파일 전체의 SHA-256이 CI 산출물과 일치**했다. [머지 후 main CI 37161818484](https://github.com/hhj4861/rescene-game/actions/runs/37161818484)도 성공했다.
+- 증거는 사용자 지정 iCloud 작업 루트 `rescene-game/may-pump-deploy-20261004/`의 `site/`, `production-asset-hashes.json`, `public-browser/`, `public-browser.log`에 보관한다. 기존 Wrangler 로그인으로 배포했으며 CI 인증·자동 배포 설정은 변경하지 않았다.
+
 ## 리브 난이도 강화 운영 배포 — 2026-10-03
 
 - 사용자 운영 반영 승인 후 [PR #20](https://github.com/hhj4861/rescene-game/pull/20)을 머지했다. 운영 소스는 `21e7fcb1bff9ccad12d94f106d69ebe65c54a63e`다.
