@@ -29,9 +29,11 @@ test('original BGM plays by default and stops on mute, pause, home and resume',a
  await expect.poll(()=>page.evaluate(()=>window.musicEvents.length)).toBeGreaterThan(4);
  await expect.poll(()=>page.evaluate(()=>{const c=window.musicContexts[0],data=new Float32Array(c.audit.fftSize);c.audit.getFloatTimeDomainData(data);return Math.sqrt(data.reduce((sum,x)=>sum+x*x,0)/data.length);})).toBeGreaterThan(.0001);
  await expect(page.getByText(/오븐 앞 오후/)).toBeVisible();await page.getByRole('button',{name:'BGM 끄기',exact:true}).click();const count=await page.evaluate(()=>window.musicEvents.length);await page.waitForTimeout(350);expect(await page.evaluate(()=>window.musicEvents.length)).toBe(count);
- await page.getByRole('button',{name:'BGM 켜기',exact:true}).click();await page.waitForTimeout(500);expect(await page.evaluate(()=>window.musicEvents.length)).toBeGreaterThan(count);
+ await page.getByRole('button',{name:'BGM 켜기',exact:true}).click();await expect.poll(()=>page.evaluate(()=>window.musicEvents.length)).toBeGreaterThan(count);
  await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();const paused=await page.evaluate(()=>window.musicEvents.length);await page.waitForTimeout(350);expect(await page.evaluate(()=>window.musicEvents.length)).toBe(paused);await expect.poll(()=>page.evaluate(()=>window.musicEvents.some(n=>n.stopped))).toBe(true);
- await page.getByRole('button',{name:'계속하기 ▶'}).click();await waitPump(page);await page.waitForTimeout(500);expect(await page.evaluate(()=>window.musicEvents.length)).toBeGreaterThan(paused);
+ // Resuming is asynchronous and the score can be between beats; wait for real output, not a fixed 500ms.
+ await page.getByRole('button',{name:'계속하기 ▶'}).click();await expect.poll(()=>page.evaluate(()=>window.musicEvents.length)).toBeGreaterThan(paused);
+ await expect.poll(()=>page.evaluate(()=>{const c=window.musicContexts[0],data=new Float32Array(c.audit.fftSize);c.audit.getFloatTimeDomainData(data);return Math.sqrt(data.reduce((sum,x)=>sum+x*x,0)/data.length);})).toBeGreaterThan(.0001);
  await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();await page.getByRole('button',{name:'오락실로 돌아가기'}).click();const home=await page.evaluate(()=>window.musicEvents.length);await page.waitForTimeout(350);expect(await page.evaluate(()=>window.musicEvents.length)).toBe(home);
 });
 
