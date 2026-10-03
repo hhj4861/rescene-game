@@ -3,6 +3,17 @@
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
 
+
+## 리브 난이도 강화 운영 배포 — 2026-10-03
+
+- 사용자 운영 반영 승인 후 [PR #20](https://github.com/hhj4861/rescene-game/pull/20)을 머지했다. 운영 소스는 `21e7fcb1bff9ccad12d94f106d69ebe65c54a63e`다.
+- [PR CI 37123062439](https://github.com/hhj4861/rescene-game/actions/runs/37123062439)의 단위 62개·브라우저 184개(환경별 5개 제외)·린트·빌드가 통과했다. PR head `bc2f4ea`와 머지 결과의 차이는 이전 배포 기록 `docs/deployment/arcade-pages.md`뿐이며 실제 빌드 입력은 동일함을 확인한 뒤 CI `arcade-static-site`를 배포했다.
+- Pages 배포 `62fb5ab0-185d-461e-b495-d516ceb608d9`: **Production / main / source `21e7fcb`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://62fb5ab0.rescene-arcade.pages.dev).
+- 리브 적의 등장 빈도·체력·진격 속도, 강화 보스와 좌우 호위 적을 적용했다. 첫 두 게이트의 성장 구간과 기존 저장·목숨·음성을 유지한다. [난이도 기준](../design/liv-difficulty.md).
+- 실제 운영 주소 **브라우저 184개 통과, 환경 전용 5개 제외**. 강화 보스와 호위·PC/모바일 조작·일시정지·새로고침 저장 복원을 포함한다. 공개 **28개 파일 SHA-256이 CI 산출물과 일치**했다. 모바일 검사는 에뮬레이션이다.
+- [머지 후 main CI 37124048625](https://github.com/hhj4861/rescene-game/actions/runs/37124048625)도 성공했다. 증거는 사용자 지정 iCloud 작업 루트 `rescene-game/liv-difficulty-deploy-20261003/`에 보관한다. 기존 Wrangler 로그인으로 배포했으며 자동 배포 인증은 변경하지 않았다.
+- 이후 요청된 메이·펌프 개선은 이 배포에 포함되지 않으며 별도 구현 브랜치에서 진행한다.
+
 ## 멤버 반응 음성·리브 노래·제나 드래그 운영 배포 — 2026-10-03
 
 - 사용자 명시 승인 후 [PR #19](https://github.com/hhj4861/rescene-game/pull/19)를 머지했다. 운영 소스는 `070b0c6b6578ab3173aa25c2cf975c1953e43aa5`다.
