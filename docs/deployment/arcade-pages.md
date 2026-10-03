@@ -2,6 +2,17 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+## 원이 보상 음성 반복 완화 운영 배포 — 2026-10-03
+
+- 사용자 명시 승인 후 [PR #18](https://github.com/hhj4861/rescene-game/pull/18)을 머지했다. 운영 소스는 `424624f5c1f100de3c61eb24d75b3116409f24f6`다.
+- [PR CI 37114027495](https://github.com/hhj4861/rescene-game/actions/runs/37114027495)에서 Node 55개·브라우저 175개(환경별 5개 제외)·린트·빌드가 통과했다. PR 커밋 `87d11af`과 머지 커밋의 Git 트리 `07757bd8ed413af177de413912146770d92c4d03`가 동일함을 확인하고 해당 `arcade-static-site` 산출물을 배포했다.
+- Pages 배포 `cefa1897-dfc1-4777-ba83-d090d9a0a58d`: **Production / main / source `424624f`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://cefa1897.rescene-arcade.pages.dev).
+- 금빛 파이리 보상 음성 “오이쉬에~”는 최소 15초 간격으로 재생한다. 연속 획득으로 현재 음성을 재시작하거나 생략된 음성을 대기열에 쌓지 않는다. 마지막 금빛으로 클리어하면 클리어 음성만 한 번 요청한다. 점수·획득 수·효과음·캐릭터 반응, 수동 다시 듣기와 다른 멤버 음성은 유지한다. [정책과 검증](../design/woni-voice-spacing.md).
+- 공개 **전체 12개 파일의 SHA-256이 CI 산출물과 일치**했다. 증거는 사용자 지정 iCloud 작업 루트 `rescene-game/woni-voice-deploy-20261003/`의 `site/`, `production-asset-hashes.json`, `public-browser/`, `public-browser.log`에 보관한다.
+- **실제 공개 주소에서 브라우저 175개 통과, 환경 전용 5개 제외.** 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 실제 MP3 재생, 보상 음성 15초 간격과 일시정지 후 간격 유지, 점수/획득 수 유지, 마지막 금빛 클리어의 단일 재생 및 수동 다시 듣기를 확인했다. 기존 게임·BGM·음소거·저장 회귀 검사도 통과했다. 모바일은 에뮬레이션이며 실기기 청음 검증은 아니다.
+- [머지 후 main CI 37114525205](https://github.com/hhj4861/rescene-game/actions/runs/37114525205)도 최종 성공했다.
+- 기존 Wrangler 로그인으로 배포했으며 CI 인증·자동 배포 설정은 변경하지 않았다.
+
 ## 아이템·보스·조작·획득 음성 운영 배포 — 2026-10-03
 
 - 사용자 명시 승인 후 [PR #17](https://github.com/hhj4861/rescene-game/pull/17)을 머지했다. 운영 소스는 `6dc800e165f5eb6f0f083108a63927d6f2fce4b7`다.
