@@ -2,6 +2,18 @@
 
 2026-09-30 사용자 승인으로 기존 Cloudflare 계정에 게임 전용 `rescene-arcade` Pages 프로젝트를 생성했다. 운영 브랜치는 `main`, 할당 도메인은 `rescene-arcade.pages.dev`다. 2026-10-01 첫 운영 배포를 완료했다. 공개 주소는 https://rescene-arcade.pages.dev/ 이다.
 
+
+## 멤버 반응 음성·리브 노래·제나 드래그 운영 배포 — 2026-10-03
+
+- 사용자 명시 승인 후 [PR #19](https://github.com/hhj4861/rescene-game/pull/19)를 머지했다. 운영 소스는 `070b0c6b6578ab3173aa25c2cf975c1953e43aa5`다.
+- [PR CI 37119578385](https://github.com/hhj4861/rescene-game/actions/runs/37119578385)의 Node 59개·브라우저 181개(환경별 5개 제외)·린트·빌드가 통과했다. PR head `0636641`과 머지 커밋의 Git 트리 `8cfdeef905bffbf76e6d16879bd8710d6d57842a`가 같음을 확인하고 해당 `arcade-static-site`를 배포했다.
+- Pages 배포 `b731e3f9-8fbe-41a5-b34a-f02862f43356`: **Production / main / source `070b0c6`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://b731e3f9.rescene-arcade.pages.dev).
+- 일반 플레이에서는 멤버별 짧은 실제 반응 3개를 돌아가며 재생하고 유행어는 클리어에 사용한다. 리브의 음표 요정은 공식 커버 영상의 4.4초 노래를 재생하며 BGM을 낮춘다. 제나 드래그는 반 칸 이상 이동하면 누른 상태에서도 즉시 교환을 확정한다. [음원 출처·구간과 재생 정책](../design/member-reactions.md).
+- 공개 전체 **28개 파일의 SHA-256이 CI 산출물과 일치**했다. 증거는 사용자 지정 iCloud 작업 루트 `rescene-game/member-reactions-deploy-20261003/`의 `site/`, `production-asset-hashes.json`, `public-browser/`, `public-browser.log`에 보관한다.
+- **실제 운영 주소에서 브라우저 181개 통과, 환경 전용 5개 제외.** 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 음원 디코드·순환·간격·리브 노래와 BGM 복귀, 드래그 즉시 교환, 저장·목숨·기존 게임을 검증했다. 모바일은 에뮬레이션이며 실기기 청음 검증은 아니다.
+- [머지 후 main CI 37122034949](https://github.com/hhj4861/rescene-game/actions/runs/37122034949)도 최종 성공했다. 기존 Wrangler 로그인으로 배포했으며 CI 인증·자동 배포 설정은 변경하지 않았다.
+- 이후 요청된 리브 난이도 조정은 이 배포에 포함되지 않으며 별도 구현 브랜치에서 검증한다.
+
 ## 원이 보상 음성 반복 완화 운영 배포 — 2026-10-03
 
 - 사용자 명시 승인 후 [PR #18](https://github.com/hhj4861/rescene-game/pull/18)을 머지했다. 운영 소스는 `424624f5c1f100de3c61eb24d75b3116409f24f6`다.
