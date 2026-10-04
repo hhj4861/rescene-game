@@ -4,6 +4,16 @@
 
 
 
+## 미나미 펌프 리센느 공식 5곡 운영 배포 — 2026-10-04
+
+- 사용자 운영 반영 승인 후 [PR #22](https://github.com/hhj4861/rescene-game/pull/22)를 머지했다. 운영 소스는 `377ea2ae194e39d9223c14bf426010e2124af44b`다. 검증한 PR head `eea5caf`와 머지 커밋 사이에 파일 차이가 없음을 확인했다.
+- [PR CI 37165556236](https://github.com/hhj4861/rescene-game/actions/runs/37165556236)의 단위 94개·브라우저 214개(환경별 5개 제외)·린트·빌드가 통과한 `arcade-static-site` 산출물을 그대로 배포했다. [머지 후 main CI 37206774070](https://github.com/hhj4861/rescene-game/actions/runs/37206774070)도 성공했다.
+- Pages 배포 `7494e756-3a3a-4e1f-b612-5aee40ce8a17`: **Production / main / source `377ea2a`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://7494e756.rescene-arcade.pages.dev).
+- LOVE ATTACK·Pinball·Heart Drop·YoYo·New World의 공식 YouTube 영상, 곡/난이도 선택·8초 미리 듣기·60초 무대·저장 이어하기를 적용했다. 영상 시계에 따라 게임이 진행하며 버퍼링·재생 차단·일시정지 중에는 게임 시간과 목숨이 소모되지 않는다. 기존 캐릭터와 연습곡 3개를 유지한다. [출처·채보와 검증 범위](../design/pump-rescene-songs.md).
+- 실제 운영 URL에서 **브라우저 214개 통과, 환경 전용 5개 제외**. Desktop Chromium·Mobile Chromium·Mobile WebKit의 회귀 검사와 YouTube API 대역을 이용한 실패·탐색·버퍼링 검사를 포함한다. 별도 실제 네트워크 검사에서 공식 5곡 모두 영상 디코딩·재생 시간 진행·음소거 해제 및 출력 볼륨을 확인했고, LOVE ATTACK의 일시정지·새로고침 후 저장 위치 재생도 확인했다. 실기기 스피커 청음이나 곡 전체의 정밀 비트 검수 완료를 뜻하지 않는다.
+- 공개 **31개 파일 전체 SHA-256이 CI 산출물과 일치**했다. 증거는 사용자 지정 iCloud 작업 루트 `rescene-game/pump-rescene-deploy-20261004/`의 `site/`, `production-asset-hashes.json`, `live-youtube.json`, `production-pump.png`, `public-browser/`, `public-browser.log`에 보관한다.
+- 기존 Wrangler 로그인과 설치된 Node 22를 사용했다. CI용 인증·자동 배포·도메인 설정은 변경하지 않았다.
+
 ## 메이 방울 전투·펌프 곡 선택 운영 배포 — 2026-10-04
 
 - 사용자 운영 반영 승인 후 [PR #21](https://github.com/hhj4861/rescene-game/pull/21)을 머지했다. 운영 소스는 `ca5222a3f00b3dfa1f509cb7fbc251ff02f8c193`다.
