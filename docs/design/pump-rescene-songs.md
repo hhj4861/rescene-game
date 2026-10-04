@@ -1,0 +1,30 @@
+# 미나미 펌프 — 리센느 공식 곡 5개
+
+2026-10-04 사용자가 실제 리센느 곡을 요청했고, 대표곡 선택과 유튜브에 있는 약 5곡 사용을 지정했다. 아래 공식 채널 영상의 재생을 게임 안에 연결한다. 음원 파일을 추출·재배포하거나 영상을 가리고 소리만 재생하는 방식은 사용하지 않는다.
+
+| 곡 | BPM | 공식 영상 |
+| --- | ---: | --- |
+| LOVE ATTACK | 112 | https://www.youtube.com/watch?v=9XttLI0oH0I |
+| Pinball | 170 | https://www.youtube.com/watch?v=B8JJ8RNM-60 |
+| Heart Drop | 135 | https://www.youtube.com/watch?v=ByX8EZq8500 |
+| YoYo | 105 | https://www.youtube.com/watch?v=uDYy2UyO1X4 |
+| New World | 100 | https://www.youtube.com/watch?v=QNXeGm-Wkms |
+
+모든 영상의 YouTube oEmbed 작성자가 `RESCENE`, 공식 채널이 `@RESCENE_official`임을 조회했다. `Glow Up`과 `UhUh`의 처음 선정한 공식 MV/퍼포먼스는 실제 임베드에서 오류 150이 발생해 제외했다. 임베드 가능 메타데이터만으로 재생 성공을 판단하지 않는다.
+
+## 플레이
+
+- 기본 선택은 LOVE ATTACK이다. 다섯 공식 곡, 난이도 3가지, 8초 미리 듣기, 선택 곡 저장을 제공한다. 기존 자체 제작 3곡은 펼칠 수 있는 연습곡 영역에 두어 기존 저장을 이어받는다.
+- 각 무대는 영상 앞부분의 60초다. 전체 노래 완주로 표시하지 않으며, 곡별 BPM의 4박자 준비 후 노트가 시작된다. BPM 기반으로 직접 작성한 방향 패턴이고 원곡의 보컬/안무를 전사한 채보는 아니다. 초기 비트 위상은 0이며, 기존 판정 보정 기능을 유지한다. MV별 무음 도입부·음악 시작 오프셋의 정밀 청음 보정은 아직 검증하지 않았다.
+- YouTube IFrame API의 실제 재생 시간을 게임 시계로 사용한다. 로딩·버퍼링·영상 일시정지·자동 재생 차단 동안 발판과 게임 시간을 멈춘다. 재생 준비 또는 실패 상태에서 입력해 점수를 얻을 수 없다.
+- 영상의 직접 탐색으로 큰 시간 차가 생기면 게임을 잠시 멈추고, 이어하기는 마지막 진행 위치부터 복원한다. 건너뛴 노트로 여러 목숨을 한 번에 차감하거나 앞뒤 탐색으로 점수를 반복 획득하지 않는다.
+- 음소거·멤버 음성 중 볼륨 감소·화면 이탈 정지·홈/곡 변경 시 이전 플레이어 파기를 지원한다. API 연결 실패는 목숨을 유지하며 다시 켜기로 재시도할 수 있다. YouTube 광고·지역/로그인/기기별 제한은 플랫폼에 따르며 임의 차단하거나 우회하지 않는다.
+- 플레이어는 최소 200×200px 이상으로 표시하고 기본 컨트롤과 공식 원본 링크를 유지한다. 플레이어에 게임 UI를 겹치지 않는다. 게임 결과의 전체 화면 창을 띄우기 전 플레이어를 제거한다. 모바일은 영상·압축한 노트 화면·다섯 발판 순으로 배치하고 미나미 캐릭터를 유지한다.
+
+## 출처와 검증 범위
+
+- [YouTube IFrame API](https://developers.google.com/youtube/iframe_api_reference): 상태·재생 위치·일시정지·음량·오류·자동 재생 차단 처리.
+- [YouTube 플레이어 최소 기능](https://developers.google.com/youtube/terms/required-minimum-functionality): 공식 플레이어 표시와 오버레이 제한.
+- BPM 출발값: [LOVE ATTACK](https://songbpm.com/%40rescene/love-attack-ayxg2), [Pinball·YoYo·New World](https://12notez.in/song/artist/rescene), [Heart Drop](https://trackify.am/track/4lihmuAwCau08DRXHOCthl/tempo). 공식 제작사 채보가 아니며 BPM 정보에 기반한 게임용 패턴이다.
+- 단위 검사는 5곡의 비트 격자·60초 완주·저장 복원·미디어 시계와 탐색 보호를 확인한다. 결정적인 브라우저 회귀 검사는 명시적인 YouTube API 테스트 대역으로 버퍼링/오류/차단/탐색을 재현한다. 별도 실제 네트워크 검사로 공식 영상의 디코딩·재생 시간 진행·음소거 해제 상태를 확인하며, 이 둘을 혼동하지 않는다.
+- 산출물과 로그는 사용자 지정 iCloud `rescene-game/pump-rescene-songs-20261004/`에 저장한다. 실제 휴대폰 스피커 청음이나 원곡과 채보의 전 구간 음악적 검수 완료를 뜻하지 않는다.
