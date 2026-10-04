@@ -2,6 +2,26 @@ import {enterPump} from './pump-helpers.js';
 /* global document */
 import {test,expect} from '@playwright/test';
 
+async function expectCentered(page,id){
+ await expect(page.locator(`[data-slide="${id}"]`)).toHaveAttribute('aria-current','true');
+ await expect.poll(()=>page.locator(`#machine-${id}`).evaluate(card=>{
+  const r=card.getBoundingClientRect(),track=card.parentElement.getBoundingClientRect();
+  return Math.abs(r.left+r.width/2-(track.left+track.width/2));
+ })).toBeLessThan(2);
+}
+
+test('member tabs center the actual cabinet at wide, narrow and mobile widths',async({page},info)=>{
+ await page.goto('./');await expect(page.locator('[data-start="drive"].start')).toBeEnabled();
+ for(const width of [2200,1440,1065,700,390,320]){
+  await page.setViewportSize({width,height:1000});
+  for(const id of ['blocks','catch','photo','rhythm','drive']){
+   await page.locator(`[data-slide="${id}"]`).click();await expectCentered(page,id);
+  }
+ }
+ await page.setViewportSize({width:2200,height:1000});await page.locator('[data-slide="blocks"]').click();await expectCentered(page,'blocks');
+ await page.screenshot({path:info.outputPath('may-centered-wide.png')});
+});
+
 test('cabinet picker supports buttons, keyboard and remembers the game on return',async({page},info)=>{
  await page.goto('./');await expect(page.locator('[data-start="drive"].start')).toBeEnabled();
  await expect(page.locator('[data-slide-status]')).toHaveText('1 / 5 · 원이');await expect(page.getByRole('button',{name:'이전 게임',exact:true})).toBeDisabled();

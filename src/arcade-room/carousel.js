@@ -6,7 +6,7 @@ export function mountCarousel(root,initial,onChange){
  let resizeFrame=0,viewportWidth=window.innerWidth;
  let index=Math.max(0,cards.findIndex(c=>c.id===`machine-${initial}`));
  function mark(i){index=i;cards.forEach((c,n)=>c.dataset.selected=String(n===i));tabs.forEach((b,n)=>b.setAttribute('aria-current',String(n===i)));previous.disabled=i===0;next.disabled=i===cards.length-1;status.textContent=`${i+1} / ${cards.length} · ${tabs[i].textContent}`;onChange(tabs[i].dataset.slide);}
- function select(i){i=Math.max(0,Math.min(cards.length-1,i));mark(i);track.scrollTo({left:cards[i].offsetLeft-track.offsetLeft-(track.clientWidth-cards[i].offsetWidth)/2,behavior:'instant'});}
+ function select(i){i=Math.max(0,Math.min(cards.length-1,i));mark(i);const card=cards[i].getBoundingClientRect(),viewport=track.getBoundingClientRect();track.scrollTo({left:track.scrollLeft+card.left+card.width/2-(viewport.left+track.clientLeft+track.clientWidth/2),behavior:'instant'});}
  function scroll(){if(window.innerWidth!==viewportWidth)return;const center=track.getBoundingClientRect().left+track.clientWidth/2;let best=0,distance=Infinity;cards.forEach((c,i)=>{const r=c.getBoundingClientRect(),d=Math.abs(r.left+r.width/2-center);if(d<distance){best=i;distance=d;}});if(best!==index)mark(best);}
  function click(e){const b=e.target.closest('button');if(b?.dataset.slide)select(tabs.indexOf(b));else if(b?.dataset.slideStep)select(index+Number(b.dataset.slideStep));}
  function key(e){const move={ArrowLeft:index-1,ArrowRight:index+1,Home:0,End:cards.length-1}[e.key];if(move===undefined||e.altKey||e.metaKey||e.ctrlKey)return;e.preventDefault();select(move);if(e.target.closest('.machine'))cards[index].querySelector('.start').focus({preventScroll:true});}

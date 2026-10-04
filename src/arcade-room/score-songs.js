@@ -1,5 +1,5 @@
 export const SONG_STEP=5000;
-export const SONG_GAMES=['drive','blocks','photo','catch'];
+export const SONG_GAMES=['drive','blocks','catch'];
 const safe=n=>Number.isSafeInteger(n)&&n>=0;
 export function songLedger(value){return {points:safe(value?.points)?value.points:0,claimed:safe(value?.claimed)?value.claimed:0,roundHigh:safe(value?.roundHigh)?value.roundHigh:0};}
 // Credit only new round highs: recovering a fake-target penalty earns no duplicate points.
