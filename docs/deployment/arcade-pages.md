@@ -4,6 +4,15 @@
 
 
 
+## 멤버 선택 중앙 정렬·제나 리액션 복구 운영 배포 — 2026-10-05
+
+- 사용자 승인 후 [PR #24](https://github.com/hhj4861/rescene-game/pull/24)를 머지했다. 운영 소스는 `cf65dc3d793ddaa69aa410e6ee52b8352b8941f4`이며 검증한 PR head `55ef8ca`와 Git 트리 `d734c6277bf8e601d89d6e0f4a8308f20a47950b`가 동일하다.
+- [PR CI 37237851316](https://github.com/hhj4861/rescene-game/actions/runs/37237851316): 단위 115개, 브라우저 277개 통과·기존 환경 조건 5개 제외, lint/build 성공. 해당 `arcade-static-site`를 그대로 배포했다. 이전 CI는 제나 아이템 테스트의 오래된 무음 기대값 때문에 실패했고, 요청한 리액션 한 번 재생을 검사하도록 수정한 뒤 전체 CI를 통과했다.
+- Pages 배포 `dde38a9c-3d01-4923-9795-ceb4e20e37e3`: **Production / main / source `cf65dc3`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://dde38a9c.rescene-arcade.pages.dev).
+- 넓은 화면에서 멤버 탭 선택과 실제 카드 위치가 어긋나는 계산을 수정했다. 제나만 매치·연쇄·아이템 획득 리액션 세 가지를 복구하고 누적 노래 보상을 해제했다. 기존 캐릭터, 클리어 유행어, 다른 멤버의 노래 보상은 유지한다.
+- 운영 URL 관련 브라우저 검증 70개와 제나 아이템 검증 3개가 통과했다(총 73개, CDP 터치 전용 2개 환경 제외). 320–2200px의 여섯 화면 크기에서 실제 카드 중앙 오차 2px 미만, 제나 리액션 순환·음소거·클리어와 다른 멤버 노래를 확인했다. 정적 파일 34개 SHA-256이 CI 산출물과 일치했다. 모바일은 브라우저 에뮬레이션이며 물리 기기 스피커 청취를 뜻하지 않는다.
+- 증거는 공용 iCloud 작업 루트 `rescene-game/picker-zena-deploy-20261005/`의 `release.json`, `deploy.log`, `deployments.txt`, `production-asset-hashes.json`, `public-browser.log`, `public-item.log`와 브라우저 산출물에 보관한다. 기존 Wrangler 로그인으로 배포했으며 인증·도메인·자동 배포 설정은 변경하지 않았다.
+
 ## 누적 점수 노래 보상·리브 곡 공격·펌프 점수제 운영 배포 — 2026-10-05
 
 - 사용자 명시 승인 후 [PR #23](https://github.com/hhj4861/rescene-game/pull/23)을 머지했다. 운영 소스는 `fe0e1ec98df26f1c17f756bff40f9f0818cb72ec`이다.
