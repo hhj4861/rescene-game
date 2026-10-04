@@ -135,3 +135,11 @@ export const LIV_SONG={
   "end": 24.9,
   "source": "https://www.youtube.com/watch?v=O0BVlom5poY&t=20s"
 };
+
+// Individual members singing in official YouTube covers/challenge, not group-song substitutes.
+export const SCORE_SONGS={
+ woni:{kind:'song',file:'./voices/woni-song.mp3',title:'여름아 부탁해',start:16.4,end:19.2,source:'https://www.youtube.com/watch?v=l2GnjywCPjE&t=16s'},
+ may:{kind:'song',file:'./voices/may-song.mp3',title:'Put Your Records On',start:10,end:13.5,source:'https://www.youtube.com/watch?v=c13--HEy_8U&t=10s'},
+ zena:{kind:'song',file:'./voices/zena-song.mp3',title:'Life’s Too Short',start:10,end:13.5,source:'https://www.youtube.com/watch?v=OybCC65kqEw&t=10s'},
+ liv:{...LIV_SONG,kind:'song',title:'내 남자 친구에게'},
+};

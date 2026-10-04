@@ -9,9 +9,9 @@ test('damage protection groups a breach, expires, persists and never replenishes
  const breach=()=>{s.enemies=[0,1,2].map(id=>({id,lane:0,y:479,hp:50,maxHp:50,boss:false}));stepGame(s,.1);};
  breach();assert.equal(s.hearts,2);const resumed=restoreRound(snapshotRound(s));assert.equal(resumed.damageCooldown,s.damageCooldown);breach();assert.equal(s.hearts,2);stepGame(s,1.5);breach();assert.equal(s.hearts,1);
 });
-test('May contact plus timeout consumes one life; a missed pump chord also costs one',()=>{
+test('May contact plus timeout consumes one life; a missed pump chord keeps playing without damage',()=>{
  const s=createGame('blocks',{seed:7});s.elapsed=59.95;s.remaining=.05;s.invincible=0;s.enemies=[{x:90,y:536,home:0,dir:1,trapped:0}];stepGame(s,.1);assert.equal(s.hearts,2);assert.equal(s.endReason,'timeout');
- const r=createGame('rhythm',{stage:3});const at=r.notes.find((n,i)=>i&&n.at===r.notes[i-1].at).at;r.notes.filter(n=>n.at<at).forEach(n=>n.status='hit');r.elapsed=at;r.remaining=60-at;stepGame(r,.3);assert.equal(r.misses,2);assert.equal(r.hearts,2);
+ const r=createGame('rhythm',{stage:3});const at=r.notes.find((n,i)=>i&&n.at===r.notes[i-1].at).at;r.notes.filter(n=>n.at<at).forEach(n=>n.status='hit');r.elapsed=at;r.remaining=60-at;stepGame(r,.3);assert.equal(r.misses,2);assert.equal(r.hearts,3);assert.equal(r.ended,false);
 });
 test('May drops reachable alternating items; speed and bubble hitboxes improve then expire',()=>{
  const s=createGame('blocks',{stage:4,seed:7});s.spawn=10;s.enemies=[{x:145,y:536,home:0,dir:1,trapped:4}];gameAction(s,'bubble');assert.equal(s.items[0].kind,'speed');s.player.x=145;stepGame(s,.03);assert.equal(s.itemPickups,1);const x=s.player.x;gameAction(s,'right');stepGame(s,.1);assert.ok(s.player.x-x>28);
@@ -21,15 +21,15 @@ test('May drops reachable alternating items; speed and bubble hitboxes improve t
 test('positive gates strengthen distinct firing stats with caps and no repeat rewards',()=>{
  const s=createGame('catch',{seed:7});s.spawn=10;
  for(let i=0;i<10;i++){s.gates=[{y:479,options:Array(3).fill({op:'add',value:4})}];stepGame(s,.05);s.gates=[{y:479,options:Array(3).fill({op:'multiply',value:2})}];stepGame(s,.05);}
- assert.equal(s.fireLevel,5);assert.equal(s.volley,5);assert.equal(s.squad,60);assert.ok(s.shots.length>5);assert.ok(restoreRound(snapshotRound(s)));assert.equal(s.gatesTaken,20);
+ assert.equal(s.fireLevel,5);assert.equal(s.volley,5);assert.equal(s.squad,48);assert.ok(s.shots.length>5);assert.ok(restoreRound(snapshotRound(s)));assert.equal(s.gatesTaken,20);
 });
 for(const kind of LIV_ITEMS)test(`Liv ${kind} has a real combat effect and persists`,()=>{
  const s=createGame('catch',{seed:7});s.spawn=10;s.gates=[];s.pickups=[{lane:1,y:440,kind}];s.enemies=[{id:0,lane:0,y:150,hp:50,maxHp:50,boss:false}];stepGame(s,.025);
  assert.equal(s.item,kind);assert.equal(s.itemPickups,1);assert.ok(restoreRound(snapshotRound(s)));
- if(kind==='wand')assert.equal(s.shots[0].power,3);
- if(kind==='fairy')assert.equal(s.shots.length,3);
- if(kind==='meteor')assert.equal(s.enemies[0].hp,46);
- if(kind==='wings')assert.deepEqual(s.shots.map(b=>b.x).sort((a,b)=>a-b),[95,240,385]);
+ assert.ok(s.shots.every(b=>b.kind===kind));
+ if(kind==='love-attack'){assert.equal(s.shots[0].power,3);assert.equal(s.shots.length,2);}
+ if(kind==='heart-drop')assert.equal(s.enemies[0].hp,45);
+ if(kind==='new-world')assert.deepEqual(s.shots.map(b=>b.x).sort((a,b)=>a-b),[95,240,385]);
  s.itemTime=.01;stepGame(s,.025);assert.equal(s.item,'');
 });
 test('Liv must beat the final boss; boss escape ends only this round with one life lost',()=>{
