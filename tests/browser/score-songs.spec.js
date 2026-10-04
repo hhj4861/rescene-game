@@ -2,9 +2,9 @@
 import {test,expect} from '@playwright/test';
 import {createGame,availableSwap} from '../../src/arcade-room/model.js';
 import {emptyProgress,snapshotRound,stageGoal,PROGRESS_KEY} from '../../src/arcade-room/progress.js';
-import {SCORE_SONGS} from '../../src/arcade-room/voices.js';
+import {SCORE_SONGS,REACTION_VOICES} from '../../src/arcade-room/voices.js';
 import {fakeApi} from './youtube-helpers.js';
-const members={drive:'woni',blocks:'may',photo:'zena',catch:'liv'};
+const members={drive:'woni',blocks:'may',catch:'liv'};
 async function setup(page,kind,{points=4990,clear=false}={}){
  if(kind==='catch')await fakeApi(page);
  const s=createGame(kind,{seed:7,stage:1}),p=emptyProgress();s.spawn=10;
@@ -21,6 +21,26 @@ async function score(page,s){
  else if(s.kind==='photo'){const pair=availableSwap(s.board);for(const i of pair)await page.locator(`.field-controls [data-act="${i}"]`).click();}
  await page.clock.runFor(100);
 }
+test('Zena restores rotating match reactions and leaves old song rewards inactive',async({page})=>{
+ const s=await setup(page,'photo',{points:9990});await score(page,s);
+ await expect(page.locator('#song-progress')).toHaveCount(0);await expect(page.locator('[data-song-replay]')).toHaveCount(0);
+ await expect.poll(()=>page.evaluate(()=>window.songClips.at(-1)?.audio.currentTime||0)).toBeGreaterThan(0);
+ expect(await page.evaluate(()=>window.songClips.map(c=>c.src))).toEqual([REACTION_VOICES.zena[0].file]);
+ for(let turn=1;turn<3;turn++){
+  await page.locator('[data-pause]').click();
+  const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).games.photo,PROGRESS_KEY);
+  expect(saved.songs.points).toBe(9990);expect(saved.songs.claimed).toBe(5000);
+  await page.clock.runFor(4100);await page.locator('[data-resume]').click();
+  // Pausing saves the settled board and cancels the previous native voice.
+  await page.clock.runFor(1500);await score(page,{kind:'photo',board:saved.snapshot.board});
+  await expect.poll(()=>page.evaluate(()=>window.songClips.at(-1)?.audio.currentTime||0)).toBeGreaterThan(0);
+  expect(await page.evaluate(()=>window.songClips.map(c=>c.src))).toEqual(REACTION_VOICES.zena.slice(0,turn+1).map(c=>c.file));
+ }
+});
+for(const toggle of ['voice','sound'])test(`Zena match reactions respect ${toggle} mute`,async({page})=>{
+ const s=await setup(page,'photo');await page.locator(`[data-${toggle}]`).click();await score(page,s);
+ expect(await page.evaluate(()=>window.songClips)).toEqual([]);
+});
 for(const [kind,member] of Object.entries(members))test(`${member} earns own singing reward at cumulative 5000 and persists without replay`,async({page},info)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));const s=await setup(page,kind);await score(page,s);
  await expect(page.locator('#song-progress')).toContainText('다음 노래 10,000점');
