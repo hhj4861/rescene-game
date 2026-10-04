@@ -1,9 +1,11 @@
+import {fakeApi} from './youtube-helpers.js';
 import {enterPump,waitPump} from './pump-helpers.js';
 /* global localStorage, window */
 import {test,expect} from '@playwright/test';
 import {createGame,gameAction,availableSwap} from '../../src/arcade-room/model.js';
 import {emptyProgress,snapshotRound,stageGoal,PROGRESS_KEY} from '../../src/arcade-room/progress.js';
 async function open(page,s){
+ if(s.kind==='catch')await fakeApi(page);
  const p=emptyProgress();p.games[s.kind]={stage:s.stage,highest:s.stage,hearts:s.hearts,snapshot:snapshotRound(s)};
  await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);},{key:PROGRESS_KEY,value:JSON.stringify(p)});
  await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.locator(`[data-start="${s.kind}"].start`).click();await enterPump(page);await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-resume]').click();await waitPump(page);
@@ -25,8 +27,8 @@ test('May collects both boosts, uses physical F in a Korean layout and reloads w
  await page.reload();await page.locator('[data-start="blocks"].start').click();await expect(page.locator('#powerup-status')).toContainText('큰 방울');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(0);
 });
 test('Liv gates increase rate and volley, picks a themed item and saves its duration',async({page},info)=>{
- await voiceSpy(page);const s=createGame('catch',{seed:7});s.spawn=10;s.gates=[{y:479,options:Array(3).fill({op:'add',value:4})},{y:474,options:Array(3).fill({op:'multiply',value:2})}];s.pickups=[{lane:1,y:440,kind:'wings'}];await open(page,s);await page.clock.runFor(200);await expect(page.locator('#powerup-status')).toContainText('연사 1단계 · 한 번에 2발');await expect(page.locator('#powerup-status')).toContainText('오로라 날개');await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);expect(await page.evaluate(()=>window.itemClips.at(-1).currentSrc)).toContain('/voices/liv-reaction-');let current=await saved(page,'catch');expect(current.shots.some(b=>b.x===95)).toBe(true);expect(current.itemTime).toBeGreaterThan(9);expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(1);
- await page.screenshot({path:info.outputPath('liv-items.png'),fullPage:true});await page.reload();await page.locator('[data-start="catch"].start').click();await expect(page.locator('#powerup-status')).toContainText('오로라 날개');
+ await voiceSpy(page);const s=createGame('catch',{seed:7});s.spawn=10;s.gates=[{y:479,options:Array(3).fill({op:'add',value:4})},{y:474,options:Array(3).fill({op:'multiply',value:2})}];s.pickups=[{lane:1,y:440,kind:'new-world'}];await open(page,s);await page.clock.runFor(200);await expect(page.locator('#powerup-status')).toContainText('연사 1단계 · 한 번에 2발');await expect(page.locator('#powerup-status')).toContainText('New World');await expect(page.locator('#music-status')).toContainText('재생 중 · New World');let current=await saved(page,'catch');expect(current.shots.some(b=>b.x===95)).toBe(true);expect(current.itemTime).toBeGreaterThan(9);expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(0);
+ await page.screenshot({path:info.outputPath('liv-items.png'),fullPage:true});await page.reload();await page.locator('[data-start="catch"].start').click();await expect(page.locator('#powerup-status')).toContainText('New World');
 });
 test('Liv boss remains after the kill target and keyboard support can finish the boss',async({page},info)=>{
  const s=createGame('catch',{seed:7});s.defeated=6;s.charge=5;s.bossSpawned=true;s.enemies=[{id:0,lane:1,y:190,hp:10,maxHp:32,boss:true}];s.gates=[];s.spawn=10;await open(page,s);await page.clock.runFor(50);await expect(page.locator('#app')).toHaveAttribute('data-state','playing');await expect(page.locator('#powerup-status')).toContainText('보스를 물리쳐요');await page.screenshot({path:info.outputPath('liv-boss.png'),fullPage:true});await page.keyboard.press('Space');await page.clock.runFor(50);await expect(page.locator('#result-title')).toHaveText('스테이지 1 클리어!');
@@ -41,8 +43,8 @@ test('Zena keyboard selects bread, uses rolling pin, falls and cannot reuse an e
 test('all five pump physical keys work even with Korean characters',async({page})=>{
  const s=createGame('rhythm',{seed:7,stage:3});await open(page,s);for(const [code,key,lane] of [['KeyZ','ㅋ',0],['KeyQ','ㅂ',1],['KeyS','ㄴ',2],['KeyE','ㄷ',3],['KeyC','ㅊ',4]]){await page.locator('#game').dispatchEvent('keydown',{code,key,bubbles:true});expect((await saved(page,'rhythm')).lastTaps[lane]).toBe(0);}
 });
-test('item voice follows member mute and does not replay from a saved pickup',async({page})=>{
- await voiceSpy(page);const s=createGame('catch',{seed:7});s.spawn=10;s.gates=[];s.pickups=[{lane:1,y:400,kind:'fairy'}];await open(page,s);await page.getByRole('button',{name:'멤버 음성 끄기',exact:true}).click();await page.clock.runFor(450);await expect(page.locator('#powerup-status')).toContainText('음표 요정');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(0);
+test('Liv item songs follow BGM instead of the member voice switch',async({page})=>{
+ await voiceSpy(page);const s=createGame('catch',{seed:7});s.spawn=10;s.gates=[];s.pickups=[{lane:1,y:400,kind:'pinball'}];await open(page,s);await page.getByRole('button',{name:'멤버 음성 끄기',exact:true}).click();await page.clock.runFor(450);await expect(page.locator('#powerup-status')).toContainText('Pinball');await expect(page.locator('#music-status')).toContainText('재생 중 · Pinball');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(0);await page.locator('[data-music]').click();expect(await page.evaluate(()=>window.ytPlayers.at(-1).muted)).toBe(true);
 });
 test('Woni late-stage fake and real targets both remain keyboard operable',async({page},info)=>{
  const s=createGame('drive',{stage:15,seed:7});s.spawn=10;s.hits=3;s.score=500;s.holes[0]={ttl:1.6,total:1.6,gold:false,fake:true,flash:0};s.holes[3]={ttl:1.6,total:1.6,gold:false,fake:false,flash:0};await open(page,s);await page.screenshot({path:info.outputPath('woni-late-fake.png'),fullPage:true});await page.keyboard.press('1');await expect(page.locator('#score')).toHaveText('350');await page.keyboard.press('4');await expect(page.locator('#score')).toHaveText('460');await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 3개');

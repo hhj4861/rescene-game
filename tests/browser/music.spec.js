@@ -38,8 +38,8 @@ test('original BGM plays by default and stops on mute, pause, home and resume',a
 });
 
 test('pump chart follows the 120 BPM score through pause and resume',async({page})=>{
- await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-start="rhythm"].start').click();await enterPump(page);await expect(page.locator('.music-credit')).toContainText('Five Steps, One Stage');await page.clock.runFor(2000);await page.keyboard.press('z');await expect(page.locator('#goal')).toHaveText('1 / 16 박자 · 곡 끝까지!');
+ await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-start="rhythm"].start').click();await enterPump(page);await expect(page.locator('.music-credit')).toContainText('Five Steps, One Stage');await page.clock.runFor(2000);await page.keyboard.press('z');await expect(page.locator('#goal')).toHaveText('성공 1 · MISS 0');
  await page.getByRole('button',{name:'잠깐 쉬기 Ⅱ'}).click();await page.clock.runFor(5000);await page.getByRole('button',{name:'계속하기 ▶'}).click();await waitPump(page);
- for(const [i,key] of ['c','e','z'].entries()){await page.clock.runFor(1000);await page.keyboard.press(key);await expect(page.locator('#goal')).toHaveText(`${i+2} / 16 박자 · 곡 끝까지!`);}
- await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 3개');
+ for(const [i,key] of ['c','e','z'].entries()){await page.clock.runFor(1000);await page.keyboard.press(key);await expect(page.locator('#goal')).toHaveText(`성공 ${i+2} · MISS 0`);}
+ await expect(page.locator('#lives')).toHaveCount(0);
 });
