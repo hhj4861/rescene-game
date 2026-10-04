@@ -5,7 +5,7 @@ export class ArcadeAudio {
   constructor({now=()=>performance.now()}={}){this.now=now;this.voiceStartedAt=new Map();this.reactionTurns=new Map();this.reactionAt=new Map();this.song=null;this.songState=null;this.songSource=null;this.songRequest=0;this.musicBus=null;this.enabled=true;this.musicEnabled=true;this.voiceEnabled=true;this.context=null;this.nodes=new Set();this.musicNodes=new Set();this.transport=null;this.voice=null;this.voiceReport=null;this.voiceRequest=0;}
   async enable(value){
     this.enabled=value;if(!value){this.stop();return false;}
-    try{this.context??=new (window.AudioContext||window.webkitAudioContext)();if(!this.musicBus){this.musicBus=this.context.createGain();this.musicBus.connect(this.context.destination);this.musicBus.gain.value=this.voice?.paused===false?.2:1;}await this.context.resume();return true;}
+    try{this.context??=new (window.AudioContext||window.webkitAudioContext)();if(!this.musicBus){this.musicBus=this.context.createGain();this.musicBus.connect(this.context.destination);this.musicBus.gain.value=this.voice?.paused===false?(this.voiceIsSong?0:.2):1;}await this.context.resume();return true;}
     catch{this.enabled=false;return false;}
   }
   tone(frequency=600,delay=0,duration=.09){
@@ -57,10 +57,10 @@ export class ArcadeAudio {
   }
   setMusic(value){this.musicEnabled=value;if(!value)this.stopMusic();}
   duckMusic(active,immediate=false){
-    this.externalMusic?.(active);
+    this.externalMusic?.(active,!!this.voiceIsSong);
     if(!this.musicBus||!this.context)return;
     const gain=this.musicBus.gain,at=this.context.currentTime;
-    gain.cancelScheduledValues(at);if(immediate){gain.setValueAtTime(active?.2:1,at);return;}gain.setValueAtTime(gain.value,at);gain.linearRampToValueAtTime(active?.2:1,at+.08);
+    gain.cancelScheduledValues(at);if(immediate){gain.setValueAtTime(active?(this.voiceIsSong?0:.2):1,at);return;}gain.setValueAtTime(gain.value,at);gain.linearRampToValueAtTime(active?(this.voiceIsSong?0:.2):1,at+.08);
   }
   playReaction(member,pool,report){
     // Rotate actual recordings. Suppressed events never consume a turn or queue audio.
@@ -71,7 +71,7 @@ export class ArcadeAudio {
     return this.playVoice(pool[turn%pool.length],report);
   }
   cancelVoice(){
-    this.voiceRequest++;this.duckMusic(false);
+    this.voiceRequest++;this.duckMusic(false);this.voiceIsSong=false;
     if(this.voice){this.voice.onplaying=null;this.voice.onended=null;this.voice.onerror=null;this.voice.pause();this.voice.removeAttribute('src');this.voice.load();this.voice=null;}
     this.voiceReport?.('음성 재생을 멈췄어요.');this.voiceReport=null;
   }
@@ -84,11 +84,11 @@ export class ArcadeAudio {
     const current=()=>request===this.voiceRequest;
     if(!source?.file){report('연결된 음성이 없어요. 자막으로 확인해 주세요.');return false;}
     try{
-      this.voiceStartedAt.set(source.file,now);
+      this.voiceStartedAt.set(source.file,now);this.voiceIsSong=source.kind==='song';
       const voice=new window.Audio(source.file);this.voice=voice;this.voiceReport=report;voice.volume=.85;
       const failed=()=>{if(current()){report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}};
-      voice.onplaying=()=>{if(current()){this.duckMusic(true);report('실제 멤버 음성 재생 중');}};
-      voice.onended=()=>{if(current()){report('원본 음성 · 방송 배경음 포함');this.cancelVoiceQuietly();}};
+      voice.onplaying=()=>{if(current()){this.duckMusic(true);report(source.kind==='song'?`노래 보상 · ${source.title} 재생 중`:'실제 멤버 음성 재생 중');}};
+      voice.onended=()=>{if(current()){report(source.kind==='song'?'노래 보상 끝 · 다시 듣기로 재생할 수 있어요.':'원본 음성 · 방송 배경음 포함');this.cancelVoiceQuietly();}};
       voice.onerror=failed;report('멤버 음성 준비 중…');
       await voice.play();return current();
     }catch{if(current()){report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}return false;}

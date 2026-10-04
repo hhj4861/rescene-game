@@ -38,9 +38,9 @@ export class PumpVideo{
   if(!this.ready)return;
   this.volume();if(this.loaded){this.player.seekTo(position,true);this.player.playVideo();}else{this.loaded=true;this.player.loadVideoById({videoId:this.song.videoId,startSeconds:position,endSeconds:60});}
  }
- volume(){if(!this.ready)return;this.player.setVolume(this.ducked?20:75);if(this.muted)this.player.mute();else this.player.unMute();}
+ volume(){if(!this.ready)return;this.player.setVolume(this.ducked?(this.songDucked?0:20):75);if(this.muted)this.player.mute();else this.player.unMute();}
  setMuted(value){this.muted=value;this.volume();}
- setDucked(value){this.ducked=value;this.volume();}
+ setDucked(value,song=false){this.ducked=value;this.songDucked=song;this.volume();}
  isPlaying(requireSync=true){return this.ready&&this.wanted&&(!requireSync||!this.syncing)&&this.player.getPlayerState()===1;}
  sample(elapsed){
   if(!this.ready||!this.wanted)return {dt:0,jump:false};

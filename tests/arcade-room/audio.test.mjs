@@ -90,3 +90,10 @@ test('stopping an idle graph resets the music gain immediately, without waiting 
  const {audio,clips}=fixture(t),values=[];audio.context={currentTime:12};audio.musicBus={gain:{value:.2,cancelScheduledValues(){},setValueAtTime(value){values.push(value);},linearRampToValueAtTime(){}}};
  const pending=audio.playVoice({file:'song.mp3'});clips[0].resolve();await pending;audio.stop();assert.equal(values.at(-1),1);
 });
+test('song rewards silence both music buses and restore them on completion or cancellation',async t=>{
+ const {audio,clips}=fixture(t),ramps=[],external=[];
+ audio.externalMusic=(active,song)=>external.push({active,song});audio.context={currentTime:0};audio.musicBus={gain:{value:1,cancelScheduledValues(){},setValueAtTime(){},linearRampToValueAtTime(v){ramps.push(v);}}};
+ for(const end of ['onended','onerror','stop']){
+  const p=audio.playVoice({kind:'song',file:'score.mp3',title:'Cover'});const clip=clips.at(-1);clip.resolve();await p;clip.onplaying();assert.equal(ramps.at(-1),0);assert.deepEqual(external.at(-1),{active:true,song:true});if(end==='stop')audio.stop();else clip[end]();assert.equal(audio.voiceIsSong,false);assert.equal(ramps.at(-1),1);assert.equal(external.at(-1).active,false);
+ }
+});
