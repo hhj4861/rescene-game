@@ -57,6 +57,7 @@ export class ArcadeAudio {
   }
   setMusic(value){this.musicEnabled=value;if(!value)this.stopMusic();}
   duckMusic(active,immediate=false){
+    this.externalMusic?.(active);
     if(!this.musicBus||!this.context)return;
     const gain=this.musicBus.gain,at=this.context.currentTime;
     gain.cancelScheduledValues(at);if(immediate){gain.setValueAtTime(active?.2:1,at);return;}gain.setValueAtTime(gain.value,at);gain.linearRampToValueAtTime(active?.2:1,at+.08);

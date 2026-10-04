@@ -1,0 +1,42 @@
+/* global window, document, localStorage, Event */
+import {test,expect} from '@playwright/test';
+import {PROGRESS_KEY} from '../../src/arcade-room/progress.js';
+const ids=['love-attack','pinball','heart-drop','yoyo','new-world'];
+async function fakeApi(page,blocked=false){
+ await page.addInitScript(value=>{window.ytBlocked=value;},blocked);
+ await page.route('https://www.youtube.com/iframe_api',r=>r.fulfill({contentType:'application/javascript',body:`
+ window.ytPlayers=[];window.YT={Player:class{
+ constructor(mount,options){this.options=options;this.events=options.events;this.position=0;this.status=5;this.anchor=performance.now();this.frame=document.createElement('iframe');mount.replaceWith(this.frame);window.ytPlayers.push(this);queueMicrotask(()=>this.events.onReady({target:this}));}
+ getIframe(){return this.frame;}getCurrentTime(){return this.position+(this.status===1?(performance.now()-this.anchor)/1000:0);}getPlayerState(){return this.status;}
+ state(value){this.position=this.getCurrentTime();this.anchor=performance.now();this.status=value;this.events.onStateChange({data:value,target:this});}
+ loadVideoById(value){this.loaded=value;this.position=value.startSeconds;this.anchor=performance.now();if(window.ytBlocked){this.state(5);this.events.onAutoplayBlocked({target:this});}else this.state(1);}
+ seekTo(value){this.position=value;this.anchor=performance.now();}playVideo(){this.state(1);}pauseVideo(){this.state(2);}setVolume(value){this.volume=value;}mute(){this.muted=true;}unMute(){this.muted=false;}destroy(){this.state(2);this.frame.remove();this.destroyed=true;}
+ }};window.onYouTubeIframeAPIReady();` }));
+}
+async function open(page){await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-start="rhythm"].start').click();}
+async function begin(page){await page.locator('[data-song-start]').click();await expect(page.locator('#music-status')).toContainText('재생 중');await page.clock.runFor(50);}
+const saved=page=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)).games.rhythm.snapshot,PROGRESS_KEY);
+test('five official choices create one visible player and preserve keyboard song selection',async({page},info)=>{
+ await fakeApi(page);await open(page);await expect(page.getByRole('group',{name:'리센느 공식 곡 선택'}).locator('button')).toHaveCount(5);
+ for(const id of ids){await page.locator(`[data-song="${id}"]`).click();await page.locator('[data-song-preview]').click();await expect(page.locator('#song-preview-status')).toContainText('재생 중');const box=await page.locator('#pump-video iframe').boundingBox();expect(box.width).toBeGreaterThanOrEqual(200);expect(box.height).toBeGreaterThanOrEqual(200);expect(await page.evaluate(()=>window.ytPlayers.slice(0,-1).every(p=>p.destroyed))).toBe(true);}
+ await page.locator('[data-song="love-attack"]').click();await page.locator('[data-song-level="3"]').click();await begin(page);await expect(page.locator('.music-credit')).toContainText('LOVE ATTACK');await expect(page.locator('.stage-goal b')).toHaveText('STAGE 3');await page.screenshot({path:info.outputPath('official-pump.png'),fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});
+test('media clock follows actual playback and buffering or native pause cannot cost lives',async({page})=>{
+ await fakeApi(page);await open(page);await begin(page);await page.clock.runFor(1050);await page.evaluate(()=>window.ytPlayers.at(-1).state(3));await page.clock.runFor(5000);await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 3개');await expect(page.locator('#time')).toHaveText('59초');
+ await page.evaluate(()=>window.ytPlayers.at(-1).state(1));await page.clock.runFor(1043);await page.keyboard.press('z');await expect(page.locator('#goal')).toHaveText('1 / 16 박자 · 60초 완주!');await page.evaluate(()=>window.ytPlayers.at(-1).state(2));await page.clock.runFor(3000);await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 3개');
+ await page.locator('[data-pause]').click();const before=await saved(page);await page.reload();await page.locator('[data-start="rhythm"].start').click();await page.locator('[data-song-resume]').click();await page.locator('[data-resume]').click();await expect(page.locator('#music-status')).toContainText('재생 중');expect(await page.evaluate(()=>window.ytPlayers.at(-1).loaded.startSeconds)).toBeCloseTo(before.elapsed,2);expect((await saved(page)).hits).toBe(1);
+});
+test('seek jumps pause safely and mute, resume and leaving control the official player',async({page})=>{
+ await fakeApi(page);await open(page);await begin(page);await page.clock.runFor(500);await page.locator('[data-music]').click();expect(await page.evaluate(()=>window.ytPlayers.at(-1).muted)).toBe(true);await page.locator('[data-music]').click();expect(await page.evaluate(()=>window.ytPlayers.at(-1).muted)).toBe(false);
+ await page.evaluate(()=>window.ytPlayers.at(-1).seekTo(30));await page.clock.runFor(50);await expect(page.locator('#app')).toHaveAttribute('data-state','paused');await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 3개');await page.locator('[data-resume]').click();await page.clock.runFor(50);expect(await page.evaluate(()=>window.ytPlayers.at(-1).getCurrentTime())).toBeLessThan(1);await page.locator('[data-pause]').click();await page.locator('[data-leave]').click();expect(await page.evaluate(()=>window.ytPlayers.every(p=>p.destroyed))).toBe(true);
+});
+test('autoplay blocking waits for a user play without starting the game clock',async({page})=>{
+ await fakeApi(page,true);await open(page);await page.locator('[data-song-start]').click();await expect(page.locator('#music-status')).toContainText('▶');await page.clock.runFor(20000);await expect(page.locator('#time')).toHaveText('60초');await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 3개');await page.evaluate(()=>window.ytPlayers.at(-1).playVideo());await page.clock.runFor(500);await expect(page.locator('#music-status')).toContainText('재생 중');
+});
+test('API failure can recover without discarding the selected official song or lives',async({page})=>{
+ await page.route('https://www.youtube.com/iframe_api',r=>r.abort());await open(page);await page.locator('[data-song="heart-drop"]').click();await page.locator('[data-song-start]').click();await expect(page.locator('#app')).toHaveAttribute('data-state','paused');await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 3개');await page.unroute('https://www.youtube.com/iframe_api');await fakeApi(page);await page.locator('[data-retry-music]').click();await expect(page.locator('#music-status')).toContainText('재생 중 · Heart Drop');
+});
+
+test('focusing native video controls keeps the round active, but leaving the tab pauses it',async({page})=>{
+ await fakeApi(page);await open(page);await begin(page);await page.locator('#pump-video iframe').click();await page.clock.runFor(100);await expect(page.locator('#app')).toHaveAttribute('data-state','playing');await page.locator('#game').focus();await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.clock.runFor(50);await expect(page.locator('#app')).toHaveAttribute('data-state','paused');expect(await page.evaluate(()=>window.ytPlayers.at(-1).status)).toBe(2);
+});
