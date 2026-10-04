@@ -4,6 +4,16 @@
 
 
 
+## 누적 점수 노래 보상·리브 곡 공격·펌프 점수제 운영 배포 — 2026-10-05
+
+- 사용자 명시 승인 후 [PR #23](https://github.com/hhj4861/rescene-game/pull/23)을 머지했다. 운영 소스는 `fe0e1ec98df26f1c17f756bff40f9f0818cb72ec`이다.
+- [PR CI 37220015380](https://github.com/hhj4861/rescene-game/actions/runs/37220015380): 단위 115개, 브라우저 268개 통과·기존 환경 조건 5개 제외, lint·build 성공. PR head `3378085`와 머지 결과의 Git 트리 `4f638417bd7a2dbe4c7d398a367a7ea9591da287`가 동일함을 확인하고 검증된 `arcade-static-site`를 그대로 배포했다. [머지 후 main CI 37234237722](https://github.com/hhj4861/rescene-game/actions/runs/37234237722)도 성공했다.
+- Pages 배포 `0ff5d7a3-52f5-47de-896c-616bda1e45a3`: **Production / main / source `fe0e1ec`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://0ff5d7a3.rescene-arcade.pages.dev).
+- 원이·메이·제나·리브의 일반 적 처리 음성을 제거하고 멤버별 누적 5,000점마다 본인 가창의 짧은 노래 보상을 연결했다. 미나미 펌프는 적용 대상에서 제외하며, 기존 공식 5곡을 목숨 차감 없이 점수제로 완주한다. 리브 곡 아이템·특수공격과 난이도 상향도 함께 반영했다. [노래 원본 구간과 저장 정책](../design/score-songs.md), [리브 곡 공격](../design/liv-song-attacks.md).
+- 운영 URL에서도 Chromium 데스크톱·모바일 및 WebKit으로 총 268개 시나리오를 검증했다(기존 환경 조건 5개 제외). 최초 전체 실행은 267개 통과, 1개가 로컬 스크린샷 저장 중 `ENOSPC`로 중단됐다. 이번 작업의 완료된 임시 다운로드·도구만 정리한 뒤 동일 운영 URL에서 해당 항목을 재실행해 통과했다. 게임 코드나 테스트 검사를 건너뛰지 않았다.
+- 공개 정적 파일 34개 모두 검증된 CI 산출물과 SHA-256이 일치했다. 실제 노래 파일의 브라우저 디코딩·비무음 신호·재생 시간, 누적 보상·저장·음소거·중복 방지·다시 듣기와 리브·펌프 흐름을 확인했다. 물리 기기 스피커 청취를 대신하는 검증은 아니다.
+- 증거는 공용 iCloud 작업 루트 `rescene-game/score-songs-deploy-20261005/`의 `site/`, `production-asset-hashes.json`, `public-browser.log`, `public-browser/`, `public-recheck.log`, `public-recheck/`, `deploy.log`, `deployments.txt`에 보관한다. 기존 Wrangler 로그인과 설치된 Node 22로 배포했으며, CI 인증·자동 배포·도메인 설정은 변경하지 않았다.
+
 ## 미나미 펌프 리센느 공식 5곡 운영 배포 — 2026-10-04
 
 - 사용자 운영 반영 승인 후 [PR #22](https://github.com/hhj4861/rescene-game/pull/22)를 머지했다. 운영 소스는 `377ea2ae194e39d9223c14bf426010e2124af44b`다. 검증한 PR head `eea5caf`와 머지 커밋 사이에 파일 차이가 없음을 확인했다.
