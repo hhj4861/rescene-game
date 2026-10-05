@@ -34,3 +34,14 @@ test('focusing native video controls keeps the round active, but leaving the tab
 test('an official song reaches the result even if every note is missed',async({page})=>{
  await fakeApi(page);await open(page);await begin(page);await page.clock.runFor(15000);await expect(page.locator('#app')).toHaveAttribute('data-state','playing');await page.locator('[data-pause]').click();expect((await saved(page)).misses).toBeGreaterThan(3);await page.locator('[data-resume]').click();await page.clock.runFor(45100);await expect(page.locator('#result-title')).toHaveText('무대 완주!');await expect(page.locator('.result-paper h2')).toHaveText('0점');await expect(page.locator('.pump-result-summary')).toContainText('노트 적중률 0%');expect(await page.evaluate(()=>window.ytPlayers.every(p=>p.destroyed))).toBe(true);await page.locator('.result-paper [data-pump-picker]').click();await expect(page.locator('#app')).toHaveAttribute('data-state','songs');
 });
+
+// A blocked, already-ready player must be reused so a mobile tap can authorize it.
+test('retrying blocked playback keeps the ready iframe and starts the score clock',async({page})=>{
+ await fakeApi(page,true);await open(page);await page.locator('[data-song-start]').click();await expect(page.locator('#music-status')).toContainText('▶');await page.clock.runFor(6000);
+ await page.locator('[data-retry-music]').click();await expect(page.locator('#music-status')).toContainText('재생 중');expect(await page.evaluate(()=>window.ytPlayers.length)).toBe(1);await page.clock.runFor(1200);await expect(page.locator('#time')).toHaveText('59초');
+});
+test('blocked playback has an adjacent touch start and preserves progress on resume',async({page},info)=>{
+ await fakeApi(page,true);await open(page);await page.locator('[data-song-start]').click();const start=page.locator('[data-video-play]');await expect(start).toBeVisible();await expect(start).toBeEnabled();await page.clock.runFor(5000);await expect(page.locator('#time')).toHaveText('60초');
+ await page.screenshot({path:info.outputPath('pump-tap-to-start.png'),fullPage:true});
+ if(info.project.name==='desktop-chromium')await start.click();else await start.tap();await expect(page.locator('#music-status')).toContainText('재생 중');await expect(start).toBeHidden();await page.clock.runFor(1500);await expect(page.locator('#time')).toHaveText('59초');await page.locator('[data-pause]').click();const before=await saved(page);await page.locator('[data-resume]').click();await page.clock.runFor(500);await page.locator('[data-pause]').click();expect((await saved(page)).elapsed).toBeGreaterThan(before.elapsed);expect(await page.evaluate(()=>window.ytPlayers.length)).toBe(1);
+});
