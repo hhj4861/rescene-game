@@ -14,16 +14,16 @@ function loseLife(s){if(s.damageCooldown>0)return;s.damageCooldown=1.4;s.hearts=
 function failRound(s,reason){if(s.ended)return;loseLife(s);s.ended=true;s.endReason=reason;}
 export const RHYTHM_WINDOW=.2,BEAT_SECONDS=PUMP_BEAT;
 export function rhythmWindow(s){return Math.max(.09,.2-(stageSpeed(s)-1)*.045-s.elapsed*.0004);}
-export function makeRhythmNotes(stage,songId){
+export function makeRhythmNotes(stage,songId,beatShift=0){
  const song=pumpSong(songId),pattern=song.pattern,beatSeconds=60/song.bpm,notes=[];
  // Four intro beats, then steps on the score's beat grid. Higher stages add
  // offbeats and chords, rather than drifting the chart away from the song.
- for(let beat=4;beat<(DURATION-.5)/beatSeconds;beat++){
+ for(let beat=4;beat<(DURATION-.5-beatShift)/beatSeconds;beat++){
   const i=beat-4,lane=pattern[i%pattern.length];
   if(stage===1&&i%2)continue;
-  notes.push({at:beat*beatSeconds,lane,status:'waiting'});
-  if(stage>=3&&i%8===7)notes.push({at:beat*beatSeconds,lane:(lane+2)%5,status:'waiting'});
-  if(stage>=4&&i%4===(stage>=7?1:3))notes.push({at:(beat+.5)*beatSeconds,lane:pattern[(i+1)%pattern.length],status:'waiting'});
+  notes.push({at:beatShift+beat*beatSeconds,lane,status:'waiting'});
+  if(stage>=3&&i%8===7)notes.push({at:beatShift+beat*beatSeconds,lane:(lane+2)%5,status:'waiting'});
+  if(stage>=4&&i%4===(stage>=7?1:3))notes.push({at:beatShift+(beat+.5)*beatSeconds,lane:pattern[(i+1)%pattern.length],status:'waiting'});
  }
  return notes;
 }
@@ -34,7 +34,7 @@ export function createGame(kind,options={}){
  if(kind==='drive')Object.assign(s,createChase());
  if(kind==='blocks')createMay(s);
  if(kind==='photo'){Object.assign(s,{bakeryVersion:1,rollingPins:1,breadCharge:0,itemArmed:false,board:playableBoard(s),selected:-1,collected:0,combo:0,moves:Math.max(10,18-Math.floor((stageSpeed(s)-1)*6)),shuffles:2,flash:0,clearedCells:[],hint:[]});s.hint=availableSwap(s.board)||[];}
- if(kind==='rhythm')Object.assign(s,{hearts:INITIAL_LIVES,songId:pumpSong(options.songId).id,notes:makeRhythmNotes(s.stage,options.songId),offset:clamp(Number(options.offsetMs)||0,-200,200)/1000,hits:0,misses:0,combo:0,bestCombo:0,lastTaps:Array(5).fill(-1),feedback:Array(5).fill(''),glows:Array(5).fill(0)});
+ if(kind==='rhythm')Object.assign(s,{hearts:INITIAL_LIVES,songId:pumpSong(options.songId).id,beatShift:clamp(Number(options.beatShift)||0,-.6,.6),notes:makeRhythmNotes(s.stage,options.songId,clamp(Number(options.beatShift)||0,-.6,.6)),offset:clamp(Number(options.offsetMs)||0,-200,200)/1000,hits:0,misses:0,combo:0,bestCombo:0,lastTaps:Array(5).fill(-1),feedback:Array(5).fill(''),glows:Array(5).fill(0)});
  if(kind==='catch')Object.assign(s,createRunner());
  return s;
 }

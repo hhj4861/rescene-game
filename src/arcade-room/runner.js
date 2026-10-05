@@ -1,4 +1,6 @@
 export const RUNNER_X=[95,240,385];
+export const LIV_SONG_SECONDS=20;
+export const LIV_ITEM_INTERVAL=24;
 import {RESCENE_SONGS} from './music.js';
 export const LIV_ITEMS=Object.keys(RESCENE_SONGS);
 export const LIV_ITEM_NAMES=Object.fromEntries(LIV_ITEMS.map(id=>[id,RESCENE_SONGS[id].title]));
@@ -9,19 +11,20 @@ export function runnerDifficulty(stage=1){
  const level=Number.isSafeInteger(stage)&&stage>0?stage:1,ramp=1-1/(1+(level-1)*.1);
  return {hp:12+Math.round(32*ramp),bossHp:240+Math.round(660*ramp),spawn:1.35-.65*ramp,enemySpeed:52+34*ramp,bossSpeed:22+10*ramp,penalty:4+Math.floor(2*ramp)};
 }
-export function createRunner(){return {runnerVersion:1,upgradeVersion:1,songVersion:1,effects:[],fireLevel:0,volley:1,bossSpawned:false,bossDefeated:0,pickups:[],item:'',itemTime:0,itemClock:0,itemCount:0,lane:1,x:240,squad:3,gatesTaken:0,gates:[{y:230,options:[{op:'add',value:3},{op:'multiply',value:1.5},{op:'add',value:-2}]}],gateSpawn:6,enemies:[],shots:[],defeated:0,spawn:1,nextEnemy:0,shotClock:0,charge:0,burst:0,gateFlash:0,lastGate:''};}
+export function createRunner(){return {runnerVersion:1,upgradeVersion:1,songVersion:1,songItem:'',songTime:0,itemCooldown:0,effects:[],fireLevel:0,volley:1,bossSpawned:false,bossDefeated:0,pickups:[],item:'',itemTime:0,itemClock:0,itemCount:0,lane:1,x:240,squad:3,gatesTaken:0,gates:[{y:230,options:[{op:'add',value:3},{op:'multiply',value:1.5},{op:'add',value:-2}]}],gateSpawn:6,enemies:[],shots:[],defeated:0,spawn:1,nextEnemy:0,shotClock:0,charge:0,burst:0,gateFlash:0,lastGate:''};}
 export function runnerAction(s,a){
  if(a==='left'||a==='right')s.lane=Math.max(0,Math.min(2,s.lane+(a==='left'?-1:1)));
  else if(Number.isInteger(a)&&a>=0&&a<3)s.lane=a;
- else if(a==='burst'&&s.charge===5){s.charge=0;s.burst=.35;for(const e of s.enemies)e.hp-=12;s.event='defense-burst';}
+ else if(a==='burst'&&s.charge===5){s.charge=0;s.burst=.35;for(const e of s.enemies)e.hp-=30;s.event='defense-burst';}
 }
 export function stepRunner(s,dt,speed,loseLife,target){
  const difficulty=runnerDifficulty(s.stage),intro=Math.min(1,s.gatesTaken/4);
  // Give a fresh squad four gates to build before applying full stage pressure.
  for(const key of ['hp','spawn','enemySpeed']){const start=runnerDifficulty(1)[key];difficulty[key]=start+(difficulty[key]-start)*intro;}
  s.x+=Math.sign(RUNNER_X[s.lane]-s.x)*Math.min(Math.abs(RUNNER_X[s.lane]-s.x),700*dt);
- for(const k of ['spawn','gateSpawn','shotClock','burst','gateFlash','itemTime','itemClock'])s[k]=Math.max(0,s[k]-dt);
+ for(const k of ['spawn','gateSpawn','shotClock','burst','gateFlash','itemTime','itemClock','songTime','itemCooldown'])s[k]=Math.max(0,s[k]-dt);
  if(!s.itemTime)s.item='';
+ if(!s.songTime)s.songItem='';
  s.effects=s.effects.map(e=>({...e,ttl:e.ttl-dt})).filter(e=>e.ttl>0).slice(-24);
  if(!s.bossSpawned&&s.defeated>=target-1){
   const hp=difficulty.bossHp;s.enemies.push({id:s.nextEnemy++,lane:1,y:105,hp,maxHp:hp,boss:true});s.bossSpawned=true;s.event='defense-boss';
@@ -48,8 +51,8 @@ export function stepRunner(s,dt,speed,loseLife,target){
   }
  }
  s.gates=s.gates.filter(g=>!g.done);
- for(const item of s.pickups){item.y+=110*dt;if(Math.abs(RUNNER_X[item.lane]-s.x)<60&&item.y>=440&&item.y<=515){s.item=item.kind;s.itemTime=10;s.itemClock=0;item.y=600;s.itemPickups++;s.event='defense-item';}}
- s.pickups=s.pickups.filter(item=>item.y<540);
+ for(const item of s.pickups){item.y+=110*dt;if(!s.itemCooldown&&Math.abs(RUNNER_X[item.lane]-s.x)<60&&item.y>=440&&item.y<=515){s.item=item.kind;s.itemTime=30;s.itemClock=0;s.songItem=item.kind;s.songTime=LIV_SONG_SECONDS;s.itemCooldown=LIV_ITEM_INTERVAL;item.y=600;s.itemPickups++;s.event='defense-item';}}
+ s.pickups=s.itemCooldown?[]:s.pickups.filter(item=>item.y<540);
  const shot=(x,power)=>({x,y:455,power,kind:s.item,returning:false,hitIds:[]});
  if(!s.shotClock){
   const power=Math.ceil(s.squad/6)+(s.item?1:0)+(s.item==='love-attack'?1:0),volley=Math.min(5,s.volley+(s.item==='love-attack'?1:0));
@@ -76,7 +79,7 @@ export function stepRunner(s,dt,speed,loseLife,target){
   const e=s.enemies[i];
   if(e.hp<=0){
    s.enemies.splice(i,1);s.defeated++;if(e.boss)s.bossDefeated=1;s.score+=e.boss?1000:100;s.charge=Math.min(5,s.charge+1);s.event=e.boss?'defense-boss-clear':'defense-hit';
-   if(!e.boss&&s.defeated%2===1&&s.pickups.length<3)s.pickups.push({lane:(e.lane+1+s.itemCount%2)%3,y:e.y,kind:LIV_ITEMS[s.itemCount++%LIV_ITEMS.length]});
+   if(!e.boss&&!s.itemCooldown&&s.defeated%2===1&&!s.pickups.length)s.pickups.push({lane:(e.lane+1+s.itemCount%2)%3,y:e.y,kind:LIV_ITEMS[s.itemCount++%LIV_ITEMS.length]});
   }else{e.y+=(e.boss?difficulty.bossSpeed:difficulty.enemySpeed)*dt;if(e.y>=480){s.enemies.splice(i,1);s.squad=Math.max(1,s.squad-(e.boss?6:2));loseLife(s);s.event='defense-miss';if(e.boss){s.ended=true;s.endReason='boss';}if(s.ended)return;}}
  }
 }

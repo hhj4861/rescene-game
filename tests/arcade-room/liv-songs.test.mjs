@@ -22,3 +22,17 @@ test('new gates grow slower and later waves include simultaneous enemies',()=>{
  const s=arena('');s.gates=createGame('catch').gates;s.gates[0].y=479;stepGame(s,.025);assert.equal(s.squad,4);assert.equal(s.lastGate,'×1.5');s.gates=[];s.gateSpawn=0;stepGame(s,.025);assert.ok(s.gates[0].options.every(o=>o.op==='multiply'?o.value===1.5:o.value<=3));
  const late=createGame('catch',{stage:10});late.nextEnemy=3;late.spawn=0;late.gatesTaken=2;stepGame(late,.025);assert.equal(late.enemies.length,2);assert.ok(restoreRound(snapshotRound(late)));assert.ok(runnerDifficulty(1).hp>8);assert.ok(runnerDifficulty(1).spawn<1.65);assert.equal(LIV_ITEMS.length,5);
 });
+
+test('song pickup protects a 20-second song and separates later drops by at least 24 seconds',()=>{
+ const s=arena('');s.pickups=[{lane:1,y:440,kind:'love-attack'},{lane:1,y:450,kind:'pinball'}];
+ stepGame(s,.025);assert.equal(s.itemPickups,1);assert.equal(s.item,'love-attack');assert.equal(s.songItem,'love-attack');assert.equal(s.songTime,20);assert.equal(s.itemCooldown,24);assert.equal(s.pickups.length,0);
+ s.enemies=[enemy(8,1,200,0)];stepGame(s,.025);assert.equal(s.pickups.length,0);assert.equal(s.songItem,'love-attack');
+ s.itemTime=.01;stepGame(s,.025);assert.equal(s.item,'');assert.equal(s.songItem,'love-attack');assert.ok(s.songTime>19);assert.ok(s.itemCooldown>23);
+ const restored=restoreRound(snapshotRound(s));assert.ok(restored);assert.equal(restored.songTime,s.songTime);assert.equal(restored.itemCooldown,s.itemCooldown);
+ restored.itemCooldown=.01;restored.songTime=0;restored.songItem='';restored.defeated=2;restored.enemies=[enemy(9,1,200,0)];stepGame(restored,.025);assert.equal(restored.pickups.length,1);
+});
+test('legacy song saves resume at the same media position and reject invalid timers',()=>{
+ const old=snapshotRound(arena('pinball'));delete old.songItem;delete old.songTime;delete old.itemCooldown;old.itemTime=6;
+ const s=restoreRound(old);assert.ok(s);assert.equal(s.songItem,'pinball');assert.equal(s.songTime,16);assert.equal(20-s.songTime,10-old.itemTime);
+ for(const [key,value] of [['songTime',21],['itemCooldown',25],['songItem','unknown']]){const bad=snapshotRound(s);bad[key]=value;assert.equal(restoreRound(bad),null);}
+});
