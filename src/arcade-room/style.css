@@ -115,3 +115,10 @@
 #overlay.with-song .pump-video-card>p{font-size:10px;margin:2px 0 0}
 
 .gift-link{display:inline-block;text-decoration:none;color:var(--ink)}
+
+/* Keep mobile playback recovery beside the native player, never over it. */
+.video-start{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;font-size:11px;line-height:1.5}
+.video-start:has([data-video-status]:empty){display:none}
+.video-start [data-video-status]{flex:1;min-width:140px}
+.video-start button{min-height:44px;flex:none}
+.video-start button[hidden]{display:none}
