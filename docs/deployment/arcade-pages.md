@@ -4,6 +4,16 @@
 
 
 
+## 노래 선물·리브 재생 간격·방울 점프·펌프 조작 운영 배포 — 2026-10-05
+
+- 사용자 승인 후 [PR #25](https://github.com/hhj4861/rescene-game/pull/25)를 머지했다. 운영 소스는 `435837111d2d6d64ddb04c40a3590ffb2dc266ba`이며 PR head `727d55e`와 Git 트리 `ce1f7988044c6d6e5ffc875240d61aea10322371`가 동일하다. [성공한 CI 37255889833](https://github.com/hhj4861/rescene-game/actions/runs/37255889833)의 `arcade-static-site`를 그대로 배포했다.
+- Pages 배포 `675b3e0d-69d9-4dcd-9ae9-322c5004caf9`: **Production / main / source `4358371`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://675b3e0d.rescene-arcade.pages.dev).
+- 리브 노래 아이템은 20초 재생·30초 특수공격이며 다음 아이템은 획득 후 최소 24초 뒤에 등장한다. 겹친 아이템의 즉시 교체를 방지하고 보스 클리어 후에도 남은 노래를 유지한다. 반복 처치 팝업을 제거하고 아이템·결과 팝업 폭을 줄였다.
+- 모든 멤버의 결과 화면에 선택해서 듣는 노래 선물을 제공한다. 미나미 선물은 공식 커버 원본을 새 탭으로 연다(임베드 오류 150). 메이의 빈 방울 착지·반동 점프, 펌프 오락실 복귀 버튼·영상 시계 보간·곡별 6탭 보정을 포함한다. 제나의 기존 순환 리액션을 유지한다.
+- **운영 URL 브라우저 117개 통과**: 데스크톱 Chromium·모바일 Chromium·모바일 WebKit에서 노래 선물/음소거/저장·리브 재생 유지·메이 방울 점프·펌프 복귀/보정을 확인했다. 배포 정적 파일 **34개 모두 CI 산출물과 SHA-256 일치**. Python HTTP 요청은 403이어서 브라우저 정상 접근을 확인한 뒤 curl로 전 파일을 검증했다.
+- 운영 화면의 리브 영상/축소 결과 배치도 확인했다. YouTube 재생 흐름 검사는 API 대역을 포함하며 실제 영상 청취를 뜻하지 않는다. **공식 5곡 기본 채보의 청감 박자 검증은 여전히 남아 있고, 기존 BPM/위상 값은 변경하지 않았다.** 모바일 검사는 에뮬레이션이다.
+- 증거: 공용 iCloud 작업 루트 `rescene-game/song-gifts-deploy-20261005/`의 `release.json`, `deploy.log`, `deployments.txt`, `production-asset-hashes.json`, `public-browser.log`, `public-browser/`. 기존 Wrangler 로그인·설치된 Node 22를 사용했으며 인증·도메인·자동 배포 설정은 변경하지 않았다.
+
 ## 멤버 선택 중앙 정렬·제나 리액션 복구 운영 배포 — 2026-10-05
 
 - 사용자 승인 후 [PR #24](https://github.com/hhj4861/rescene-game/pull/24)를 머지했다. 운영 소스는 `cf65dc3d793ddaa69aa410e6ee52b8352b8941f4`이며 검증한 PR head `55ef8ca`와 Git 트리 `d734c6277bf8e601d89d6e0f4a8308f20a47950b`가 동일하다.
