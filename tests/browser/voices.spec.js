@@ -66,5 +66,5 @@ test('backgrounding a result stops voice and source link stays in the keyboard f
   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new window.Event('visibilitychange'));});
   expect(await page.evaluate(()=>window.clips.at(-1).paused)).toBe(true);
   await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new window.Event('visibilitychange'));});
-  await page.locator('.member-voice a').focus();await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'다음 스테이지 ▶'})).toBeFocused();
+  await page.locator('.song-gift a').focus();await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'다음 스테이지 ▶'})).toBeFocused();
 });

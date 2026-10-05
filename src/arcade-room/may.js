@@ -7,14 +7,17 @@ export function createMay(s){const data={mayVersion:2,mayLayout:s.stage%2===0?2:
 function pop(s,first){const group=[first];for(let i=0;i<group.length;i++)for(const e of s.enemies)if(e.trapped&&!group.includes(e)&&Math.hypot(e.x-group[i].x,e.y-group[i].y)<85)group.push(e);
  for(const e of group){s.enemies.splice(s.enemies.indexOf(e),1);s.popped++;s.combo++;s.score+=(100+Math.min(5,s.combo)*50)*Math.min(4,group.length);if(s.items.length<4)s.items.push({x:e.x,y:e.y-22,kind:s.popped%2?'speed':'size',ttl:12});}s.flash=.25;s.event=group.length>1?'bubble-chain':'bubble-pop';}
 export function mayAction(s,a){const p=s.player;
- if(a==='left'||a==='right'){p.dir=a==='left'?-1:1;p.facing=p.dir;p.walk=.18;}else if(a==='turn'){p.facing*=-1;p.dir=0;p.walk=0;}else if(a==='stop'){p.dir=0;p.walk=0;}else if(a==='jump'&&Math.abs(p.vy)<.01)p.vy=-550;
- else if(a==='bubble'&&!s.cooldown){s.cooldown=.28;const near=s.enemies.filter(e=>e.trapped&&Math.hypot(e.x-p.x,e.y-p.y)<64).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];if(near)pop(s,near);else if(s.bubbles.length<8)s.bubbles.push({x:p.x+p.facing*20,y:p.y-24,vx:p.facing*260,ttl:1.8,radius:s.sizeBoost?34:21});}}
+ if(a==='left'||a==='right'){p.dir=a==='left'?-1:1;p.facing=p.dir;p.walk=.18;}else if(a==='turn'){p.facing*=-1;p.dir=0;p.walk=0;}else if(a==='stop'){p.dir=0;p.walk=0;}else if(a==='jump'&&Math.abs(p.vy)<.01&&mayPlatforms(s.mayLayout).some(f=>Math.abs(p.y-f.y)<.5&&p.x>=f.x-6&&p.x<=f.x+f.w+6))p.vy=-550;
+ else if(a==='bubble'&&!s.cooldown){s.cooldown=.28;const near=s.enemies.filter(e=>e.trapped&&Math.hypot(e.x-p.x,e.y-p.y)<64).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];if(near)pop(s,near);else if(s.bubbles.length<8)s.bubbles.push({x:p.x+p.facing*20,y:p.y-24,vx:p.facing*260,ttl:3.2,radius:s.sizeBoost?34:21});}}
 function fall(body,dt,platforms){const old=body.y;body.vy+=1200*dt;body.y+=body.vy*dt;if(body.vy>=0)for(const [i,p] of platforms.map((p,i)=>[i,p]).sort((a,b)=>a[1].y-b[1].y))if(body.x>=p.x-6&&body.x<=p.x+p.w+6&&old<=p.y&&body.y>=p.y){body.y=p.y;body.vy=0;if('home'in body)body.home=i;break;}if(body.y>536){body.y=536;body.vy=0;if('home'in body)body.home=0;}}
 export function stepMay(s,dt,loseLife,target){const p=s.player,platforms=mayPlatforms(s.mayLayout),d=mayDifficulty(s.stage),hurry=s.elapsed>=35;
  for(const k of ['invincible','cooldown','flash','speedBoost','sizeBoost'])s[k]=Math.max(0,s[k]-dt);
- p.x=clamp(p.x+p.dir*(s.speedBoost?285:190)*Math.min(dt,p.walk),18,462);p.walk=Math.max(0,p.walk-dt);fall(p,dt,platforms);
- for(const b of s.bubbles){b.x+=b.vx*(b.ttl>1.2?1:.18)*dt;b.y-=(b.ttl>1.2?18:42)*dt;b.ttl-=dt;const hit=s.enemies.find(e=>!e.trapped&&Math.hypot(e.x-b.x,e.y-20-b.y)<(b.radius||21)+9);if(hit){hit.trapped=d.trap;hit.vy=0;b.ttl=0;s.event='bubble-trap';}}
- s.bubbles=s.bubbles.filter(b=>b.ttl>0&&b.x>-20&&b.x<500);
+ p.x=clamp(p.x+p.dir*(s.speedBoost?285:190)*Math.min(dt,p.walk),18,462);p.walk=Math.max(0,p.walk-dt);const oldY=p.y;fall(p,dt,platforms);
+ for(const b of s.bubbles){b.x+=b.vx*(b.ttl>2.9?1:.08)*dt;b.y-=(b.ttl>2.9?18:30)*dt;b.ttl-=dt;const hit=s.enemies.find(e=>!e.trapped&&Math.hypot(e.x-b.x,e.y-20-b.y)<(b.radius||21)+9);if(hit){hit.trapped=d.trap;hit.vy=0;b.ttl=0;s.event='bubble-trap';}}
+ // Descending feet can land on an empty bubble, never its underside.
+ const step=s.bubbles.filter(b=>b.ttl>0&&b.y>40&&b.x>-20&&b.x<500&&p.vy>=0&&Math.abs(p.x-b.x)<(b.radius||21)+6&&oldY<=(b.y+(b.ttl>2.9?18:30)*dt)-(b.radius||21)&&p.y>=b.y-(b.radius||21)).sort((a,b)=>(a.y-(a.radius||21))-(b.y-(b.radius||21)))[0];
+ if(step){p.y=step.y-(step.radius||21);p.vy=-600;step.ttl=0;s.flash=.2;s.event='bubble-jump';}
+ s.bubbles=s.bubbles.filter(b=>b.ttl>0&&b.y>40&&b.x>-20&&b.x<500);
  for(const e of [...s.enemies]){if(!s.enemies.includes(e))continue;e.vy??=0;e.think??=.8;e.angry??=false;
   if(e.trapped){e.trapped=Math.max(0,e.trapped-dt);e.y=Math.max(70,e.y-18*dt);if(Math.hypot(e.x-p.x,e.y-p.y)<38){pop(s,e);continue;}if(!e.trapped){e.y=platforms[e.home].y;e.angry=true;e.think=0;s.combo=0;s.event='bubble-escape';}}
   else{e.think=Math.max(0,e.think-dt);const platform=platforms[e.home];

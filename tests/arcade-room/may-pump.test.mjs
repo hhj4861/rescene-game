@@ -34,3 +34,11 @@ test('May pursuit reaches upper ledges and drops down even when the player stand
   assert.ok(arrived,`enemy must get from platform ${home} to ${target}`);
  }
 });
+
+test('May bounces only when landing on an empty bubble from above and can resume mid-bounce',()=>{
+ const s=createGame('blocks',{seed:7});s.enemies=[];s.spawn=10;s.player.x=240;s.player.y=449;s.player.vy=150;s.bubbles=[{x:240,y:475,vx:260,ttl:2,radius:21}];
+ stepGame(s,.05);assert.ok(s.player.vy<0);assert.equal(s.bubbles.length,0);assert.equal(s.event,'bubble-jump');assert.ok(restoreRound(snapshotRound(s)));
+ const before=s.player.vy;gameAction(s,'jump');assert.equal(s.player.vy,before);
+ for(const [x,y,vy] of [[240,485,-300],[360,449,150]]){const a=createGame('blocks',{seed:7});a.enemies=[];a.spawn=10;a.player={...a.player,x,y,vy};a.bubbles=[{x:240,y:475,vx:260,ttl:2,radius:21}];stepGame(a,.05);assert.equal(a.bubbles.length,1);assert.notEqual(a.event,'bubble-jump');}
+ s.player.y=400;s.player.vy=0;gameAction(s,'jump');assert.equal(s.player.vy,0);
+});

@@ -1,4 +1,5 @@
-/* global window, document, setTimeout, clearTimeout */
+import {MediaClock} from './beat-sync.js';
+/* global window, document, setTimeout, clearTimeout, performance */
 let apiPromise;
 export function loadYouTube(){
  if(window.YT?.Player)return Promise.resolve(window.YT);
@@ -18,7 +19,7 @@ export function mediaAdvance(elapsed,time,playing){
  return {dt:delta<-.35||delta>1.25?0:Math.max(0,Math.min(60-elapsed,delta)),jump:delta<-.35||delta>1.25};
 }
 export class PumpVideo{
- constructor(host,song,report=()=>{}){this.host=host;this.song=song;this.report=report;this.player=null;this.disposed=false;this.ready=false;this.position=0;this.wanted=false;this.muted=false;this.ducked=false;this.syncing=true;this.timer=0;}
+ constructor(host,song,report=()=>{}){this.clock=new MediaClock();this.host=host;this.song=song;this.report=report;this.player=null;this.disposed=false;this.ready=false;this.position=0;this.wanted=false;this.muted=false;this.ducked=false;this.syncing=true;this.timer=0;}
  async mount(){
   this.report('공식 영상 준비 중…');
   try{
@@ -34,7 +35,7 @@ export class PumpVideo{
   }catch{if(!this.disposed)this.report('공식 영상을 불러오지 못했어요. 연결을 확인하고 다시 켜 주세요.',true);}
  }
  play(position=0){
-  this.position=position;this.wanted=true;this.syncing=true;
+  this.clock.reset();this.position=position;this.wanted=true;this.syncing=true;
   if(!this.ready)return;
   this.volume();if(this.loaded){this.player.seekTo(position,true);this.player.playVideo();}else{this.loaded=true;this.player.loadVideoById({videoId:this.song.videoId,startSeconds:position,endSeconds:60});}
  }
@@ -42,9 +43,10 @@ export class PumpVideo{
  setMuted(value){this.muted=value;this.volume();}
  setDucked(value,song=false){this.ducked=value;this.songDucked=song;this.volume();}
  isPlaying(requireSync=true){return this.ready&&this.wanted&&(!requireSync||!this.syncing)&&this.player.getPlayerState()===1;}
+ time(){return this.ready?this.clock.read(this.player.getCurrentTime(),this.isPlaying(false),performance.now()):null;}
  sample(elapsed){
   if(!this.ready||!this.wanted)return {dt:0,jump:false};
-  const status=this.player.getPlayerState(),time=this.player.getCurrentTime();
+  const status=this.player.getPlayerState(),time=this.time();
   if(this.syncing){if(status!==1||Math.abs(time-this.position)>.75)return {dt:0,jump:false};this.syncing=false;}
   return mediaAdvance(elapsed,status===0&&time>=59.75?60:time,status===1||status===0&&time>=59.75);
  }
