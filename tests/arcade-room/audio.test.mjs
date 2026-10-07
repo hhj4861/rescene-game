@@ -104,3 +104,15 @@ test('item singing loops for a minute, survives stage cleanup, pauses and stops 
  setTime(20000);t.mock.timers.tick(20000);audio.stop({preserveSong:true});assert.equal(audio.voice,clips[0]);audio.pauseItemSong();assert.equal(audio.itemSongRemaining,40000);t.mock.timers.tick(60000);assert.equal(audio.voice,clips[0]);
  const resumed=audio.resumeItemSong();clips[0].resolve();await resumed;t.mock.timers.tick(39999);assert.equal(audio.voice,clips[0]);t.mock.timers.tick(1);assert.equal(audio.voice,null);assert.equal(clips[0].paused,true);
 });
+
+test('pausing a pending item song keeps it resumable after WebKit AbortError',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});const {audio,clips}=fixture(t),abort=Object.assign(Error('play interrupted by pause'),{name:'AbortError'});
+ const first=audio.playVoice({kind:'song',file:'woni-song.mp3'},undefined,{durationSeconds:60,member:'woni'});audio.pauseItemSong();audio.stop({preserveSong:true});clips[0].reject(abort);await first;assert.equal(audio.voice,clips[0]);assert.equal(audio.itemSongRemaining,60000);
+ const resume=audio.resumeItemSong();audio.pauseItemSong();clips[0].reject(abort);await resume;assert.equal(audio.voice,clips[0]);
+ const next=audio.resumeItemSong();clips[0].onplaying();clips[0].resolve();await next;t.mock.timers.tick(60000);assert.equal(audio.voice,null);
+});
+test('a stale resume rejection never cancels a newer item song',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});const {audio,clips}=fixture(t);
+ const first=audio.playVoice({kind:'song',file:'woni-song.mp3'},undefined,{durationSeconds:60,member:'woni'});clips[0].resolve();await first;
+ const oldResume=audio.resumeItemSong(),next=audio.playVoice({kind:'song',file:'may-song.mp3'},undefined,{durationSeconds:60,member:'may'});clips[0].reject(Error('old failure'));await oldResume;assert.equal(audio.voice,clips[1]);clips[1].resolve();await next;audio.stop();
+});

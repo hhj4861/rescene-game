@@ -91,7 +91,7 @@ export class ArcadeAudio {
       voice.onended=()=>{if(durationSeconds)return;if(current()){report(source.kind==='song'?'노래 보상 끝 · 다시 듣기로 재생할 수 있어요.':'원본 음성 · 방송 배경음 포함');this.cancelVoiceQuietly();}};
       voice.onerror=failed;report('멤버 음성 준비 중…');
       await voice.play();return current();
-    }catch{if(current()){report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}return false;}
+    }catch(error){if(current()){if(durationSeconds&&error?.name==='AbortError')return false;report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}return false;}
   }
   resumeItemSongTimer(){
     if(!this.itemSongRemaining||this.itemSongTimer)return;
@@ -104,7 +104,9 @@ export class ArcadeAudio {
   }
   async resumeItemSong(){
     if(!this.itemSongMember||!this.voice)return;
-    try{await this.voice.play();this.resumeItemSongTimer();}catch{this.cancelVoiceQuietly();}
+    const voice=this.voice,request=this.voiceRequest;
+    // pause() may reject a still-pending play() on WebKit. Keep its remaining time.
+    try{await voice.play();if(request===this.voiceRequest)this.resumeItemSongTimer();}catch(error){if(request===this.voiceRequest&&error?.name!=='AbortError')this.cancelVoiceQuietly();}
   }
   cancelVoiceQuietly(){this.voiceReport=null;this.cancelVoice();}
   stop({preserveSong=false}={}){if(!preserveSong||!this.itemSongMember)this.cancelVoice();this.stopMusic();this.duckMusic(!!this.voice,true);for(const o of this.nodes){try{o.stop();}catch{/* Already ended. */}}this.nodes.clear();}
