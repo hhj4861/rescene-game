@@ -44,7 +44,7 @@ for(const toggle of ['voice','sound'])test(`Zena match reactions respect ${toggl
 });
 for(const [kind,member] of Object.entries(members))test(`${member} offers an optional personal song on the result screen`,async({page})=>{
  const s=await setup(page,kind,{clear:true});await score(page,s);await page.clock.runFor(1500);await expect(page.locator('#app')).toHaveAttribute('data-state','result');await expect(page.locator('[data-song-replay]')).toContainText('노래 선물');
- expect(await page.evaluate(()=>window.songClips.map(c=>c.src))).not.toContain(SCORE_SONGS[member].file||'no native clip');
+ const automaticSongs=await page.evaluate(()=>window.songClips.filter(c=>c.src.includes('-song.mp3')).map(c=>c.src));expect(automaticSongs).toEqual(member==='may'?[SCORE_SONGS.may.file]:[]); // The sixth May pop also collects its song item.
  if(member==='minami'){await page.context().route('https://www.youtube.com/watch?*',r=>r.fulfill({body:'Official cover',contentType:'text/html'}));const popupPromise=page.waitForEvent('popup');await page.locator('[data-song-replay]').click();const popup=await popupPromise;await expect.poll(()=>popup.url()).toBe(SCORE_SONGS.minami.source);await popup.close();}
  else {await page.locator('[data-song-replay]').click();await expect.poll(()=>page.evaluate(()=>window.songClips.at(-1)?.audio.currentTime||0)).toBeGreaterThan(0);expect(await page.evaluate(()=>window.songClips.at(-1).src)).toBe(SCORE_SONGS[member].file);}
  await page.locator('[data-leave]').click();expect(await page.evaluate(()=>window.songClips.every(c=>c.audio.paused))).toBe(true);

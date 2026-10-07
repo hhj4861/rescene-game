@@ -1,3 +1,4 @@
+import {pumpNoteAt} from './pump-input.js';
 import {createMay,mayAction,stepMay} from './may.js';
 export {PLATFORMS} from './may.js';
 import {createChase,chaseHit,stepChase} from './chase.js';
@@ -33,9 +34,9 @@ export function createGame(kind,options={}){
  s.random=options.random||(()=>{s.rngState=(Math.imul(s.rngState,1664525)+1013904223)>>>0;return s.rngState/4294967296;});
  if(kind==='drive')Object.assign(s,createChase());
  if(kind==='blocks')createMay(s);
- if(kind==='photo'){Object.assign(s,{bakeryVersion:1,rollingPins:1,breadCharge:0,itemArmed:false,board:playableBoard(s),selected:-1,collected:0,combo:0,moves:Math.max(10,18-Math.floor((stageSpeed(s)-1)*6)),shuffles:2,flash:0,clearedCells:[],hint:[]});s.hint=availableSwap(s.board)||[];}
+ if(kind==='photo'){Object.assign(s,{bakeryVersion:1,songPickups:0,rollingPins:1,breadCharge:0,itemArmed:false,board:playableBoard(s),selected:-1,collected:0,combo:0,moves:Math.max(10,18-Math.floor((stageSpeed(s)-1)*6)),shuffles:2,flash:0,clearedCells:[],hint:[]});s.hint=availableSwap(s.board)||[];}
  if(kind==='rhythm')Object.assign(s,{hearts:INITIAL_LIVES,songId:pumpSong(options.songId).id,beatShift:clamp(Number(options.beatShift)||0,-.6,.6),notes:makeRhythmNotes(s.stage,options.songId,clamp(Number(options.beatShift)||0,-.6,.6)),offset:clamp(Number(options.offsetMs)||0,-200,200)/1000,hits:0,misses:0,combo:0,bestCombo:0,lastTaps:Array(5).fill(-1),feedback:Array(5).fill(''),glows:Array(5).fill(0)});
- if(kind==='catch')Object.assign(s,createRunner());
+ if(kind==='catch')Object.assign(s,createRunner(options));
  return s;
 }
 export function matches(board){const found=new Set();for(let row=0;row<6;row++)for(let col=0;col<6;col++){const i=row*6+col,color=board[i]%10;if(!color)continue;if(col<4&&board[i+1]%10===color&&board[i+2]%10===color){let c=col;while(c<6&&board[row*6+c]%10===color)found.add(row*6+c++);}if(row<4&&board[i+6]%10===color&&board[i+12]%10===color){let r=row;while(r<6&&board[r*6+col]%10===color)found.add(r++*6+col);}}return [...found];}
@@ -62,6 +63,7 @@ function resolveBread(s,frames,found,b=-1,earn=true){
   if(special>=0)remove.delete(special);
   frames.push({kind:'pop',duration:.24,board:[...s.board],removed:[...remove],combo:s.combo});
   s.collected+=remove.size;s.score+=remove.size*30*s.combo;s.clearedCells.push(...remove);
+  if([...remove].some(i=>s.board[i]>10))s.songPickups++;
   for(const i of remove)s.board[i]=0;if(special>=0)s.board[special]=color+10;
   const fromRows=Array(36);
   for(let col=0;col<6;col++){
@@ -83,7 +85,7 @@ export function breadFrame(s){
 }
 function stepBread(s,dt){s.flash=Math.max(0,s.flash-dt);if(!s.flash){s.breadFrames=null;if(!s.moves&&s.collected<stageTarget(s.kind,s.stage))failRound(s,'moves');}}
 function breadAction(s,a){if(s.flash)return;if(a==='rolling-pin'){if(s.rollingPins)s.itemArmed=!s.itemArmed;return;}if(s.itemArmed&&Number.isInteger(a)&&a>=0&&a<36){s.rollingPins--;s.itemArmed=false;resolveBread(s,[],Array.from({length:6},(_,i)=>Math.floor(a/6)*6+i),-1,false);s.event='bread-item';return;}if(a&&typeof a==='object'){swapBread(s,a.from,a.to);return;}if(a==='shuffle'){if(!s.shuffles)return;s.board=playableBoard(s);s.shuffles--;s.selected=-1;s.hint=availableSwap(s.board)||[];s.event='bread-shuffle';}else if(Number.isInteger(a)&&a>=0&&a<36){if(adjacent(s.selected,a))swapBread(s,s.selected,a);else s.selected=a;}}
-export function tapRhythm(s,lane){if(s.ended||!Number.isInteger(lane)||lane<0||lane>4||s.elapsed-s.lastTaps[lane]<.08)return;s.lastTaps[lane]=s.elapsed;const waiting=s.notes.filter(n=>n.lane===lane&&n.status==='waiting').sort((a,b)=>Math.abs(a.at+s.offset-s.elapsed)-Math.abs(b.at+s.offset-s.elapsed)),n=waiting[0],delta=n?Math.abs(n.at+s.offset-s.elapsed):Infinity;s.glows[lane]=.25;if(delta>rhythmWindow(s)){s.combo=0;s.feedback[lane]='WAIT';s.event='rhythm-early';return;}n.status='hit';s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);const perfect=delta<.075;s.feedback[lane]=perfect?'PERFECT':'GOOD';s.score+=(perfect?100:60)+Math.min(10,s.combo)*5;s.event=perfect?'rhythm-perfect':'rhythm-good';}
+export function tapRhythm(s,action){const targeted=action&&typeof action==='object',note=targeted?pumpNoteAt(s,action.x,action.y,action.height):null,lane=targeted?note?.lane:action;if(s.ended||!Number.isInteger(lane)||lane<0||lane>4||s.elapsed-s.lastTaps[lane]<.08)return;s.lastTaps[lane]=s.elapsed;const waiting=s.notes.filter(n=>n.lane===lane&&n.status==='waiting').sort((a,b)=>Math.abs(a.at+s.offset-s.elapsed)-Math.abs(b.at+s.offset-s.elapsed)),n=targeted?note:waiting[0],delta=n?Math.abs(n.at+s.offset-s.elapsed):Infinity;s.glows[lane]=.25;if(delta>rhythmWindow(s)){s.combo=0;s.feedback[lane]='WAIT';s.event='rhythm-early';return;}n.status='hit';s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);const perfect=delta<.075;s.feedback[lane]=perfect?'PERFECT':'GOOD';s.score+=(perfect?100:60)+Math.min(10,s.combo)*5;s.event=perfect?'rhythm-perfect':'rhythm-good';}
 function stepPump(s,dt){s.glows=s.glows.map(n=>Math.max(0,n-dt));for(const n of s.notes)if(n.status==='waiting'&&s.elapsed-s.offset-n.at>rhythmWindow(s)){n.status='miss';s.misses++;s.combo=0;s.feedback[n.lane]='MISS';s.glows[n.lane]=.25;s.event='rhythm-miss';}}
 export function stepGame(s,dt){if(s.ended||!Number.isFinite(dt)||dt<=0)return;s.event=null;if(s.kind==='photo'&&s.collected>=stageTarget(s.kind,s.stage)){const advance=Math.min(dt,Math.max(0,s.remaining-.001));s.elapsed+=advance;s.remaining=DURATION-s.elapsed;stepBread(s,dt);return;}let remaining=Math.min(dt,s.remaining);while(remaining>1e-9&&!s.ended){const step=Math.min(.025,remaining);s.damageCooldown=Math.max(0,s.damageCooldown-step);s.elapsed+=step;s.remaining=Math.max(0,DURATION-s.elapsed);remaining-=step;({drive:(s,dt)=>stepChase(s,dt,stageSpeed(s),loseLife),blocks:(s,dt)=>stepMay(s,dt,loseLife,stageTarget(s.kind,s.stage)),photo:stepBread,rhythm:stepPump,catch:(s,dt)=>stepRunner(s,dt,stageSpeed(s),loseLife,stageTarget(s.kind,s.stage))})[s.kind](s,step);}if(!s.ended&&s.remaining<1e-7){s.remaining=0;s.elapsed=DURATION;if(s.kind==='rhythm')s.ended=true;else failRound(s,'timeout');}}
 export function gameAction(s,action){if(s.ended)return;({drive:chaseHit,blocks:mayAction,photo:breadAction,rhythm:tapRhythm,catch:runnerAction})[s.kind](s,action);}
