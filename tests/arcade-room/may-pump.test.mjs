@@ -44,6 +44,6 @@ test('May bounces only when landing on an empty bubble from above and can resume
 });
 
 test('May third pop drops a song that is consumed once and restored without a replay',()=>{
- const s=createGame('blocks',{seed:7});s.spawn=10;s.popped=2;s.enemies=[{x:140,y:536,home:0,dir:1,trapped:4,vy:0,think:.8,angry:false}];gameAction(s,'bubble');assert.equal(s.items[0].kind,'song');s.player.x=140;stepGame(s,.025);assert.equal(s.songPickups,1);assert.equal(s.items.length,0);assert.equal(s.speedBoost,0);assert.equal(s.sizeBoost,0);const r=restoreRound(snapshotRound(s));assert.ok(r);stepGame(r,.025);assert.equal(r.songPickups,1);
+ const s=createGame('blocks',{seed:7});s.spawn=10;s.popped=2;s.enemies=[{x:140,y:536,home:0,dir:1,trapped:4,vy:0,think:.8,angry:false}];gameAction(s,'bubble');assert.equal(s.items[0].kind,'honey');s.player.x=140;stepGame(s,.025);assert.equal(s.songPickups,1);assert.equal(s.items.length,0);assert.equal(s.speedBoost,0);assert.equal(s.sizeBoost,0);const r=restoreRound(snapshotRound(s));assert.ok(r);stepGame(r,.025);assert.equal(r.songPickups,1);
  const old=snapshotRound(s);delete old.songPickups;assert.equal(restoreRound(old).songPickups,0);
 });

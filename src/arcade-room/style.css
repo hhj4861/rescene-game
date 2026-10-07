@@ -117,3 +117,7 @@
 .gift-link{display:inline-block;text-decoration:none;color:var(--ink)}
 
 #app[data-game=rhythm] #game{cursor:crosshair}
+/* Compact collectible and gauge controls remain usable beside the playfield. */
+.game-controls .song-pickup{width:100%;background:#f4c5dd;font-size:15px}
+#pump-gauge{color:#84e5b4;font-variant-numeric:tabular-nums}
+#pump-gauge[data-low="true"]{color:#ff91a8}

@@ -97,3 +97,10 @@ test('song rewards silence both music buses and restore them on completion or ca
   const p=audio.playVoice({kind:'song',file:'score.mp3',title:'Cover'});const clip=clips.at(-1);clip.resolve();await p;clip.onplaying();assert.equal(ramps.at(-1),0);assert.deepEqual(external.at(-1),{active:true,song:true});if(end==='stop')audio.stop();else clip[end]();assert.equal(audio.voiceIsSong,false);assert.equal(ramps.at(-1),1);assert.equal(external.at(-1).active,false);
  }
 });
+
+test('item singing loops for a minute, survives stage cleanup, pauses and stops exactly at its remaining time',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});const {audio,clips,setTime}=fixture(t);
+ const playing=audio.playVoice({kind:'song',file:'may-song.mp3',title:'May'},undefined,{durationSeconds:60,member:'may'});clips[0].onplaying();clips[0].resolve();await playing;assert.equal(clips[0].loop,true);
+ setTime(20000);t.mock.timers.tick(20000);audio.stop({preserveSong:true});assert.equal(audio.voice,clips[0]);audio.pauseItemSong();assert.equal(audio.itemSongRemaining,40000);t.mock.timers.tick(60000);assert.equal(audio.voice,clips[0]);
+ const resumed=audio.resumeItemSong();clips[0].resolve();await resumed;t.mock.timers.tick(39999);assert.equal(audio.voice,clips[0]);t.mock.timers.tick(1);assert.equal(audio.voice,null);assert.equal(clips[0].paused,true);
+});

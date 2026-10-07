@@ -8,7 +8,7 @@ const members={drive:'woni',blocks:'may',photo:'zena',rhythm:'minami',catch:'liv
 async function setup(page,kind,{points=4990,clear=false}={}){
  if(['catch','rhythm'].includes(kind))await fakeApi(page);
  const s=createGame(kind,{seed:7,stage:1}),p=emptyProgress();s.spawn=10;
- if(kind==='drive'){s.holes[0]={ttl:4,total:4,gold:false,fake:false,flash:0};if(clear)s.hits=stageGoal(kind,1).target-1;}
+ if(kind==='drive'){s.objects=[{id:0,lane:1,y:455,kind:'berry'}];if(clear)s.hits=stageGoal(kind,1).target-1;}
  if(kind==='blocks'){if(clear)s.popped=stageGoal(kind,1).target-1;s.enemies=[{x:90,y:520,home:0,dir:1,trapped:4,vy:0,think:.8,angry:false}];}
  if(kind==='catch'){s.enemies=[{id:0,lane:1,y:190,hp:1,maxHp:1,boss:false}];s.charge=5;s.gates=[];s.pickups=[{lane:1,y:440,kind:'love-attack'}];}
  if(clear&&kind==='catch'){s.bossSpawned=true;s.defeated=stageGoal(kind,1).target-1;s.enemies[0].boss=true;}if(clear&&kind==='photo')s.collected=stageGoal(kind,1).target-1;if(kind==='rhythm'){s.elapsed=59.95;s.remaining=.05;}
@@ -17,7 +17,7 @@ async function setup(page,kind,{points=4990,clear=false}={}){
  await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.locator(`[data-start="${kind}"].start`).click();if(kind==='rhythm')await page.locator('[data-song-resume]').click();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-resume]').click();if(kind==='rhythm')await expect(page.locator('#music-status')).toContainText('재생 중');return s;
 }
 async function score(page,s){
- if(s.kind==='drive')await page.keyboard.press('1');
+ if(s.kind==='drive')await page.keyboard.press('2');
  else if(s.kind==='catch')await page.keyboard.press('Space');
  else if(s.kind==='photo'){const pair=availableSwap(s.board);for(const i of pair)await page.locator(`.field-controls [data-act="${i}"]`).click();}
  await page.clock.runFor(100);

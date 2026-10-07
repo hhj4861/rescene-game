@@ -46,7 +46,7 @@ test('Liv stage pressure is monotonic and bounded; fresh squads get four buildup
  const ready=createGame('catch',{stage:50,seed:7});ready.gatesTaken=2;ready.spawn=0;stepGame(ready,.025);assert.ok(ready.enemies[0].maxHp>fresh.enemies[0].maxHp);assert.ok(ready.spawn<fresh.spawn);assert.ok(restoreRound(snapshotRound(ready)));
 });
 test('Liv boss survives opening fire and brings side escorts; an escort kill cannot clear the stage',()=>{
- const s=createGame('catch',{stage:5,seed:7});s.defeated=13;s.gatesTaken=2;s.squad=12;s.volley=2;s.spawn=0;s.gates=[];
+ const s=createGame('catch',{stage:5,seed:7});s.elapsed=120;s.remaining=180;s.firstItemAt=0;s.defeated=13;s.gatesTaken=2;s.squad=12;s.volley=2;s.spawn=0;s.gates=[];
  stepGame(s,1);const boss=s.enemies.find(e=>e.boss);assert.ok(boss);assert.ok(boss.hp>100);assert.ok(s.enemies.some(e=>!e.boss&&e.lane!==1));assert.ok(restoreRound(snapshotRound(s)));
  const escort=s.enemies.find(e=>!e.boss);escort.hp=0;stepGame(s,.025);assert.equal(isStageClear(s),false);assert.equal(s.bossDefeated,0);
  boss.hp=0;stepGame(s,.025);assert.equal(isStageClear(s),true);
@@ -56,7 +56,7 @@ test('movement and song pickups keep harder stages beatable, while idling is unr
   const games=Array.from({length:20},(_,i)=>playRunner(stage,i+1));
   const wins=games.filter(isStageClear).length;
   t.diagnostic(`stage ${stage}: ${wins}/20 active clears`);assert.ok(wins>=12,`stage ${stage}: only ${wins}/20 active clears`);
-  for(const s of games.filter(isStageClear)){assert.ok(s.elapsed<60);assert.ok(s.hearts>0);}
+  for(const s of games.filter(isStageClear)){assert.ok(s.elapsed>=120&&s.elapsed<300);assert.ok(s.hearts>0);}
  }
  const idle=Array.from({length:20},(_,i)=>playRunner(1,i+1,false));assert.ok(idle.filter(isStageClear).length<=4);
 });

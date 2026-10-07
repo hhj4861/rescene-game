@@ -3,7 +3,7 @@ import {enterPump,waitPump} from './pump-helpers.js';
 /* global localStorage, window */
 import {test,expect} from '@playwright/test';
 import {createGame,gameAction,availableSwap} from '../../src/arcade-room/model.js';
-import {emptyProgress,snapshotRound,stageGoal,PROGRESS_KEY} from '../../src/arcade-room/progress.js';
+import {emptyProgress,snapshotRound,PROGRESS_KEY} from '../../src/arcade-room/progress.js';
 async function open(page,s){
  if(s.kind==='catch')await fakeApi(page);
  const p=emptyProgress();p.games[s.kind]={stage:s.stage,highest:s.stage,hearts:s.hearts,snapshot:snapshotRound(s)};
@@ -15,7 +15,7 @@ test('one Liv breach with three overlapping enemies costs one life',async({page}
  await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 2개');await expect(page.locator('#app')).toHaveAttribute('data-state','playing');
 });
 test('May overlapping enemies cause one hit and timeout does not charge that hit again',async({page})=>{
- const s=createGame('blocks',{seed:7});s.elapsed=59.95;s.remaining=.05;s.invincible=0;s.enemies=[0,1,2].map(()=>({x:90,y:536,home:0,dir:1,trapped:0}));await open(page,s);await page.clock.runFor(100);
+ const s=createGame('blocks',{seed:7});s.elapsed=179.95;s.remaining=.05;s.invincible=0;s.enemies=[0,1,2].map(()=>({x:90,y:536,home:0,dir:1,trapped:0}));await open(page,s);await page.clock.runFor(100);
  await expect(page.locator('.result-lives')).toContainText('♥♥♡');expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).games.blocks.hearts,PROGRESS_KEY)).toBe(2);
 });
 async function saved(page,kind){await page.locator('[data-pause]').click();const s=await page.evaluate(({key,kind})=>JSON.parse(localStorage.getItem(key)).games[kind].snapshot,{key:PROGRESS_KEY,kind});await page.locator('[data-resume]').click();await waitPump(page);return s;}
@@ -46,20 +46,7 @@ test('all five pump physical keys work even with Korean characters',async({page}
 test('Liv item songs follow BGM instead of the member voice switch',async({page})=>{
  await voiceSpy(page);const s=createGame('catch',{seed:7});s.spawn=10;s.gates=[];s.pickups=[{lane:1,y:400,kind:'pinball'}];await open(page,s);await page.getByRole('button',{name:'멤버 음성 끄기',exact:true}).click();await page.clock.runFor(450);await expect(page.locator('#powerup-status')).toContainText('Pinball');await expect(page.locator('#music-status')).toContainText('재생 중 · Pinball');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(0);await page.locator('[data-music]').click();expect(await page.evaluate(()=>window.ytPlayers.at(-1).muted)).toBe(true);
 });
-test('Woni late-stage fake and real targets both remain keyboard operable',async({page},info)=>{
- const s=createGame('drive',{stage:15,seed:7});s.spawn=10;s.hits=3;s.score=500;s.holes[0]={ttl:1.6,total:1.6,gold:false,fake:true,flash:0};s.holes[3]={ttl:1.6,total:1.6,gold:false,fake:false,flash:0};await open(page,s);await page.screenshot({path:info.outputPath('woni-late-fake.png'),fullPage:true});await page.keyboard.press('1');await expect(page.locator('#score')).toHaveText('350');await page.keyboard.press('4');await expect(page.locator('#score')).toHaveText('460');await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 3개');
-});
-
-test('Woni gold plays one song without restarting it, then a later pickup plays again',async({page})=>{
- await voiceSpy(page);const s=createGame('drive',{seed:7});s.spawn=10;for(const i of [0,3,6])s.holes[i]={ttl:4,total:4,gold:true,fake:false,flash:0};await open(page,s);
- await page.keyboard.press('1');await page.keyboard.press('4');await expect(page.locator('#score')).toHaveText('430');expect(await page.evaluate(()=>window.voiceFiles)).toEqual(['./voices/woni-song.mp3']);
- await page.locator('[data-pause]').click();expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).games.drive.snapshot.itemPickups,PROGRESS_KEY)).toBe(2);await page.clock.runFor(4100);await page.locator('[data-resume]').click();await page.keyboard.press('7');await expect(page.locator('#score')).toHaveText('660');expect(await page.evaluate(()=>window.voiceFiles)).toEqual(['./voices/woni-song.mp3','./voices/woni-song.mp3']);
-});
-test('Woni final gold keeps its song and manual clear-voice replay stays available',async({page})=>{
- await voiceSpy(page);const s=createGame('drive',{seed:7});s.hits=stageGoal('drive',1).target-1;s.spawn=10;s.holes[0]={ttl:4,total:4,gold:true,fake:false,flash:0};await open(page,s);await page.keyboard.press('1');await expect(page.locator('#result-title')).toHaveText('스테이지 1 클리어!');expect(await page.evaluate(()=>window.voiceFiles)).toEqual(['./voices/woni-song.mp3']);await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
- await page.getByRole('button',{name:'▶ 원이 실제 음성 듣기',exact:true}).click();expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(2);await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
-});
 test('Zena earns a rolling pin by a normal keyboard match with one restored reaction',async({page})=>{
  await voiceSpy(page);let s,pair;for(let seed=1;seed<100;seed++){const candidate=createGame('photo',{stage:5,seed}),probe=createGame('photo',{stage:5,seed});const match=availableSwap(probe.board);gameAction(probe,{from:match[0],to:match[1]});if(probe.combo>1&&probe.collected<42){s=candidate;pair=match;break;}}expect(s).toBeTruthy();s.breadCharge=2;s.rollingPins=0;await open(page,s);
- for(let n=0;n<pair[0]%6;n++)await page.keyboard.press('ArrowRight');for(let n=0;n<Math.floor(pair[0]/6);n++)await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');await page.keyboard.press(pair[1]-pair[0]===1?'ArrowRight':'ArrowDown');await page.keyboard.press('Enter');await expect(page.locator('#score')).not.toHaveText('0');expect(await page.evaluate(()=>window.voiceFiles)).toEqual(['./voices/zena-reaction-1.mp3']);await expect(page.locator('#powerup-status')).toContainText('밀대 1개');
+ for(let n=0;n<pair[0]%10;n++)await page.keyboard.press('ArrowRight');for(let n=0;n<Math.floor(pair[0]/10);n++)await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');await page.keyboard.press(pair[1]-pair[0]===1?'ArrowRight':'ArrowDown');await page.keyboard.press('Enter');await expect(page.locator('#score')).not.toHaveText('0');expect(await page.evaluate(()=>window.voiceFiles)).toEqual(['./voices/zena-reaction-1.mp3']);await expect(page.locator('#powerup-status')).toContainText('밀대 1개');
 });
