@@ -36,7 +36,7 @@ test('Liv must beat the final boss; boss escape ends only this round with one li
  const loss=createGame('catch');loss.bossSpawned=true;loss.enemies=[{id:0,lane:0,y:479.9,hp:50,maxHp:50,boss:true}];stepGame(loss,.1);assert.equal(loss.hearts,2);assert.equal(loss.endReason,'boss');
 });
 test('rolling pin clears the selected row with falling frames, no move charge and no free refills',()=>{
- const s=createGame('photo',{seed:7});gameAction(s,'rolling-pin');gameAction(s,14);assert.equal(s.rollingPins,0);assert.equal(s.itemArmed,false);assert.equal(s.moves,36);assert.ok(s.collected>=6);assert.deepEqual(s.breadFrames[0].removed,[12,13,14,15,16,17]);assert.ok(s.breadFrames.some(f=>f.kind==='fall'));assert.equal(s.breadCharge,0);stepGame(s,5);gameAction(s,'rolling-pin');assert.equal(s.itemArmed,false);assert.ok(restoreRound(snapshotRound(s)));
+ const s=createGame('photo',{seed:7});gameAction(s,'rolling-pin');gameAction(s,42);assert.equal(s.rollingPins,0);assert.equal(s.itemArmed,false);assert.equal(s.moves,36);assert.ok(s.collected>=20);assert.deepEqual(s.breadFrames[0].removed,Array.from({length:20},(_,i)=>40+i));assert.ok(s.breadFrames.some(f=>f.kind==='fall'));assert.equal(s.breadCharge,0);stepGame(s,5);gameAction(s,'rolling-pin');assert.equal(s.itemArmed,false);assert.ok(restoreRound(snapshotRound(s)));
 });
 test('normal cascades earn a capped rolling pin and an item voice cue',()=>{
  let found=false;for(let seed=1;seed<100&&!found;seed++){const s=createGame('photo',{seed});s.breadCharge=2;s.rollingPins=0;gameAction(s,{from:availableSwap(s.board)[0],to:availableSwap(s.board)[1]});if(s.combo>1){assert.ok(s.rollingPins>0);assert.ok(s.itemPickups>0);found=true;}}assert.ok(found);

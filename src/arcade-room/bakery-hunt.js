@@ -1,4 +1,4 @@
-export const bakerySize=stage=>Math.min(20,5+stage);
+export const bakerySize=()=>20;
 export function hiddenBreadAreas(size,stage=1){
  if(stage===1)return [{x:0,y:1,w:2,h:2},{x:size-3,y:size-2,w:3,h:2}];
  if(stage===2)return [{x:0,y:0,w:2,h:2},{x:size-3,y:0,w:3,h:3},{x:1,y:size-2,w:3,h:2}];
