@@ -1,5 +1,6 @@
+import {collectSongTime,SONG_ITEM_SECONDS} from './song-time.js';
 export const RUNNER_X=[95,240,385];
-export const LIV_SONG_SECONDS=20;
+export const LIV_SONG_SECONDS=SONG_ITEM_SECONDS.catch;
 export const LIV_ITEM_INTERVAL=24;
 import {RESCENE_SONGS} from './music.js';
 export const LIV_ITEMS=Object.keys(RESCENE_SONGS);
@@ -24,6 +25,7 @@ export function stepRunner(s,dt,speed,loseLife,target){
  for(const key of ['hp','spawn','enemySpeed']){const start=runnerDifficulty(1)[key];difficulty[key]=start+(difficulty[key]-start)*intro;}
  s.x+=Math.sign(RUNNER_X[s.lane]-s.x)*Math.min(Math.abs(RUNNER_X[s.lane]-s.x),700*dt);
  for(const k of ['spawn','gateSpawn','shotClock','burst','gateFlash','itemTime','itemClock','songTime','itemCooldown'])s[k]=Math.max(0,s[k]-dt);
+ s.songItemTime=s.songTime;
  if(!s.itemTime)s.item='';
  if(!s.songTime)s.songItem='';
  s.effects=s.effects.map(e=>({...e,ttl:e.ttl-dt})).filter(e=>e.ttl>0).slice(-24);
@@ -52,7 +54,7 @@ export function stepRunner(s,dt,speed,loseLife,target){
   }
  }
  s.gates=s.gates.filter(g=>!g.done);
- for(const item of s.pickups){item.y+=110*dt;if(!s.itemCooldown&&Math.abs(RUNNER_X[item.lane]-s.x)<60&&item.y>=440&&item.y<=515){if(s.firstItemAt===null)s.firstItemAt=s.elapsed;s.item=item.kind;s.itemSongIndex=(LIV_ITEMS.indexOf(item.kind)+1)%LIV_ITEMS.length;s.itemTime=30;s.itemClock=0;s.songItem=item.kind;s.songTime=LIV_SONG_SECONDS;s.itemCooldown=LIV_ITEM_INTERVAL;item.y=600;s.itemPickups++;s.event='defense-item';}}
+ for(const item of s.pickups){item.y+=110*dt;if(!s.songItemTime&&!s.itemCooldown&&Math.abs(RUNNER_X[item.lane]-s.x)<60&&item.y>=440&&item.y<=515){collectSongTime(s);if(s.firstItemAt===null)s.firstItemAt=s.elapsed;s.item=item.kind;s.itemSongIndex=(LIV_ITEMS.indexOf(item.kind)+1)%LIV_ITEMS.length;s.itemTime=30;s.itemClock=0;s.songItem=item.kind;s.songTime=LIV_SONG_SECONDS;s.itemCooldown=LIV_ITEM_INTERVAL;item.y=600;s.itemPickups++;s.event='defense-item';}}
  s.pickups=s.itemCooldown?[]:s.pickups.filter(item=>item.y<540);
  const shot=(x,power)=>({x,y:455,power,kind:s.item,returning:false,hitIds:[]});
  if(!s.shotClock){
@@ -80,7 +82,7 @@ export function stepRunner(s,dt,speed,loseLife,target){
   const e=s.enemies[i];
   if(e.hp<=0){
    s.enemies.splice(i,1);s.defeated++;if(e.boss)s.bossDefeated=1;s.score+=e.boss?1000:100;s.charge=Math.min(5,s.charge+1);s.event=e.boss?'defense-boss-clear':'defense-hit';
-   if(!e.boss&&!s.itemCooldown&&s.defeated%2===1&&!s.pickups.length){s.pickups.push({lane:(e.lane+1+s.itemCount%2)%3,y:e.y,kind:LIV_ITEMS[s.itemSongIndex]});s.itemCount++;}
+   if(!e.boss&&!s.songItemTime&&!s.itemCooldown&&s.defeated%2===1&&!s.pickups.length){s.pickups.push({lane:(e.lane+1+s.itemCount%2)%3,y:e.y,kind:LIV_ITEMS[s.itemSongIndex]});s.itemCount++;}
   }else{e.y+=(e.boss?difficulty.bossSpeed:difficulty.enemySpeed)*dt;if(e.y>=480){s.enemies.splice(i,1);s.squad=Math.max(1,s.squad-(e.boss?6:2));loseLife(s);s.event='defense-miss';if(e.boss){s.ended=true;s.endReason='boss';}if(s.ended)return;}}
  }
 }

@@ -121,3 +121,7 @@ test('a full item song never loops and its natural end releases the song timer a
  t.mock.timers.enable({apis:['setTimeout']});const {audio,clips}=fixture(t),messages=[];
  const play=audio.playVoice({kind:'song',file:'full-woni.mp3',loop:false},message=>messages.push(message),{durationSeconds:41,member:'woni'});clips[0].onplaying();clips[0].resolve();await play;assert.equal(clips[0].loop,false);assert.equal(audio.itemSongRemaining,41000);clips[0].onended();assert.equal(audio.voice,null);assert.equal(audio.itemSongTimer,null);assert.equal(audio.itemSongMember,null);assert.equal(audio.voiceIsSong,false);const before=[...messages];t.mock.timers.tick(42000);assert.deepEqual(messages,before);
 });
+
+test('remaining item song time follows playback, freezes on pause and expires for next-stage item gating',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});const {audio,clips,setTime}=fixture(t);const play=audio.playVoice({kind:'song',file:'full-woni.mp3',loop:false},undefined,{durationSeconds:41,member:'woni'});clips[0].onplaying();clips[0].resolve();await play;setTime(10000);assert.equal(audio.itemSongSecondsRemaining,31);audio.pauseItemSong();setTime(30000);assert.equal(audio.itemSongSecondsRemaining,31);audio.stop();assert.equal(audio.itemSongSecondsRemaining,0);
+});

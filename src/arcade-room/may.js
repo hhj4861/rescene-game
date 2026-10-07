@@ -1,3 +1,4 @@
+import {collectSongTime} from './song-time.js';
 export const PLATFORMS=[{x:0,y:536,w:480},{x:35,y:422,w:170},{x:267,y:330,w:178},{x:48,y:224,w:168}];
 export function mayPlatforms(stage=1){return stage%2===0?PLATFORMS.map((p,i)=>i?{...p,x:480-p.x-p.w}:p):PLATFORMS;}
 export function mayDifficulty(stage=1){const ramp=1-1/(1+Math.max(0,stage-1)*.12);return {speed:72+48*ramp,trap:4.5-1.5*ramp,spawn:1.6-.7*ramp,limit:Math.min(7,4+Math.floor((stage-1)/3))};}
@@ -5,7 +6,7 @@ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 function enemy(s,home){const p=mayPlatforms(s.mayLayout)[home];let x=p.x+25+s.random()*(p.w-50);if(Math.hypot(x-s.player.x,p.y-s.player.y)<95)x=s.player.x<p.x+p.w/2?p.x+p.w-25:p.x+25;return {x,y:p.y,home,dir:s.random()<.5?-1:1,trapped:0,vy:0,think:.7+s.random()*.5,angry:false};}
 export function createMay(s){const data={mayVersion:2,songPickups:0,mayLayout:s.stage%2===0?2:1,items:[],speedBoost:0,sizeBoost:0,player:{x:90,y:536,vy:0,facing:1,walk:0,dir:0},popped:0,combo:0,enemies:[],bubbles:[],invincible:1.2,cooldown:0,spawn:1.6,flash:0};Object.assign(s,data);s.enemies=[0,1,2,3].map(home=>enemy(s,home));s.enemies[0].x=340;return s;}
 function pop(s,first){const group=[first];for(let i=0;i<group.length;i++)for(const e of s.enemies)if(e.trapped&&!group.includes(e)&&Math.hypot(e.x-group[i].x,e.y-group[i].y)<85)group.push(e);
- for(const e of group){s.enemies.splice(s.enemies.indexOf(e),1);s.popped++;s.combo++;s.score+=(100+Math.min(5,s.combo)*50)*Math.min(4,group.length);if(s.items.length<4)s.items.push({x:e.x,y:e.y-22,kind:s.popped%3===0?'honey':s.popped%2?'speed':'size',ttl:12});}s.flash=.25;s.event=group.length>1?'bubble-chain':'bubble-pop';}
+ for(const e of group){s.enemies.splice(s.enemies.indexOf(e),1);s.popped++;s.combo++;s.score+=(100+Math.min(5,s.combo)*50)*Math.min(4,group.length);if(s.items.length<4)s.items.push({x:e.x,y:e.y-22,kind:s.popped%3===0&&!s.songItemTime?'honey':s.popped%2?'speed':'size',ttl:12});}s.flash=.25;s.event=group.length>1?'bubble-chain':'bubble-pop';}
 export function mayAction(s,a){const p=s.player;
  if(a==='left'||a==='right'){p.dir=a==='left'?-1:1;p.facing=p.dir;p.walk=.18;}else if(a==='turn'){p.facing*=-1;p.dir=0;p.walk=0;}else if(a==='stop'){p.dir=0;p.walk=0;}else if(a==='jump'&&Math.abs(p.vy)<.01&&mayPlatforms(s.mayLayout).some(f=>Math.abs(p.y-f.y)<.5&&p.x>=f.x-6&&p.x<=f.x+f.w+6))p.vy=-550;
  else if(a==='bubble'&&!s.cooldown){s.cooldown=.28;const near=s.enemies.filter(e=>e.trapped&&Math.hypot(e.x-p.x,e.y-p.y)<64).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];if(near)pop(s,near);else if(s.bubbles.length<8)s.bubbles.push({x:p.x+p.facing*20,y:p.y-24,vx:p.facing*260,ttl:3.2,radius:s.sizeBoost?34:21});}}
@@ -29,6 +30,6 @@ export function stepMay(s,dt,loseLife,target){const p=s.player,platforms=mayPlat
    if(!s.invincible&&Math.hypot(e.x-p.x,e.y-p.y)<31){loseLife(s);s.invincible=1.4;s.combo=0;s.event='bubble-miss';}
   }if(s.ended)return;
  }
- for(const item of s.items){const floor=[...platforms].sort((a,b)=>a.y-b.y).find(f=>item.x>=f.x&&item.x<=f.x+f.w&&f.y-22>=item.y-.01);item.y=Math.min(floor?floor.y-22:514,item.y+150*dt);item.ttl-=dt;if(Math.hypot(item.x-p.x,item.y-(p.y-22))<38){if(item.kind==='honey')s.songPickups++;else s[item.kind==='speed'?'speedBoost':'sizeBoost']=10;item.ttl=0;s.itemPickups++;s.event='bubble-item';}}
- s.items=s.items.filter(i=>i.ttl>0);s.spawn=Math.max(0,s.spawn-dt);if(!s.spawn){if(s.enemies.length<d.limit&&s.popped+s.enemies.length<target)s.enemies.push(enemy(s,Math.floor(s.random()*4)));s.spawn=d.spawn;}
+ for(const item of s.items){if(item.kind==='honey'&&s.songItemTime){item.ttl=0;continue;}const floor=[...platforms].sort((a,b)=>a.y-b.y).find(f=>item.x>=f.x&&item.x<=f.x+f.w&&f.y-22>=item.y-.01);item.y=Math.min(floor?floor.y-22:514,item.y+150*dt);item.ttl-=dt;if(Math.hypot(item.x-p.x,item.y-(p.y-22))<38){if(item.kind==='honey'){collectSongTime(s);s.songPickups++;}else s[item.kind==='speed'?'speedBoost':'sizeBoost']=10;item.ttl=0;s.itemPickups++;s.event='bubble-item';}}
+ s.items=s.items.filter(i=>i.ttl>0&&!(s.songItemTime&&i.kind==='honey'));s.spawn=Math.max(0,s.spawn-dt);if(!s.spawn){if(s.enemies.length<d.limit&&s.popped+s.enemies.length<target)s.enemies.push(enemy(s,Math.floor(s.random()*4)));s.spawn=d.spawn;}
 }

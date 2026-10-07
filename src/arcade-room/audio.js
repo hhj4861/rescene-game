@@ -97,6 +97,7 @@ export class ArcadeAudio {
     if(!this.itemSongRemaining||this.itemSongTimer)return;
     this.itemSongStarted=this.now();this.itemSongTimer=setTimeout(()=>{this.voiceReport?.('노래 아이템 · 재생 완료');this.cancelVoiceQuietly();},this.itemSongRemaining);
   }
+  get itemSongSecondsRemaining(){return this.itemSongMember?Math.max(0,(this.itemSongRemaining-(this.itemSongTimer?this.now()-this.itemSongStarted:0))/1000):0;}
   pauseItemSong(){
     if(!this.itemSongMember)return;
     if(this.itemSongTimer){this.itemSongRemaining=Math.max(0,this.itemSongRemaining-(this.now()-this.itemSongStarted));clearTimeout(this.itemSongTimer);this.itemSongTimer=null;}

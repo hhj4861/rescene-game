@@ -28,3 +28,5 @@ export const SIGNATURES={
 };
 
 for(const [id,game] of Object.entries(GAMES))if(!['rhythm','drive'].includes(id))game.guide+=` 목숨 3개로 시작하고, ${id==='blocks'?180:id==='catch'?300:id==='drive'?90:60}초 안에 클리어하면 남은 목숨으로 더 어려운 다음 단계에 도전해요. 스테이지마다 배경도 바뀌어요.`;
+
+for(const [id,game] of Object.entries(GAMES))if(id!=='rhythm')game.guide+=' 노래 아이템을 먹으면 남은 시간이 최소 60초가 돼요. 이미 60초 이상이면 유지해요. 노래가 끝날 때까지 다음 노래 아이템은 나오지 않아요.';

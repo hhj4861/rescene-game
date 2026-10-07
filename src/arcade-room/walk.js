@@ -1,3 +1,4 @@
+import {collectSongTime} from './song-time.js';
 export const WALK_LANES=[100,240,380];
 export const WALK_TIME_BONUS=10;
 export const WALK_MAX_BONUS=60;
@@ -24,7 +25,7 @@ export function stepWalk(s,dt,speed,loseLife){
  for(const e of s.effects)e.ttl-=dt;s.effects=s.effects.filter(e=>e.ttl>0);
  if(s.transformTime)attack(s);
  if(!s.spawn){
-  const kind=ROUTE[s.nextObject%ROUTE.length],lane=Math.floor(s.random()*3);
+  const scheduled=ROUTE[s.nextObject%ROUTE.length],kind=scheduled==='song'&&s.songItemTime?'treat':scheduled,lane=Math.floor(s.random()*3);
   s.objects.push({id:s.nextObject++,lane,y:110,kind,...(kind==='monster'?{hp:Math.min(3,1+Math.floor((s.stage-1)/4))}:{})});s.spawn=Math.max(.5,1.05/Math.sqrt(speed));
  }
  for(const o of s.objects)o.y+=(125+30*speed)*dt;
@@ -36,7 +37,7 @@ export function stepWalk(s,dt,speed,loseLife){
  }
  s.shots=s.shots.filter(b=>!b.done&&b.y>=100);
  for(const o of s.objects){
-  if(o.done)continue;
+  if(o.done)continue;if(o.kind==='song'&&s.songItemTime){o.done=true;continue;}
   if(Math.abs(WALK_LANES[o.lane]-s.x)<44&&o.y>=455&&o.y<=525){
    o.done=true;
    if(WALK_ITEMS.includes(o.kind)){
@@ -44,7 +45,7 @@ export function stepWalk(s,dt,speed,loseLife){
     if(o.kind==='treat'){
      s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);s.score+=100+Math.min(10,s.combo)*10;s.event='walk-treat';
      if(++s.heat>=5){s.heat=0;s.fever=8;s.event='walk-fever';}
-    }else if(o.kind==='song'){s.songPickups++;s.score+=50;s.event='walk-song';}
+    }else if(o.kind==='song'){collectSongTime(s);s.songPickups++;s.score+=50;s.event='walk-song';}
     else if(o.kind==='charmander'){s.transformTime=WALK_TRANSFORM_SECONDS;s.attackCooldown=0;s.score+=50;s.event='walk-transform';}
     else{const bonus=Math.min(WALK_TIME_BONUS,WALK_MAX_BONUS-s.timeBonus);s.timeBonus+=bonus;s.remaining+=bonus;s.clockPickups++;s.score+=50;s.lastReward=bonus?'clock':'clock-max';s.event='walk-clock';}
    }else if(!s.shield&&!s.fever&&!(o.kind==='log'&&s.jumpTime>0)){
@@ -52,5 +53,5 @@ export function stepWalk(s,dt,speed,loseLife){
    }else if(o.kind==='log'&&s.jumpTime>0){s.score+=20;s.event='walk-jump';}
   }else if(o.y>560){o.done=true;if(o.kind==='treat'){s.combo=0;s.heat=0;}}
  }
- s.objects=s.objects.filter(o=>!o.done);
+ s.objects=s.objects.filter(o=>!o.done&&!(s.songItemTime&&o.kind==='song'));
 }
