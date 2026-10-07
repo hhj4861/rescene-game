@@ -1,7 +1,7 @@
 import {collectSongTime} from './song-time.js';
 export const PLATFORMS=[{x:0,y:536,w:480},{x:35,y:422,w:170},{x:267,y:330,w:178},{x:48,y:224,w:168}];
 export function mayPlatforms(stage=1){return stage%2===0?PLATFORMS.map((p,i)=>i?{...p,x:480-p.x-p.w}:p):PLATFORMS;}
-export function mayDifficulty(stage=1){const ramp=1-1/(1+Math.max(0,stage-1)*.12);return {speed:72+48*ramp,trap:4.5-1.5*ramp,spawn:1.6-.7*ramp,limit:Math.min(7,4+Math.floor((stage-1)/3))};}
+export function mayDifficulty(stage=1){const ramp=1-1/(1+Math.max(0,stage-1)*.35);return {speed:72+70*ramp,trap:4.5-2*ramp,spawn:1.6-.85*ramp,limit:Math.min(7,4+Math.floor((stage-1)/2))};}
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 function enemy(s,home){const p=mayPlatforms(s.mayLayout)[home];let x=p.x+25+s.random()*(p.w-50);if(Math.hypot(x-s.player.x,p.y-s.player.y)<95)x=s.player.x<p.x+p.w/2?p.x+p.w-25:p.x+25;return {x,y:p.y,home,dir:s.random()<.5?-1:1,trapped:0,vy:0,think:.7+s.random()*.5,angry:false};}
 export function createMay(s){const data={mayVersion:2,songPickups:0,mayLayout:s.stage%2===0?2:1,items:[],speedBoost:0,sizeBoost:0,player:{x:90,y:536,vy:0,facing:1,walk:0,dir:0},popped:0,combo:0,enemies:[],bubbles:[],invincible:1.2,cooldown:0,spawn:1.6,flash:0};Object.assign(s,data);s.enemies=[0,1,2,3].map(home=>enemy(s,home));s.enemies[0].x=340;return s;}

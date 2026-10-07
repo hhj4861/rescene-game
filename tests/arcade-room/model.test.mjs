@@ -6,8 +6,8 @@ test('May jumps onto a platform and bubbles trap then pop enemies',()=>{
  s.enemies=[{x:130,y:422,home:1,dir:1,trapped:0}];gameAction(s,'bubble');stepGame(s,.1);assert.equal(s.enemies[0].trapped>0,true);stepGame(s,.2);gameAction(s,'bubble');assert.equal(s.popped,1);assert.ok(s.score>0);
 });
 test('bread swaps require an adjacent match and charge a move only on success',()=>{
- const s=createGame('photo',{seed:7}),before=[...s.board];assert.equal(swapBread(s,0,35),false);assert.deepEqual(s.board,before);assert.equal(s.moves,18);
- const pair=availableSwap(s.board);assert.ok(pair);assert.equal(swapBread(s,...pair),true);assert.equal(s.moves,17);assert.ok(s.collected>=3);assert.ok(availableSwap(s.board));
+ const s=createGame('photo',{seed:7}),before=[...s.board];assert.equal(swapBread(s,0,35),false);assert.deepEqual(s.board,before);assert.equal(s.moves,36);
+ const pair=availableSwap(s.board);assert.ok(pair);assert.equal(swapBread(s,...pair),true);assert.equal(s.moves,35);assert.ok(s.collected>=3);assert.ok(availableSwap(s.board));
 });
 test('bread four-match creates a special bread and shuffle has limited charges',()=>{
  const s=createGame('photo',{seed:1});s.board=[1,1,2,1,3,4,2,3,1,4,5,2,3,4,5,2,1,3,4,5,2,3,4,1,5,2,3,4,1,2,2,3,4,1,2,3];assert.equal(swapBread(s,2,8),true);assert.ok(s.board.some(x=>x>10));

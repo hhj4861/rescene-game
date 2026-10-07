@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createGame,gameAction,stepGame,roundDuration,roundBudget,GAME_IDS} from '../../src/arcade-room/model.js';
 import {restoreRound,snapshotRound} from '../../src/arcade-room/progress.js';
-import {SONG_ITEM_SECONDS} from '../../src/arcade-room/song-time.js';
+import {songItemSeconds} from '../../src/arcade-room/stage-songs.js';
 function gift(s){
  if(s.kind==='drive'){s.spawn=15;s.objects=[{id:s.nextObject++,lane:s.lane,y:455,kind:'song'},{id:s.nextObject++,lane:0,y:180,kind:'song'}];}
  if(s.kind==='blocks'){s.spawn=15;s.enemies=[];s.items=[{x:s.player.x,y:s.player.y-22,kind:'honey',ttl:12},{x:400,y:100,kind:'honey',ttl:12}];}
@@ -12,7 +12,7 @@ function gift(s){
 const count=s=>s.kind==='catch'?s.itemPickups:s.songPickups;
 for(const kind of ['drive','blocks','photo','catch']){
  test(`${kind}: a song pickup guarantees 60 seconds, removes other gifts and saves the extended deadline`,()=>{
-  const s=createGame(kind,{seed:7});s.elapsed=roundDuration(kind)-20;s.remaining=20;gift(s);assert.ok(Math.abs(s.remaining-60)<1e-7);assert.equal(count(s),1);assert.equal(s.songItemTime,SONG_ITEM_SECONDS[kind]);assert.ok(Math.abs(roundBudget(s)-s.elapsed-60)<1e-7);
+  const s=createGame(kind,{seed:7});s.elapsed=roundDuration(kind)-20;s.remaining=20;gift(s);assert.ok(Math.abs(s.remaining-60)<1e-7);assert.equal(count(s),1);assert.equal(s.songItemTime,songItemSeconds(s));assert.ok(Math.abs(roundBudget(s)-s.elapsed-60)<1e-7);
   if(kind==='drive')assert.equal(s.objects.filter(o=>o.kind==='song').length,0);if(kind==='blocks')assert.equal(s.items.filter(o=>o.kind==='honey').length,0);if(kind==='catch')assert.equal(s.pickups.length,0);if(kind==='photo')assert.equal(s.songDrops,1);
   const r=restoreRound(snapshotRound(s));assert.ok(r);assert.deepEqual(snapshotRound(r),snapshotRound(s));const bonus=s.songTimeBonus;gift(s);assert.equal(count(s),1);assert.equal(s.songTimeBonus,bonus,'duplicates cannot extend time or restart the waiting period');
   for(let i=0;i<21;i++){s.spawn=15;if(kind==='drive')s.objects=[];if(kind==='blocks')s.enemies=[];if(kind==='catch'){s.enemies=[];s.gates=[];}stepGame(s,1);}assert.equal(s.ended,false,'the original deadline must no longer end the round');assert.ok(s.remaining>38&&s.remaining<40);assert.ok(restoreRound(snapshotRound(s)));

@@ -10,7 +10,7 @@ export const LIV_ATTACKS={'love-attack':{name:'하트 더블샷',color:'#ff82b2'
 export const LEGACY_LIV_ITEMS={wand:'love-attack',fairy:'pinball',meteor:'heart-drop',wings:'new-world'};
 // Saturating stage curve keeps endless stages harder without unreactable speeds.
 export function runnerDifficulty(stage=1){
- const level=Number.isSafeInteger(stage)&&stage>0?stage:1,ramp=1-1/(1+(level-1)*.1);
+ const level=Number.isSafeInteger(stage)&&stage>0?stage:1,ramp=1-1/(1+(level-1)*.4);
  return {hp:12+Math.round(32*ramp),bossHp:240+Math.round(660*ramp),spawn:1.35-.65*ramp,enemySpeed:52+34*ramp,bossSpeed:22+10*ramp,penalty:4+Math.floor(2*ramp)};
 }
 export function createRunner(options={}){return {itemSongIndex:Number.isInteger(options.itemSongIndex)&&options.itemSongIndex>=0&&options.itemSongIndex<LIV_ITEMS.length?options.itemSongIndex:0,firstItemAt:null,runnerVersion:1,upgradeVersion:1,songVersion:1,songItem:'',songTime:0,itemCooldown:0,effects:[],fireLevel:0,volley:1,bossSpawned:false,bossDefeated:0,pickups:[],item:'',itemTime:0,itemClock:0,itemCount:0,lane:1,x:240,squad:3,gatesTaken:0,gates:[{y:230,options:[{op:'add',value:3},{op:'multiply',value:1.5},{op:'add',value:-2}]}],gateSpawn:6,enemies:[],shots:[],defeated:0,spawn:1,nextEnemy:0,shotClock:0,charge:0,burst:0,gateFlash:0,lastGate:''};}
@@ -36,7 +36,7 @@ export function stepRunner(s,dt,speed,loseLife,target){
   const id=s.nextEnemy++,hp=Math.ceil(difficulty.hp)+Math.min(8,Math.floor(id*.5));
   const lane=s.bossSpawned?(s.random()<.5?0:2):id===0?1:Math.floor(s.random()*3);
   s.enemies.push({id,lane,y:110,hp,maxHp:hp,boss:false});
-  if(id%4===3&&s.enemies.length<(s.bossSpawned?6:12))s.enemies.push({id:s.nextEnemy++,lane:(lane+1)%3,y:110,hp,maxHp:hp,boss:false});
+  if(id%(s.stage>=5?2:s.stage>=3?3:4)===(s.stage>=5?1:s.stage>=3?2:3)&&s.enemies.length<(s.bossSpawned?6:12))s.enemies.push({id:s.nextEnemy++,lane:(lane+1)%3,y:110,hp,maxHp:hp,boss:false});
   s.spawn=difficulty.spawn*(s.bossSpawned?1.2:1);
  }
  if(!s.gateSpawn){

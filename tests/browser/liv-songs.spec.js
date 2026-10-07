@@ -38,7 +38,7 @@ test('a boss clear keeps the item song playing beside the compact result until i
 
 test('Liv retry and reload retain the next song instead of returning to Love Attack',async({page})=>{
  await fakeApi(page);await open(page,'love-attack');await expect(page.locator('#music-status')).toContainText('LOVE ATTACK');await page.locator('[data-pause]').click();await page.locator('[data-restart]').click();await page.locator('[data-pause]').click();expect((await snapshot(page)).itemSongIndex).toBe(1);
- await page.reload();await page.locator('[data-start="catch"].start').click();await page.locator('[data-resume]').click();
+ await page.reload();await page.locator('[data-slide="catch"]').click();await page.locator('[data-start="catch"].start').click();await page.locator('[data-resume]').click();
  let pickup;
  for(let i=0;i<10;i++){await page.clock.runFor(500);await page.locator('[data-pause]').click();pickup=(await snapshot(page)).pickups[0];await page.locator('[data-resume]').click();if(pickup)break;}
  expect(pickup?.kind).toBe('pinball');await page.keyboard.press(String(pickup.lane+1));await page.clock.runFor(2200);await expect(page.locator('#music-status')).toContainText('Pinball');

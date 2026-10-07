@@ -11,14 +11,15 @@ async function setup(page,kind,{points=4990,clear=false}={}){
  if(kind==='drive'){s.objects=[{id:0,lane:1,y:455,kind:'treat'}];if(clear)s.hits=stageGoal(kind,1).target-1;}
  if(kind==='blocks'){if(clear)s.popped=stageGoal(kind,1).target-1;s.enemies=[{x:90,y:520,home:0,dir:1,trapped:4,vy:0,think:.8,angry:false}];}
  if(kind==='catch'){s.enemies=[{id:0,lane:1,y:190,hp:1,maxHp:1,boss:false}];s.charge=5;s.gates=[];s.pickups=[{lane:1,y:440,kind:'love-attack'}];}
- if(clear&&kind==='catch'){s.bossSpawned=true;s.defeated=stageGoal(kind,1).target-1;s.enemies[0].boss=true;}if(clear&&kind==='photo')s.collected=stageGoal(kind,1).target-1;if(kind==='rhythm'){s.elapsed=59.95;s.remaining=.05;}
+ if(clear&&kind==='catch'){s.bossSpawned=true;s.defeated=stageGoal(kind,1).target-1;s.enemies[0].boss=true;}if(clear&&kind==='photo'){s.breadCover.fill(true);s.breadCover[6]=false;};if(kind==='rhythm'){s.elapsed=59.95;s.remaining=.05;}
  p.games[kind].songs={points,claimed:Math.floor(points/5000)*5000,roundHigh:0};p.games[kind].snapshot=snapshotRound(s);
  await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);const Native=window.Audio;window.songClips=[];window.Audio=class extends Native{constructor(src){super(src);window.songClips.push({src,audio:this});}};},{key:PROGRESS_KEY,value:JSON.stringify(p)});
- await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.locator(`[data-start="${kind}"].start`).click();if(kind==='rhythm')await page.locator('[data-song-resume]').click();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-resume]').click();if(kind==='rhythm')await expect(page.locator('#music-status')).toContainText('재생 중');return s;
+ await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.locator(`[data-start="${kind}"].start`).click();if(kind==='rhythm')await page.locator('[data-song-resume]').click();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-resume]').click();if(kind==='rhythm')await expect(page.locator('#music-status')).toContainText('재생 중');return {...s,testClear:clear};
 }
 async function score(page,s){
  if(s.kind==='drive')await page.keyboard.press('2');
  else if(s.kind==='catch')await page.keyboard.press('Space');
+ else if(s.kind==='photo'&&s.testClear){await page.locator('[data-act="rolling-pin"]').click();await page.locator('.field-controls [data-act="6"]').click();}
  else if(s.kind==='photo'){const pair=availableSwap(s.board);for(const i of pair)await page.locator(`.field-controls [data-act="${i}"]`).click();}
  await page.clock.runFor(100);
 }
@@ -62,7 +63,7 @@ test('clear speech plays first and the singing gift starts only on request',asyn
 test('each score-song recording is audible, distinct and has the expected source duration',async({page})=>{
  await page.goto('./');const signals=await page.evaluate(async clips=>{
  const c=new (window.AudioContext||window.webkitAudioContext)();try{return await Promise.all(clips.map(async clip=>{const r=await window.fetch(clip.file);if(!r.ok)throw Error(clip.file);const bytes=await r.arrayBuffer(),hash=Array.from(new Uint8Array(await window.crypto.subtle.digest('SHA-256',bytes))).join(','),b=await c.decodeAudioData(bytes);let power=0;for(const x of b.getChannelData(0))power+=x*x;return {file:clip.file,duration:b.duration,rms:Math.sqrt(power/b.length),hash};}));}finally{await c.close();}
- },Object.values(SCORE_SONGS).filter(s=>s.file));expect(new Set(signals.map(s=>s.hash)).size).toBe(4);for(const s of signals){expect(s.duration).toBeGreaterThan(1);if(s.file.includes('woni-song')){expect(s.duration).toBeGreaterThan(40);expect(s.duration).toBeLessThan(42);}else expect(s.duration).toBeLessThan(6);expect(s.rms).toBeGreaterThan(.003);}
+ },Object.values(SCORE_SONGS).filter(s=>s.file));expect(new Set(signals.map(s=>s.hash)).size).toBe(4);for(const s of signals){expect(s.duration).toBeGreaterThan(1);if(s.file.includes('woni-song')){expect(s.duration).toBeGreaterThan(40);expect(s.duration).toBeLessThan(42);}else if(/may-song|zena-song/.test(s.file))expect(s.duration).toBeCloseTo(60,1);else expect(s.duration).toBeLessThan(6);expect(s.rms).toBeGreaterThan(.003);}
 });
 
 test('master mute suppresses the automatic clear voice and manual gift',async({page})=>{

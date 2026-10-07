@@ -140,7 +140,7 @@ export const LIV_SONG={
 export const SCORE_SONGS={
  minami:{kind:'song',external:true,title:'TITANIUM',source:'https://www.youtube.com/watch?v=AhJb7wPiOjQ'},
  woni:{kind:'song',file:'./voices/woni-song.mp3?v=full',title:'여름아 부탁해',start:0,end:41,loop:false,itemSeconds:41,source:'https://www.youtube.com/watch?v=l2GnjywCPjE'},
- may:{kind:'song',file:'./voices/may-song.mp3',title:'Put Your Records On',start:10,end:13.5,source:'https://www.youtube.com/watch?v=c13--HEy_8U&t=10s'},
- zena:{kind:'song',file:'./voices/zena-song.mp3',title:'Life’s Too Short',start:10,end:13.5,source:'https://www.youtube.com/watch?v=OybCC65kqEw&t=10s'},
+ may:{kind:'song',file:'./voices/may-song.mp3?v=continuous',title:'Put Your Records On',start:10,end:70,loop:false,itemSeconds:60,source:'https://www.youtube.com/watch?v=c13--HEy_8U&t=10s'},
+ zena:{kind:'song',file:'./voices/zena-song.mp3?v=continuous',title:'Life’s Too Short',start:10,end:70,loop:false,itemSeconds:60,source:'https://www.youtube.com/watch?v=OybCC65kqEw&t=10s'},
  liv:{...LIV_SONG,kind:'song',title:'내 남자 친구에게'},
 };

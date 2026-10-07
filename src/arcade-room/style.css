@@ -125,3 +125,7 @@
 #app[data-game="drive"] .game-controls{display:grid;grid-template-columns:44px 1fr 1.4fr 44px;gap:7px}
 #app[data-game="drive"] .game-controls .skill-button,#app[data-game="drive"] .game-controls .item-button{font-size:13px;width:auto}
 #app[data-game="drive"][data-transformed="true"] [data-act="attack"]{background:#ffcc7b}
+
+.bread-viewport{width:100%;max-height:600px;overflow:auto;overscroll-behavior:contain}.bread-board{position:relative;width:100%}.bread-board #game{width:100%;max-width:none}.bread-board .field-controls{position:absolute;inset:0}.bread-viewport:has(.bread-board[style]){max-height:min(70vh,600px)}
+
+.bread-board[style] #game,.bread-board[style] .field-controls button{touch-action:pan-x pan-y}#app[data-game=photo] .game-controls{flex-wrap:wrap}#app[data-game=photo] .game-controls button{font-size:13px;flex:1 1 40%;min-height:44px}

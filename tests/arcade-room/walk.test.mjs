@@ -29,8 +29,8 @@ test('invalid bonuses are rejected; old games retain progress but restart only t
 });
 test('every route cycle offers song and clock gifts with a reproducible lane sequence',()=>{
  const s=createGame('drive',{seed:7}),seen=[];
- for(let i=0;i<24;i++){s.objects=[];s.spawn=0;stepGame(s,.025);seen.push(s.objects[0].kind);}
- assert.equal(seen.filter(k=>k==='song').length,2);assert.equal(seen.filter(k=>k==='clock').length,2);assert.equal(seen.filter(k=>k==='treat').length,8);assert.equal(seen.filter(k=>k==='monster').length,6);assert.equal(seen.filter(k=>k==='charmander').length,2);
+ for(let i=0;i<28;i++){s.objects=[];s.spawn=0;stepGame(s,.025);seen.push(s.objects[0].kind);}
+ assert.equal(seen.filter(k=>k==='song').length,2);assert.equal(seen.filter(k=>k==='clock').length,2);assert.equal(seen.filter(k=>k==='treat').length,8);assert.equal(seen.filter(k=>k==='monster').length,8);assert.equal(seen.filter(k=>k==='charmander').length,2);
 });
 
 test('star attacks hit the nearest monster once, respect cooldown, and leave gifts intact',()=>{
