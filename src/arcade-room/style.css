@@ -121,3 +121,7 @@
 .game-controls .song-pickup{width:100%;background:#f4c5dd;font-size:15px}
 #pump-gauge{color:#84e5b4;font-variant-numeric:tabular-nums}
 #pump-gauge[data-low="true"]{color:#ff91a8}
+
+#app[data-game="drive"] .game-controls{display:grid;grid-template-columns:44px 1fr 1.4fr 44px;gap:7px}
+#app[data-game="drive"] .game-controls .skill-button,#app[data-game="drive"] .game-controls .item-button{font-size:13px;width:auto}
+#app[data-game="drive"][data-transformed="true"] [data-act="attack"]{background:#ffcc7b}

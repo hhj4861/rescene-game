@@ -29,6 +29,23 @@ test('invalid bonuses are rejected; old games retain progress but restart only t
 });
 test('every route cycle offers song and clock gifts with a reproducible lane sequence',()=>{
  const s=createGame('drive',{seed:7}),seen=[];
- for(let i=0;i<20;i++){s.objects=[];s.spawn=0;stepGame(s,.025);seen.push(s.objects[0].kind);}
- assert.equal(seen.filter(k=>k==='song').length,2);assert.equal(seen.filter(k=>k==='clock').length,2);assert.equal(seen.filter(k=>k==='treat').length,8);
+ for(let i=0;i<24;i++){s.objects=[];s.spawn=0;stepGame(s,.025);seen.push(s.objects[0].kind);}
+ assert.equal(seen.filter(k=>k==='song').length,2);assert.equal(seen.filter(k=>k==='clock').length,2);assert.equal(seen.filter(k=>k==='treat').length,8);assert.equal(seen.filter(k=>k==='monster').length,6);assert.equal(seen.filter(k=>k==='charmander').length,2);
+});
+
+test('star attacks hit the nearest monster once, respect cooldown, and leave gifts intact',()=>{
+ const s=createGame('drive',{seed:7});s.spawn=10;s.objects=[{id:0,lane:1,y:420,kind:'monster',hp:1},{id:1,lane:1,y:300,kind:'monster',hp:2},{id:2,lane:1,y:400,kind:'song'}];
+ gameAction(s,'attack');gameAction(s,'attack');assert.equal(s.shots.length,1);stepGame(s,.1);assert.equal(s.defeated,1);assert.equal(s.score,150);assert.equal(s.objects.find(o=>o.id===1).hp,2);assert.ok(s.objects.some(o=>o.kind==='song'));stepGame(s,.1);assert.equal(s.defeated,1);
+});
+test('unblocked monsters damage Woni even while jumping; wrong-lane shots miss',()=>{
+ const s=createGame('drive',{seed:7});s.spawn=10;s.objects=[{id:0,lane:0,y:420,kind:'monster',hp:1},{id:1,lane:1,y:455,kind:'monster',hp:1}];gameAction(s,'jump');s.shots=[{x:380,y:465,kind:'star'}];stepGame(s,.025);assert.equal(s.hearts,2);assert.equal(s.defeated,0);assert.ok(s.objects.some(o=>o.id===0));
+});
+test('Charmander grants 20 seconds of automatic fire, defeats armored monsters, and expires to star attacks',()=>{
+ const s=createGame('drive',{stage:9,seed:7});pickup(s,'charmander');assert.equal(s.transformTime,20);assert.equal(s.lastReward,'charmander');s.objects=[{id:1,lane:1,y:380,kind:'monster',hp:3}];stepGame(s,.15);assert.equal(s.defeated,1);assert.equal(s.score,200);assert.equal(s.hearts,3);assert.ok(restoreRound(snapshotRound(s)));
+ pickup(s,'charmander');assert.equal(s.transformTime,20,'a second pickup refreshes, never stacks beyond 20 seconds');s.transformTime=.01;s.shots=[];s.attackCooldown=0;s.objects=[];stepGame(s,.025);assert.equal(s.transformTime,0);gameAction(s,'attack');assert.equal(s.shots.at(-1).kind,'star');
+});
+test('combat snapshots restore deterministic projectiles and reject malformed combat state',()=>{
+ const s=createGame('drive',{seed:7});pickup(s,'charmander');s.objects=[{id:1,lane:1,y:180,kind:'monster',hp:3}];stepGame(s,.1);const saved=snapshotRound(s),r=restoreRound(saved);assert.ok(r);stepGame(s,.2);stepGame(r,.2);assert.deepEqual(snapshotRound(r),snapshotRound(s));
+ for(const patch of [{transformTime:21},{attackCooldown:1},{defeated:-1},{shots:[{x:240,y:300,kind:'unknown'}]},{objects:[{id:1,lane:1,y:180,kind:'monster',hp:0}]}])assert.equal(restoreRound({...saved,...patch}),null);
+ const legacy=snapshotRound(createGame('drive',{seed:7}));for(const key of ['transformTime','attackCooldown','shots','effects','defeated'])delete legacy[key];assert.equal(restoreRound(legacy).transformTime,0);
 });

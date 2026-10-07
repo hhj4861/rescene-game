@@ -85,17 +85,17 @@ export class ArcadeAudio {
     if(!source?.file){report('연결된 음성이 없어요. 자막으로 확인해 주세요.');return false;}
     try{
       this.voiceStartedAt.set(source.file,now);this.voiceIsSong=source.kind==='song';
-      const voice=new window.Audio(source.file);this.voice=voice;this.voiceReport=report;voice.volume=.85;if(durationSeconds){voice.loop=true;this.itemSongRemaining=durationSeconds*1000;this.itemSongMember=member;}
+      const voice=new window.Audio(source.file);this.voice=voice;this.voiceReport=report;voice.volume=.85;if(durationSeconds){voice.loop=source.loop!==false;this.itemSongRemaining=durationSeconds*1000;this.itemSongMember=member;}
       const failed=()=>{if(current()){report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}};
       voice.onplaying=()=>{if(current()){this.duckMusic(true);if(durationSeconds)this.resumeItemSongTimer();report(source.kind==='song'?`노래 보상 · ${source.title} 재생 중`:'실제 멤버 음성 재생 중');}};
-      voice.onended=()=>{if(durationSeconds)return;if(current()){report(source.kind==='song'?'노래 보상 끝 · 다시 듣기로 재생할 수 있어요.':'원본 음성 · 방송 배경음 포함');this.cancelVoiceQuietly();}};
+      voice.onended=()=>{if(durationSeconds&&voice.loop)return;if(current()){report(source.kind==='song'?'노래 보상 끝 · 다시 듣기로 재생할 수 있어요.':'원본 음성 · 방송 배경음 포함');this.cancelVoiceQuietly();}};
       voice.onerror=failed;report('멤버 음성 준비 중…');
       await voice.play();return current();
     }catch(error){if(current()){if(durationSeconds&&error?.name==='AbortError')return false;report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}return false;}
   }
   resumeItemSongTimer(){
     if(!this.itemSongRemaining||this.itemSongTimer)return;
-    this.itemSongStarted=this.now();this.itemSongTimer=setTimeout(()=>{this.voiceReport?.('노래 아이템 · 1분 재생 완료');this.cancelVoiceQuietly();},this.itemSongRemaining);
+    this.itemSongStarted=this.now();this.itemSongTimer=setTimeout(()=>{this.voiceReport?.('노래 아이템 · 재생 완료');this.cancelVoiceQuietly();},this.itemSongRemaining);
   }
   pauseItemSong(){
     if(!this.itemSongMember)return;

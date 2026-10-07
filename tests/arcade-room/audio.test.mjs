@@ -116,3 +116,8 @@ test('a stale resume rejection never cancels a newer item song',async t=>{
  const first=audio.playVoice({kind:'song',file:'woni-song.mp3'},undefined,{durationSeconds:60,member:'woni'});clips[0].resolve();await first;
  const oldResume=audio.resumeItemSong(),next=audio.playVoice({kind:'song',file:'may-song.mp3'},undefined,{durationSeconds:60,member:'may'});clips[0].reject(Error('old failure'));await oldResume;assert.equal(audio.voice,clips[1]);clips[1].resolve();await next;audio.stop();
 });
+
+test('a full item song never loops and its natural end releases the song timer and music ducking',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});const {audio,clips}=fixture(t),messages=[];
+ const play=audio.playVoice({kind:'song',file:'full-woni.mp3',loop:false},message=>messages.push(message),{durationSeconds:41,member:'woni'});clips[0].onplaying();clips[0].resolve();await play;assert.equal(clips[0].loop,false);assert.equal(audio.itemSongRemaining,41000);clips[0].onended();assert.equal(audio.voice,null);assert.equal(audio.itemSongTimer,null);assert.equal(audio.itemSongMember,null);assert.equal(audio.voiceIsSong,false);const before=[...messages];t.mock.timers.tick(42000);assert.deepEqual(messages,before);
+});
