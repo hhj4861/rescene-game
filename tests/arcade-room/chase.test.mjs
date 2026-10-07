@@ -6,7 +6,8 @@ import {chasePosition} from '../../src/arcade-room/chase.js';
 import {snapshotRound,restoreRound} from '../../src/arcade-room/progress.js';
 const target=(s,i=0)=>{s.holes[i]={ttl:3,total:4,gold:false,flash:0};};
 test('runners move in both directions, jump and remain inside separated tap lanes',()=>{
- for(let i=0;i<9;i++){let last;for(let n=0;n<=100;n++){const p=chasePosition({ttl:4-n*.04,total:4},i);assert.ok(p.x-52>=0&&p.x+52<=480);assert.ok(p.y-62>=123&&p.y+42<=568);if(last&&n<100)assert.ok(i%2?p.x<=last.x:p.x>=last.x);last=p;}
+ for(let i=0;i<9;i++){const directions=new Set();let last;for(let n=0;n<100;n++){const p=chasePosition({ttl:4-n*.04,total:4},i);assert.ok(p.x-52>=0&&p.x+52<=480);assert.ok(p.y-62>=123&&p.y+42<=568);if(last&&Math.abs(p.x-last.x)>.01){directions.add(Math.sign(p.x-last.x));assert.equal(p.direction,Math.sign(p.x-last.x));}last=p;}
+  assert.deepEqual([...directions].sort(),[-1,1]);
   const a=chasePosition({ttl:3.9,total:4},i),b=chasePosition({ttl:3,total:4},i);assert.notEqual(a.y,b.y);
  }
  // Maximum jump in the lower lane still leaves the entire 104px target separate.
@@ -53,4 +54,8 @@ test('natural spawns introduce decoys after two catches, stage-bounded decoys al
   }
   assert.ok(decoys>0);assert.equal(s.hearts,3);assert.ok(s.hits>=12);
  }
+});
+
+test('new spawns add bounded turns with stage difficulty and preserve them on reload',()=>{
+ for(const [stage,legs] of [[1,2],[5,3],[9,4],[1000,4]]){const s=createGame('drive',{stage,seed:7});stepGame(s,.4);const i=s.holes.findIndex(h=>h.ttl>0),h=s.holes[i];assert.equal(h.legs,legs);assert.ok(h.total/h.legs>=.8);assert.ok([-1,1].includes(h.direction));const r=restoreRound(snapshotRound(s));assert.deepEqual(chasePosition(r.holes[i],i),chasePosition(h,i));}
 });

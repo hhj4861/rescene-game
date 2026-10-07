@@ -31,3 +31,7 @@ test('ignoring a fake keeps lives and the combo needed for fever',async({page})=
  const s=createGame('drive',{seed:7});Object.assign(s,{score:400,hits:4,combo:4,bestCombo:4,heat:4,spawn:10});s.holes[0]={ttl:.1,total:4,gold:false,fake:true,flash:0};s.holes[3]={ttl:3,total:4,gold:false,flash:0};await open(page,s);await page.clock.runFor(200);
  await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 3개');await expect(page.locator('#score')).toHaveText('400');await expect(page.locator('#extra')).toHaveText('4');await active(page).first().click();await expect(page.locator('#app')).toHaveAttribute('data-fever','true');
 });
+
+test('one Woni target reverses course while its clickable area follows',async({page})=>{
+ const s=createGame('drive',{seed:7});s.spawn=10;s.holes[0]={ttl:4,total:4,gold:false,fake:false,flash:0,direction:1,legs:2};await open(page,s);const target=page.locator('.field-controls [data-act="0"]');await page.clock.runFor(1000);const a=await target.boundingBox();await page.clock.runFor(1000);const b=await target.boundingBox();await page.clock.runFor(1000);const c=await target.boundingBox();expect(b.x).toBeGreaterThan(a.x+20);expect(c.x).toBeLessThan(b.x-20);await target.click();await expect(page.locator('#extra')).toHaveText('1');
+});

@@ -49,5 +49,5 @@ test('old active saves migrate upgrades without changing score, stage or lives',
 });
 test('Woni difficulty increases monotonically with bounded speed, camouflage and fake odds',()=>{
  const levels=[1,3,8,15,50,1000].map(chaseDifficulty);for(let i=1;i<levels.length;i++)for(const k of ['speed','fakeChance','disguise'])assert.ok(levels[i][k]>=levels[i-1][k]);assert.ok(levels.at(-1).fakeChance<.43);assert.ok(levels.at(-1).disguise<=.78);
- const times=[];for(const stage of [1,8,1000]){const s=createGame('drive',{stage,seed:7});s.spawn=0;stepGame(s,.025);times.push(s.holes.find(h=>h.ttl).total);}assert.ok(times[0]>times[1]&&times[1]>times[2]);assert.ok(times[2]>=1.6);
+ const times=[];for(const stage of [1,8,1000]){const s=createGame('drive',{stage,seed:7});s.spawn=0;stepGame(s,.025);const h=s.holes.find(h=>h.ttl);times.push(h.total/h.legs);}assert.ok(times[0]>times[1]&&times[1]>times[2]);assert.ok(times[2]>=.8);
 });

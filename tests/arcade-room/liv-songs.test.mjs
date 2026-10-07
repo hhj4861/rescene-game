@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createGame,stepGame} from '../../src/arcade-room/model.js';
 import {LIV_ITEMS,LEGACY_LIV_ITEMS,runnerDifficulty} from '../../src/arcade-room/runner.js';
-import {restoreRound,snapshotRound} from '../../src/arcade-room/progress.js';
+import {restoreRound,snapshotRound,emptyProgress,saveRound,readProgress,newRun,finishStage} from '../../src/arcade-room/progress.js';
 function arena(item){const s=createGame('catch',{seed:7});s.spawn=10;s.gateSpawn=6;s.gates=[];s.item=item;s.itemTime=10;return s;}
 function enemy(id,lane,y=300,hp=50){return {id,lane,y,hp,maxHp:hp,boss:false};}
 test('Love Attack hearts deal extra damage and Pinball ricochets across three enemies',()=>{
@@ -35,4 +35,21 @@ test('legacy song saves resume at the same media position and reject invalid tim
  const old=snapshotRound(arena('pinball'));delete old.songItem;delete old.songTime;delete old.itemCooldown;old.itemTime=6;
  const s=restoreRound(old);assert.ok(s);assert.equal(s.songItem,'pinball');assert.equal(s.songTime,16);assert.equal(20-s.songTime,10-old.itemTime);
  for(const [key,value] of [['songTime',21],['itemCooldown',25],['songItem','unknown']]){const bad=snapshotRound(s);bad[key]=value;assert.equal(restoreRound(bad),null);}
+});
+
+test('five collected songs rotate evenly across new runs and reloads; missing a drop does not skip it',()=>{
+ let p=emptyProgress();const heard=[];
+ for(let round=0;round<10;round++){
+  const s=createGame('catch',{seed:7,itemSongIndex:p.games.catch.itemSongIndex});s.spawn=10;s.gates=[];s.enemies=[enemy(1,1,200,0)];stepGame(s,.025);
+  const drop=s.pickups[0];assert.equal(drop.kind,LIV_ITEMS[round%5]);drop.y=539;stepGame(s,.025);assert.equal(s.pickups.length,0);
+  s.defeated=2;s.enemies=[enemy(2,1,200,0)];stepGame(s,.025);assert.equal(s.pickups[0].kind,LIV_ITEMS[round%5]);
+  s.x=[95,240,385][s.pickups[0].lane];s.lane=s.pickups[0].lane;s.pickups[0].y=440;stepGame(s,.025);heard.push(s.songItem);saveRound(p,s);
+  p=readProgress({getItem:()=>JSON.stringify(p)});assert.equal(p.games.catch.itemSongIndex,(round+1)%5);
+  if(round%2){s.ended=true;finishStage(p,s);}newRun(p,'catch');
+ }
+ assert.deepEqual(heard,[...LIV_ITEMS,...LIV_ITEMS]);
+});
+test('legacy Love Attack saves continue with Pinball and malformed song cursors are rejected',()=>{
+ const old=snapshotRound(arena('love-attack'));delete old.itemSongIndex;const r=restoreRound(old);assert.equal(r.itemSongIndex,1);
+ for(const bad of [-1,5,1.5]){old.itemSongIndex=bad;assert.equal(restoreRound(old),null);}
 });

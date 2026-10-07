@@ -50,13 +50,13 @@ test('Woni late-stage fake and real targets both remain keyboard operable',async
  const s=createGame('drive',{stage:15,seed:7});s.spawn=10;s.hits=3;s.score=500;s.holes[0]={ttl:1.6,total:1.6,gold:false,fake:true,flash:0};s.holes[3]={ttl:1.6,total:1.6,gold:false,fake:false,flash:0};await open(page,s);await page.screenshot({path:info.outputPath('woni-late-fake.png'),fullPage:true});await page.keyboard.press('1');await expect(page.locator('#score')).toHaveText('350');await page.keyboard.press('4');await expect(page.locator('#score')).toHaveText('460');await expect(page.locator('#lives')).toHaveAttribute('aria-label','남은 목숨 3개');
 });
 
-test('Woni gold rewards keep scores without ordinary member speech',async({page})=>{
+test('Woni gold plays one song without restarting it, then a later pickup plays again',async({page})=>{
  await voiceSpy(page);const s=createGame('drive',{seed:7});s.spawn=10;for(const i of [0,3,6])s.holes[i]={ttl:4,total:4,gold:true,fake:false,flash:0};await open(page,s);
- await page.keyboard.press('1');await page.keyboard.press('4');await expect(page.locator('#score')).toHaveText('430');
- await page.locator('[data-pause]').click();expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).games.drive.snapshot.itemPickups,PROGRESS_KEY)).toBe(2);await page.clock.runFor(4100);await page.locator('[data-resume]').click();await page.keyboard.press('7');await expect(page.locator('#score')).toHaveText('660');expect(await page.evaluate(()=>window.voiceFiles)).toEqual([]);
+ await page.keyboard.press('1');await page.keyboard.press('4');await expect(page.locator('#score')).toHaveText('430');expect(await page.evaluate(()=>window.voiceFiles)).toEqual(['./voices/woni-song.mp3']);
+ await page.locator('[data-pause]').click();expect(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).games.drive.snapshot.itemPickups,PROGRESS_KEY)).toBe(2);await page.clock.runFor(4100);await page.locator('[data-resume]').click();await page.keyboard.press('7');await expect(page.locator('#score')).toHaveText('660');expect(await page.evaluate(()=>window.voiceFiles)).toEqual(['./voices/woni-song.mp3','./voices/woni-song.mp3']);
 });
-test('Woni final gold plays only the clear clip and manual replay stays available',async({page})=>{
- await voiceSpy(page);const s=createGame('drive',{seed:7});s.hits=stageGoal('drive',1).target-1;s.spawn=10;s.holes[0]={ttl:4,total:4,gold:true,fake:false,flash:0};await open(page,s);await page.keyboard.press('1');await expect(page.locator('#result-title')).toHaveText('스테이지 1 클리어!');expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(1);await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
+test('Woni final gold keeps its song and manual clear-voice replay stays available',async({page})=>{
+ await voiceSpy(page);const s=createGame('drive',{seed:7});s.hits=stageGoal('drive',1).target-1;s.spawn=10;s.holes[0]={ttl:4,total:4,gold:true,fake:false,flash:0};await open(page,s);await page.keyboard.press('1');await expect(page.locator('#result-title')).toHaveText('스테이지 1 클리어!');expect(await page.evaluate(()=>window.voiceFiles)).toEqual(['./voices/woni-song.mp3']);await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
  await page.getByRole('button',{name:'▶ 원이 실제 음성 듣기',exact:true}).click();expect(await page.evaluate(()=>window.voiceFiles.length)).toBe(2);await expect.poll(()=>page.evaluate(()=>window.itemClips.at(-1)?.currentTime||0)).toBeGreaterThan(0);
 });
 test('Zena earns a rolling pin by a normal keyboard match with one restored reaction',async({page})=>{
