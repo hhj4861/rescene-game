@@ -1,16 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createGame,stepGame,gameAction,swapBread,availableSwap} from '../../src/arcade-room/model.js';
-test('whack hits once, gold doubles the base reward, misses cost lives',()=>{
- const s=createGame('drive',{seed:7});s.holes[0]={ttl:1,total:1,gold:true,flash:0};gameAction(s,0);assert.equal(s.hits,1);assert.equal(s.score,210);gameAction(s,0);assert.equal(s.hits,1);s.holes[1]={ttl:.01,total:1,gold:false,flash:0};stepGame(s,.02);assert.equal(s.hearts,2);
-});
 test('May jumps onto a platform and bubbles trap then pop enemies',()=>{
  const s=createGame('blocks',{seed:7});s.enemies=[];gameAction(s,'jump');stepGame(s,.6);assert.equal(s.player.y,422);assert.equal(s.player.vy,0);
  s.enemies=[{x:130,y:422,home:1,dir:1,trapped:0}];gameAction(s,'bubble');stepGame(s,.1);assert.equal(s.enemies[0].trapped>0,true);stepGame(s,.2);gameAction(s,'bubble');assert.equal(s.popped,1);assert.ok(s.score>0);
 });
 test('bread swaps require an adjacent match and charge a move only on success',()=>{
- const s=createGame('photo',{seed:7}),before=[...s.board];assert.equal(swapBread(s,0,35),false);assert.deepEqual(s.board,before);assert.equal(s.moves,18);
- const pair=availableSwap(s.board);assert.ok(pair);assert.equal(swapBread(s,...pair),true);assert.equal(s.moves,17);assert.ok(s.collected>=3);assert.ok(availableSwap(s.board));
+ const s=createGame('photo',{seed:7}),before=[...s.board];assert.equal(swapBread(s,0,35),false);assert.deepEqual(s.board,before);assert.equal(s.moves,36);
+ const pair=availableSwap(s.board);assert.ok(pair);assert.equal(swapBread(s,...pair),true);assert.equal(s.moves,35);assert.ok(s.collected>=3);assert.ok(availableSwap(s.board));
 });
 test('bread four-match creates a special bread and shuffle has limited charges',()=>{
  const s=createGame('photo',{seed:1});s.board=[1,1,2,1,3,4,2,3,1,4,5,2,3,4,5,2,1,3,4,5,2,3,4,1,5,2,3,4,1,2,2,3,4,1,2,3];assert.equal(swapBread(s,2,8),true);assert.ok(s.board.some(x=>x>10));

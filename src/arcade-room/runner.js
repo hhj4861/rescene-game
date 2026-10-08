@@ -1,5 +1,6 @@
+import {collectSongTime,SONG_ITEM_SECONDS} from './song-time.js';
 export const RUNNER_X=[95,240,385];
-export const LIV_SONG_SECONDS=20;
+export const LIV_SONG_SECONDS=SONG_ITEM_SECONDS.catch;
 export const LIV_ITEM_INTERVAL=24;
 import {RESCENE_SONGS} from './music.js';
 export const LIV_ITEMS=Object.keys(RESCENE_SONGS);
@@ -9,10 +10,10 @@ export const LIV_ATTACKS={'love-attack':{name:'하트 더블샷',color:'#ff82b2'
 export const LEGACY_LIV_ITEMS={wand:'love-attack',fairy:'pinball',meteor:'heart-drop',wings:'new-world'};
 // Saturating stage curve keeps endless stages harder without unreactable speeds.
 export function runnerDifficulty(stage=1){
- const level=Number.isSafeInteger(stage)&&stage>0?stage:1,ramp=1-1/(1+(level-1)*.1);
+ const level=Number.isSafeInteger(stage)&&stage>0?stage:1,ramp=1-1/(1+(level-1)*.4);
  return {hp:12+Math.round(32*ramp),bossHp:240+Math.round(660*ramp),spawn:1.35-.65*ramp,enemySpeed:52+34*ramp,bossSpeed:22+10*ramp,penalty:4+Math.floor(2*ramp)};
 }
-export function createRunner(options={}){return {itemSongIndex:Number.isInteger(options.itemSongIndex)&&options.itemSongIndex>=0&&options.itemSongIndex<LIV_ITEMS.length?options.itemSongIndex:0,runnerVersion:1,upgradeVersion:1,songVersion:1,songItem:'',songTime:0,itemCooldown:0,effects:[],fireLevel:0,volley:1,bossSpawned:false,bossDefeated:0,pickups:[],item:'',itemTime:0,itemClock:0,itemCount:0,lane:1,x:240,squad:3,gatesTaken:0,gates:[{y:230,options:[{op:'add',value:3},{op:'multiply',value:1.5},{op:'add',value:-2}]}],gateSpawn:6,enemies:[],shots:[],defeated:0,spawn:1,nextEnemy:0,shotClock:0,charge:0,burst:0,gateFlash:0,lastGate:''};}
+export function createRunner(options={}){return {itemSongIndex:Number.isInteger(options.itemSongIndex)&&options.itemSongIndex>=0&&options.itemSongIndex<LIV_ITEMS.length?options.itemSongIndex:0,firstItemAt:null,runnerVersion:1,upgradeVersion:1,songVersion:1,songItem:'',songTime:0,itemCooldown:0,effects:[],fireLevel:0,volley:1,bossSpawned:false,bossDefeated:0,pickups:[],item:'',itemTime:0,itemClock:0,itemCount:0,lane:1,x:240,squad:3,gatesTaken:0,gates:[{y:230,options:[{op:'add',value:3},{op:'multiply',value:1.5},{op:'add',value:-2}]}],gateSpawn:6,enemies:[],shots:[],defeated:0,spawn:1,nextEnemy:0,shotClock:0,charge:0,burst:0,gateFlash:0,lastGate:''};}
 export function runnerAction(s,a){
  if(a==='left'||a==='right')s.lane=Math.max(0,Math.min(2,s.lane+(a==='left'?-1:1)));
  else if(Number.isInteger(a)&&a>=0&&a<3)s.lane=a;
@@ -24,17 +25,18 @@ export function stepRunner(s,dt,speed,loseLife,target){
  for(const key of ['hp','spawn','enemySpeed']){const start=runnerDifficulty(1)[key];difficulty[key]=start+(difficulty[key]-start)*intro;}
  s.x+=Math.sign(RUNNER_X[s.lane]-s.x)*Math.min(Math.abs(RUNNER_X[s.lane]-s.x),700*dt);
  for(const k of ['spawn','gateSpawn','shotClock','burst','gateFlash','itemTime','itemClock','songTime','itemCooldown'])s[k]=Math.max(0,s[k]-dt);
+ s.songItemTime=s.songTime;
  if(!s.itemTime)s.item='';
  if(!s.songTime)s.songItem='';
  s.effects=s.effects.map(e=>({...e,ttl:e.ttl-dt})).filter(e=>e.ttl>0).slice(-24);
- if(!s.bossSpawned&&s.defeated>=target-1){
+ if(!s.bossSpawned&&s.firstItemAt!==null&&s.elapsed-s.firstItemAt>=120){
   const hp=difficulty.bossHp;s.enemies.push({id:s.nextEnemy++,lane:1,y:105,hp,maxHp:hp,boss:true});s.bossSpawned=true;s.event='defense-boss';
  }
  if(!s.spawn&&(!s.bossSpawned||!s.bossDefeated||s.defeated<target)&&s.enemies.length<(s.bossSpawned?6:12)){
   const id=s.nextEnemy++,hp=Math.ceil(difficulty.hp)+Math.min(8,Math.floor(id*.5));
   const lane=s.bossSpawned?(s.random()<.5?0:2):id===0?1:Math.floor(s.random()*3);
   s.enemies.push({id,lane,y:110,hp,maxHp:hp,boss:false});
-  if(id%4===3&&s.enemies.length<(s.bossSpawned?6:12))s.enemies.push({id:s.nextEnemy++,lane:(lane+1)%3,y:110,hp,maxHp:hp,boss:false});
+  if(id%(s.stage>=5?2:s.stage>=3?3:4)===(s.stage>=5?1:s.stage>=3?2:3)&&s.enemies.length<(s.bossSpawned?6:12))s.enemies.push({id:s.nextEnemy++,lane:(lane+1)%3,y:110,hp,maxHp:hp,boss:false});
   s.spawn=difficulty.spawn*(s.bossSpawned?1.2:1);
  }
  if(!s.gateSpawn){
@@ -52,7 +54,7 @@ export function stepRunner(s,dt,speed,loseLife,target){
   }
  }
  s.gates=s.gates.filter(g=>!g.done);
- for(const item of s.pickups){item.y+=110*dt;if(!s.itemCooldown&&Math.abs(RUNNER_X[item.lane]-s.x)<60&&item.y>=440&&item.y<=515){s.item=item.kind;s.itemSongIndex=(LIV_ITEMS.indexOf(item.kind)+1)%LIV_ITEMS.length;s.itemTime=30;s.itemClock=0;s.songItem=item.kind;s.songTime=LIV_SONG_SECONDS;s.itemCooldown=LIV_ITEM_INTERVAL;item.y=600;s.itemPickups++;s.event='defense-item';}}
+ for(const item of s.pickups){item.y+=110*dt;if(!s.songItemTime&&!s.itemCooldown&&Math.abs(RUNNER_X[item.lane]-s.x)<60&&item.y>=440&&item.y<=515){collectSongTime(s);if(s.firstItemAt===null)s.firstItemAt=s.elapsed;s.item=item.kind;s.itemSongIndex=(LIV_ITEMS.indexOf(item.kind)+1)%LIV_ITEMS.length;s.itemTime=30;s.itemClock=0;s.songItem=item.kind;s.songTime=LIV_SONG_SECONDS;s.itemCooldown=LIV_ITEM_INTERVAL;item.y=600;s.itemPickups++;s.event='defense-item';}}
  s.pickups=s.itemCooldown?[]:s.pickups.filter(item=>item.y<540);
  const shot=(x,power)=>({x,y:455,power,kind:s.item,returning:false,hitIds:[]});
  if(!s.shotClock){
@@ -80,7 +82,7 @@ export function stepRunner(s,dt,speed,loseLife,target){
   const e=s.enemies[i];
   if(e.hp<=0){
    s.enemies.splice(i,1);s.defeated++;if(e.boss)s.bossDefeated=1;s.score+=e.boss?1000:100;s.charge=Math.min(5,s.charge+1);s.event=e.boss?'defense-boss-clear':'defense-hit';
-   if(!e.boss&&!s.itemCooldown&&s.defeated%2===1&&!s.pickups.length){s.pickups.push({lane:(e.lane+1+s.itemCount%2)%3,y:e.y,kind:LIV_ITEMS[s.itemSongIndex]});s.itemCount++;}
+   if(!e.boss&&!s.songItemTime&&!s.itemCooldown&&s.defeated%2===1&&!s.pickups.length){s.pickups.push({lane:(e.lane+1+s.itemCount%2)%3,y:e.y,kind:LIV_ITEMS[s.itemSongIndex]});s.itemCount++;}
   }else{e.y+=(e.boss?difficulty.bossSpeed:difficulty.enemySpeed)*dt;if(e.y>=480){s.enemies.splice(i,1);s.squad=Math.max(1,s.squad-(e.boss?6:2));loseLife(s);s.event='defense-miss';if(e.boss){s.ended=true;s.endReason='boss';}if(s.ended)return;}}
  }
 }

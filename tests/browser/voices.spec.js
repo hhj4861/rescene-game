@@ -9,6 +9,7 @@ import {emptyProgress,snapshotRound,stageGoal,PROGRESS_KEY} from '../../src/arca
 async function readyToClear(page,kind){
   const state=createGame(kind,{stage:1,seed:7}),progress=emptyProgress();
   state[{drive:'hits',blocks:'popped',photo:'collected',rhythm:'hits',catch:'defeated'}[kind]]=stageGoal(kind,1).target;
+  if(kind==='photo')state.breadCover.fill(true);
   if(kind==='rhythm'){state.elapsed=59.98;state.remaining=.02;state.notes.forEach(n=>n.status='hit');}if(kind==='catch'){state.bossSpawned=true;state.bossDefeated=1;}progress.games[kind].snapshot=snapshotRound(state);
   await page.addInitScript(({key,value})=>localStorage.setItem(key,value),{key:PROGRESS_KEY,value:JSON.stringify(progress)});
   await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});

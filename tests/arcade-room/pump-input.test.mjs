@@ -15,7 +15,7 @@ test('clicking a future same-lane note cannot hit the current note',()=>{
  gameAction(s,{...pumpNotePosition(s,s.notes[1],600),height:600});assert.equal(s.hits,0);assert.equal(s.notes[0].status,'waiting');
 });
 test('offsets, chords and expired notes keep their timing rules',()=>{
- const s=createGame('rhythm',{stage:3,offsetMs:100});const chord=s.notes.filter(n=>n.at===5.5);assert.equal(chord.length,2);stepGame(s,5.6);
+ const s=createGame('rhythm',{stage:3,offsetMs:100});const chord=s.notes.filter(n=>n.at===5.5);assert.equal(chord.length,2);s.notes.filter(n=>n.at<5.5).forEach(n=>n.status='hit');stepGame(s,5.6);
  for(const n of chord)gameAction(s,{...pumpNotePosition(s,n,360),height:360});assert.equal(s.hits,2);
  const n=s.notes.find(n=>n.status==='waiting');stepGame(s,n.at+.4-s.elapsed);gameAction(s,{...pumpNotePosition(s,n,600),height:600});assert.equal(s.hits,2);
  for(const action of [{x:NaN,y:136,height:600},{x:75,y:80,height:600},{x:75,y:136,height:0}])gameAction(s,action);assert.equal(s.hits,2);

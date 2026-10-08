@@ -1,4 +1,4 @@
-/* global window, performance */
+/* global window, performance, setTimeout, clearTimeout */
 import {trackFor,musicStep,pumpSong} from './music.js';
 // Score and chart share the game timeline; Web Audio schedules notes precisely.
 export class ArcadeAudio {
@@ -57,6 +57,7 @@ export class ArcadeAudio {
   }
   setMusic(value){this.musicEnabled=value;if(!value)this.stopMusic();}
   duckMusic(active,immediate=false){
+    active=active||!!this.pickupVoice;
     this.externalMusic?.(active,!!this.voiceIsSong);
     if(!this.musicBus||!this.context)return;
     const gain=this.musicBus.gain,at=this.context.currentTime;
@@ -65,17 +66,33 @@ export class ArcadeAudio {
   playReaction(member,pool,report){
     // Rotate actual recordings. Suppressed events never consume a turn or queue audio.
     const now=this.now();
-    if(!this.voiceEnabled||this.voice||!pool?.length||now-(this.reactionAt.get(member)??-Infinity)<4000)return Promise.resolve(false);
+    if(!this.voiceEnabled||this.voice||this.pickupVoice||!pool?.length||now-(this.reactionAt.get(member)??-Infinity)<4000)return Promise.resolve(false);
     const turn=this.reactionTurns.get(member)||0;
     this.reactionTurns.set(member,turn+1);this.reactionAt.set(member,now);
     return this.playVoice(pool[turn%pool.length],report);
   }
+  // A short discovery voice has its own channel so item singing keeps its clock.
+  async playPickup(source,report=()=>{}){
+    if(!this.enabled||!this.voiceEnabled||this.pickupVoice||!source?.file)return false;
+    if(this.voice&&!this.voiceIsSong)this.cancelVoice();
+    const clip=new window.Audio(source.file);this.pickupVoice=clip;clip.volume=.95;
+    const current=()=>this.pickupVoice===clip;
+    clip.onplaying=()=>{if(current()){this.duckMusic(true);report(source.spoken);}};
+    clip.onended=()=>{if(current())this.stopPickup();};
+    clip.onerror=()=>{if(current()){this.stopPickup();report('음성을 재생하지 못했어요.');}};
+    try{await clip.play();return current();}catch{if(current()){this.stopPickup();report('음성을 재생하지 못했어요.');}return false;}
+  }
+  stopPickup(){
+    const clip=this.pickupVoice;this.pickupVoice=null;
+    if(clip){clip.onplaying=null;clip.onended=null;clip.onerror=null;clip.pause();clip.removeAttribute('src');clip.load();}
+    this.duckMusic(!!this.voice);
+  }
   cancelVoice(){
-    this.voiceRequest++;this.duckMusic(false);this.voiceIsSong=false;
+    clearTimeout(this.itemSongTimer);this.itemSongTimer=null;this.itemSongRemaining=0;this.itemSongMember=null;this.voiceRequest++;this.duckMusic(false);this.voiceIsSong=false;
     if(this.voice){this.voice.onplaying=null;this.voice.onended=null;this.voice.onerror=null;this.voice.pause();this.voice.removeAttribute('src');this.voice.load();this.voice=null;}
     this.voiceReport?.('음성 재생을 멈췄어요.');this.voiceReport=null;
   }
-  async playVoice(source,report=()=>{},{minIntervalMs=0,interrupt=false}={}){
+  async playVoice(source,report=()=>{},{minIntervalMs=0,interrupt=false,durationSeconds=0,member=null}={}){
     // Drop frequent automatic rewards; never queue or restart the active clip.
     // Keep timestamps across stop/pause and stage changes. Explicit replay bypasses this.
     const now=this.now();
@@ -85,14 +102,30 @@ export class ArcadeAudio {
     if(!source?.file){report('연결된 음성이 없어요. 자막으로 확인해 주세요.');return false;}
     try{
       this.voiceStartedAt.set(source.file,now);this.voiceIsSong=source.kind==='song';
-      const voice=new window.Audio(source.file);this.voice=voice;this.voiceReport=report;voice.volume=.85;
+      const voice=new window.Audio(source.file);this.voice=voice;this.voiceReport=report;voice.volume=.85;if(durationSeconds){voice.loop=source.loop!==false;this.itemSongRemaining=durationSeconds*1000;this.itemSongMember=member;}
       const failed=()=>{if(current()){report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}};
-      voice.onplaying=()=>{if(current()){this.duckMusic(true);report(source.kind==='song'?`노래 보상 · ${source.title} 재생 중`:'실제 멤버 음성 재생 중');}};
-      voice.onended=()=>{if(current()){report(source.kind==='song'?'노래 보상 끝 · 다시 듣기로 재생할 수 있어요.':'원본 음성 · 방송 배경음 포함');this.cancelVoiceQuietly();}};
+      voice.onplaying=()=>{if(current()){this.duckMusic(true);if(durationSeconds)this.resumeItemSongTimer();report(source.kind==='song'?`노래 보상 · ${source.title} 재생 중`:'실제 멤버 음성 재생 중');}};
+      voice.onended=()=>{if(durationSeconds&&voice.loop)return;if(current()){report(source.kind==='song'?'노래 보상 끝 · 다시 듣기로 재생할 수 있어요.':'원본 음성 · 방송 배경음 포함');this.cancelVoiceQuietly();}};
       voice.onerror=failed;report('멤버 음성 준비 중…');
       await voice.play();return current();
-    }catch{if(current()){report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}return false;}
+    }catch(error){if(current()){if(durationSeconds&&error?.name==='AbortError')return false;report('음성을 재생하지 못했어요. 다시 듣기를 눌러 주세요.');this.cancelVoiceQuietly();}return false;}
+  }
+  resumeItemSongTimer(){
+    if(!this.itemSongRemaining||this.itemSongTimer)return;
+    this.itemSongStarted=this.now();this.itemSongTimer=setTimeout(()=>{this.voiceReport?.('노래 아이템 · 재생 완료');this.cancelVoiceQuietly();},this.itemSongRemaining);
+  }
+  get itemSongSecondsRemaining(){return this.itemSongMember?Math.max(0,(this.itemSongRemaining-(this.itemSongTimer?this.now()-this.itemSongStarted:0))/1000):0;}
+  pauseItemSong(){
+    if(!this.itemSongMember)return;
+    if(this.itemSongTimer){this.itemSongRemaining=Math.max(0,this.itemSongRemaining-(this.now()-this.itemSongStarted));clearTimeout(this.itemSongTimer);this.itemSongTimer=null;}
+    this.voice?.pause();
+  }
+  async resumeItemSong(){
+    if(!this.itemSongMember||!this.voice)return;
+    const voice=this.voice,request=this.voiceRequest;
+    // pause() may reject a still-pending play() on WebKit. Keep its remaining time.
+    try{await voice.play();if(request===this.voiceRequest)this.resumeItemSongTimer();}catch(error){if(request===this.voiceRequest&&error?.name!=='AbortError')this.cancelVoiceQuietly();}
   }
   cancelVoiceQuietly(){this.voiceReport=null;this.cancelVoice();}
-  stop(){this.cancelVoice();this.stopMusic();this.duckMusic(false,true);for(const o of this.nodes){try{o.stop();}catch{/* Already ended. */}}this.nodes.clear();}
+  stop({preserveSong=false,preservePickup=false}={}){if(!preservePickup)this.stopPickup();if(!preserveSong||!this.itemSongMember)this.cancelVoice();this.stopMusic();this.duckMusic(!!this.voice,true);for(const o of this.nodes){try{o.stop();}catch{/* Already ended. */}}this.nodes.clear();}
 }

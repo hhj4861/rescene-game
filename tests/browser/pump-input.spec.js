@@ -14,8 +14,8 @@ for(const official of [false,true])test(`rising notes can be directly tapped wit
  await page.screenshot({path:info.outputPath('pump-direct.png'),fullPage:true});await page.locator('[data-pause]').click();await page.locator('#game').dispatchEvent('pointerdown',{clientX:75,clientY:136,pointerId:2,pointerType:'touch'});await expect(page.locator('#score')).toHaveText('105');
 });
 test('two pointers can hit a chord and keyboard remains available',async({page,isMobile})=>{
- await open(page);await page.locator('[data-pump-picker]').click();await page.locator('[data-song-level="3"]').click();await page.locator('[data-song-start]').click();await waitPump(page);await page.clock.runFor(2000);await page.keyboard.press('z');await expect(page.locator('#score')).toHaveText('105');await page.clock.runFor(3500);
+ await open(page);await page.locator('[data-pump-picker]').click();await page.locator('[data-song-level="3"]').click();await page.locator('[data-song-start]').click();await waitPump(page);await page.clock.runFor(2000);await page.keyboard.press('z');await expect(page.locator('#score')).toHaveText('105');for(const key of ['s','c','q','e','s','z']){await page.clock.runFor(500);await page.keyboard.press(key);}await page.clock.runFor(500);
  // Five Steps beat 11 has lanes 4 and 1. Secondary touch must not be discarded.
  const b=await page.locator('#game').boundingBox();for(const [i,x] of [403,157].entries())await page.locator('#game').dispatchEvent('pointerdown',{clientX:b.x+x/480*b.width,clientY:b.y+136/600*b.height,pointerId:i+5,pointerType:isMobile?'touch':'mouse',button:0,isPrimary:i===0});
- await expect(page.locator('#goal')).toContainText('성공 3');
+ await expect(page.locator('#goal')).toContainText('성공 9');
 });

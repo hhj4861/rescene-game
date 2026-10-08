@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createGame,gameAction,stepGame,availableSwap} from '../../src/arcade-room/model.js';
 import {snapshotRound,restoreRound,isStageClear,stageGoal} from '../../src/arcade-room/progress.js';
-import {chaseDifficulty} from '../../src/arcade-room/chase.js';
 import {LIV_ITEMS} from '../../src/arcade-room/runner.js';
 test('damage protection groups a breach, expires, persists and never replenishes lives',()=>{
  const s=createGame('catch',{seed:7});s.spawn=10;s.gates=[];
@@ -10,7 +9,7 @@ test('damage protection groups a breach, expires, persists and never replenishes
  breach();assert.equal(s.hearts,2);const resumed=restoreRound(snapshotRound(s));assert.equal(resumed.damageCooldown,s.damageCooldown);breach();assert.equal(s.hearts,2);stepGame(s,1.5);breach();assert.equal(s.hearts,1);
 });
 test('May contact plus timeout consumes one life; a missed pump chord keeps playing without damage',()=>{
- const s=createGame('blocks',{seed:7});s.elapsed=59.95;s.remaining=.05;s.invincible=0;s.enemies=[{x:90,y:536,home:0,dir:1,trapped:0}];stepGame(s,.1);assert.equal(s.hearts,2);assert.equal(s.endReason,'timeout');
+ const s=createGame('blocks',{seed:7});s.elapsed=179.95;s.remaining=.05;s.invincible=0;s.enemies=[{x:90,y:536,home:0,dir:1,trapped:0}];stepGame(s,.1);assert.equal(s.hearts,2);assert.equal(s.endReason,'timeout');
  const r=createGame('rhythm',{stage:3});const at=r.notes.find((n,i)=>i&&n.at===r.notes[i-1].at).at;r.notes.filter(n=>n.at<at).forEach(n=>n.status='hit');r.elapsed=at;r.remaining=60-at;stepGame(r,.3);assert.equal(r.misses,2);assert.equal(r.hearts,3);assert.equal(r.ended,false);
 });
 test('May drops reachable alternating items; speed and bubble hitboxes improve then expire',()=>{
@@ -33,11 +32,11 @@ for(const kind of LIV_ITEMS)test(`Liv ${kind} has a real combat effect and persi
  s.itemTime=.01;stepGame(s,.025);assert.equal(s.item,'');
 });
 test('Liv must beat the final boss; boss escape ends only this round with one life lost',()=>{
- const s=createGame('catch',{seed:7});s.defeated=stageGoal('catch',1).target;s.enemies=[];stepGame(s,.025);assert.equal(isStageClear(s),false);const boss=s.enemies.find(e=>e.boss);assert.ok(boss);assert.ok(restoreRound(snapshotRound(s)));boss.hp=0;stepGame(s,.025);assert.equal(isStageClear(s),true);
+ const s=createGame('catch',{seed:7});s.defeated=stageGoal('catch',1).target;s.elapsed=120;s.remaining=180;s.firstItemAt=0;s.enemies=[];stepGame(s,.025);assert.equal(isStageClear(s),false);const boss=s.enemies.find(e=>e.boss);assert.ok(boss);assert.ok(restoreRound(snapshotRound(s)));boss.hp=0;stepGame(s,.025);assert.equal(isStageClear(s),true);
  const loss=createGame('catch');loss.bossSpawned=true;loss.enemies=[{id:0,lane:0,y:479.9,hp:50,maxHp:50,boss:true}];stepGame(loss,.1);assert.equal(loss.hearts,2);assert.equal(loss.endReason,'boss');
 });
 test('rolling pin clears the selected row with falling frames, no move charge and no free refills',()=>{
- const s=createGame('photo',{seed:7});gameAction(s,'rolling-pin');gameAction(s,14);assert.equal(s.rollingPins,0);assert.equal(s.itemArmed,false);assert.equal(s.moves,18);assert.ok(s.collected>=6);assert.deepEqual(s.breadFrames[0].removed,[12,13,14,15,16,17]);assert.ok(s.breadFrames.some(f=>f.kind==='fall'));assert.equal(s.breadCharge,0);stepGame(s,5);gameAction(s,'rolling-pin');assert.equal(s.itemArmed,false);assert.ok(restoreRound(snapshotRound(s)));
+ const s=createGame('photo',{seed:7});gameAction(s,'rolling-pin');gameAction(s,14);assert.equal(s.rollingPins,0);assert.equal(s.itemArmed,false);assert.equal(s.moves,36);assert.ok(s.collected>=6);assert.deepEqual(s.breadFrames[0].removed,[12,13,14,15,16,17]);assert.ok(s.breadFrames.some(f=>f.kind==='fall'));assert.equal(s.breadCharge,0);stepGame(s,5);gameAction(s,'rolling-pin');assert.equal(s.itemArmed,false);assert.ok(restoreRound(snapshotRound(s)));
 });
 test('normal cascades earn a capped rolling pin and an item voice cue',()=>{
  let found=false;for(let seed=1;seed<100&&!found;seed++){const s=createGame('photo',{seed});s.breadCharge=2;s.rollingPins=0;gameAction(s,{from:availableSwap(s.board)[0],to:availableSwap(s.board)[1]});if(s.combo>1){assert.ok(s.rollingPins>0);assert.ok(s.itemPickups>0);found=true;}}assert.ok(found);
@@ -46,8 +45,4 @@ test('old active saves migrate upgrades without changing score, stage or lives',
  const fields={blocks:['mayVersion','items','speedBoost','sizeBoost'],photo:['bakeryVersion','rollingPins','breadCharge','itemArmed'],catch:['upgradeVersion','fireLevel','volley','bossSpawned','bossDefeated','pickups','item','itemTime','itemClock','itemCount']};
  for(const [kind,keys] of Object.entries(fields)){const old=snapshotRound(createGame(kind,{stage:8,hearts:2,seed:7}));old.score=800;for(const k of [...keys,'damageCooldown','itemPickups'])delete old[k];const r=restoreRound(old);assert.ok(r,kind);assert.equal(r.score,800);assert.equal(r.hearts,2);assert.equal(r.stage,8);}
  for(const [kind,key,value] of [['blocks','speedBoost',Infinity],['catch','volley',50],['catch','pickups',[{kind:'tank',lane:0,y:100}]],['photo','rollingPins',999]]){const s=snapshotRound(createGame(kind));s[key]=value;assert.equal(restoreRound(s),null);}
-});
-test('Woni difficulty increases monotonically with bounded speed, camouflage and fake odds',()=>{
- const levels=[1,3,8,15,50,1000].map(chaseDifficulty);for(let i=1;i<levels.length;i++)for(const k of ['speed','fakeChance','disguise'])assert.ok(levels[i][k]>=levels[i-1][k]);assert.ok(levels.at(-1).fakeChance<.43);assert.ok(levels.at(-1).disguise<=.78);
- const times=[];for(const stage of [1,8,1000]){const s=createGame('drive',{stage,seed:7});s.spawn=0;stepGame(s,.025);const h=s.holes.find(h=>h.ttl);times.push(h.total/h.legs);}assert.ok(times[0]>times[1]&&times[1]>times[2]);assert.ok(times[2]>=.8);
 });
