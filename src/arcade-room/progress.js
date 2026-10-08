@@ -11,7 +11,7 @@ const integer=(n,min,max)=>Number.isInteger(n)&&n>=min&&n<=max;
 const number=(n,min,max)=>Number.isFinite(n)&&n>=min&&n<=max;
 const vector=(a,len,test)=>Array.isArray(a)&&a.length===len&&a.every(test);
 const list=(a,max,test)=>Array.isArray(a)&&a.length<=max&&a.every(test);
-export function stageGoal(kind,stage){return {target:stageTarget(kind,stage),unit:{drive:'간식',blocks:'방울',photo:'신라빵',rhythm:'박자',catch:'격파'}[kind]};}
+export function stageGoal(kind,stage){return {target:stageTarget(kind,stage),unit:{drive:'간식',blocks:'방울',photo:'십원빵',rhythm:'박자',catch:'격파'}[kind]};}
 export function stageValue(s){return s.kind==='blocks'?s.popped:s.kind==='photo'?foundBread(s):s.kind==='catch'?s.defeated:s.hits;}
 export function isStageClear(s){if(s.kind==='rhythm')return !!s.stage&&s.remaining<=.001&&s.gauge>0&&!s.endReason;return !!s.stage&&stageValue(s)>=(s.kind==='photo'?breadHunt(s).length:stageGoal(s.kind,s.stage).target)&&s.hearts>0&&!s.endReason&&(s.kind!=='catch'||s.bossDefeated>0)&&(s.kind!=='rhythm'||s.remaining<=.001);}
 export function emptyProgress(){return {version:2,games:Object.fromEntries(GAME_IDS.map(id=>[id,{stage:1,highest:1,hearts:INITIAL_LIVES,snapshot:null,...(id==='catch'?{itemSongIndex:0}:id==='photo'?{songDrops:0}:{}),songs:songLedger()}]))};}

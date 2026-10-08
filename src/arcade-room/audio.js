@@ -57,6 +57,7 @@ export class ArcadeAudio {
   }
   setMusic(value){this.musicEnabled=value;if(!value)this.stopMusic();}
   duckMusic(active,immediate=false){
+    active=active||!!this.pickupVoice;
     this.externalMusic?.(active,!!this.voiceIsSong);
     if(!this.musicBus||!this.context)return;
     const gain=this.musicBus.gain,at=this.context.currentTime;
@@ -65,10 +66,26 @@ export class ArcadeAudio {
   playReaction(member,pool,report){
     // Rotate actual recordings. Suppressed events never consume a turn or queue audio.
     const now=this.now();
-    if(!this.voiceEnabled||this.voice||!pool?.length||now-(this.reactionAt.get(member)??-Infinity)<4000)return Promise.resolve(false);
+    if(!this.voiceEnabled||this.voice||this.pickupVoice||!pool?.length||now-(this.reactionAt.get(member)??-Infinity)<4000)return Promise.resolve(false);
     const turn=this.reactionTurns.get(member)||0;
     this.reactionTurns.set(member,turn+1);this.reactionAt.set(member,now);
     return this.playVoice(pool[turn%pool.length],report);
+  }
+  // A short discovery voice has its own channel so item singing keeps its clock.
+  async playPickup(source,report=()=>{}){
+    if(!this.enabled||!this.voiceEnabled||this.pickupVoice||!source?.file)return false;
+    if(this.voice&&!this.voiceIsSong)this.cancelVoice();
+    const clip=new window.Audio(source.file);this.pickupVoice=clip;clip.volume=.95;
+    const current=()=>this.pickupVoice===clip;
+    clip.onplaying=()=>{if(current()){this.duckMusic(true);report(source.spoken);}};
+    clip.onended=()=>{if(current())this.stopPickup();};
+    clip.onerror=()=>{if(current()){this.stopPickup();report('음성을 재생하지 못했어요.');}};
+    try{await clip.play();return current();}catch{if(current()){this.stopPickup();report('음성을 재생하지 못했어요.');}return false;}
+  }
+  stopPickup(){
+    const clip=this.pickupVoice;this.pickupVoice=null;
+    if(clip){clip.onplaying=null;clip.onended=null;clip.onerror=null;clip.pause();clip.removeAttribute('src');clip.load();}
+    this.duckMusic(!!this.voice);
   }
   cancelVoice(){
     clearTimeout(this.itemSongTimer);this.itemSongTimer=null;this.itemSongRemaining=0;this.itemSongMember=null;this.voiceRequest++;this.duckMusic(false);this.voiceIsSong=false;
@@ -110,5 +127,5 @@ export class ArcadeAudio {
     try{await voice.play();if(request===this.voiceRequest)this.resumeItemSongTimer();}catch(error){if(request===this.voiceRequest&&error?.name!=='AbortError')this.cancelVoiceQuietly();}
   }
   cancelVoiceQuietly(){this.voiceReport=null;this.cancelVoice();}
-  stop({preserveSong=false}={}){if(!preserveSong||!this.itemSongMember)this.cancelVoice();this.stopMusic();this.duckMusic(!!this.voice,true);for(const o of this.nodes){try{o.stop();}catch{/* Already ended. */}}this.nodes.clear();}
+  stop({preserveSong=false,preservePickup=false}={}){if(!preservePickup)this.stopPickup();if(!preserveSong||!this.itemSongMember)this.cancelVoice();this.stopMusic();this.duckMusic(!!this.voice,true);for(const o of this.nodes){try{o.stop();}catch{/* Already ended. */}}this.nodes.clear();}
 }

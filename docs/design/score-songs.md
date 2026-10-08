@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 별이랑 산책 / 원이 | [BOL4 공식 채널 · 원이와 여름아 부탁해 챌린지](https://www.youtube.com/watch?v=l2GnjywCPjE) | 0–41초, 공식 원본 전체를 반복 없이 한 번 재생 |
 | 방울 / 메이 | [RESCENE 공식 · 메이 Put Your Records On 커버](https://www.youtube.com/watch?v=c13--HEy_8U&t=10s) | 10–13.5초 |
-| 신라빵 / 제나  | [RESCENE 공식 · 제나 Life’s Too Short 커버](https://www.youtube.com/watch?v=OybCC65kqEw&t=10s) | 10–13.5초 |
+| 십원빵 / 제나  | [RESCENE 공식 · 제나 Life’s Too Short 커버](https://www.youtube.com/watch?v=OybCC65kqEw&t=10s) | 10–13.5초 |
 | 리브 러너 | [RESCENE 공식 · 리브 내 남자 친구에게 커버](https://www.youtube.com/watch?v=O0BVlom5poY&t=20s) | 20.5–24.9초, 기존 짧은 커버 파일 재사용 |
 
 | 펌프 / 미나미 | [RESCENE 공식 · TITANIUM by MINAMI](https://www.youtube.com/watch?v=AhJb7wPiOjQ) | 공식 전체 커버를 YouTube 새 탭에서 선택해 재생 |

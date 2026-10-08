@@ -125,3 +125,25 @@ test('a full item song never loops and its natural end releases the song timer a
 test('remaining item song time follows playback, freezes on pause and expires for next-stage item gating',async t=>{
  t.mock.timers.enable({apis:['setTimeout']});const {audio,clips,setTime}=fixture(t);const play=audio.playVoice({kind:'song',file:'full-woni.mp3',loop:false},undefined,{durationSeconds:41,member:'woni'});clips[0].onplaying();clips[0].resolve();await play;setTime(10000);assert.equal(audio.itemSongSecondsRemaining,31);audio.pauseItemSong();setTime(30000);assert.equal(audio.itemSongSecondsRemaining,31);audio.stop();assert.equal(audio.itemSongSecondsRemaining,0);
 });
+
+test('bread discovery plays beside an item song without replacing it or resetting its timer',async t=>{
+ const {audio,clips}=fixture(t);const song=audio.playVoice({kind:'song',file:'song.mp3',loop:false},undefined,{durationSeconds:60,member:'zena'});clips[0].resolve();await song;
+ const pickup=audio.playPickup({file:'tenwon.mp3',spoken:'십원빵 아이가'});clips[1].onplaying();clips[1].resolve();assert.equal(await pickup,true);
+ assert.equal(audio.voice,clips[0]);assert.equal(audio.itemSongRemaining,60000);assert.equal(audio.itemSongMember,'zena');assert.notEqual(clips[0].paused,true);
+ clips[1].onended();assert.equal(audio.pickupVoice,null);assert.equal(audio.voice,clips[0]);audio.stop();
+});
+test('bread discovery coalesces simultaneous finds, overrides a normal reaction and stops on pause',async t=>{
+ const {audio,clips}=fixture(t);const reaction=audio.playVoice({file:'reaction.mp3'});clips[0].resolve();await reaction;
+ const pickup=audio.playPickup({file:'tenwon.mp3'});assert.equal(clips[0].paused,true);clips[1].resolve();await pickup;
+ assert.equal(await audio.playPickup({file:'tenwon.mp3'}),false);assert.equal(clips.length,2);
+ assert.equal(await audio.playReaction('zena',[{file:'reaction.mp3'}]),false);audio.stop({preserveSong:true});assert.equal(clips[1].paused,true);assert.equal(audio.pickupVoice,null);
+});
+test('bread discovery respects both mute switches and can retry after a playback error',async t=>{
+ const {audio,clips}=fixture(t);audio.enabled=false;assert.equal(await audio.playPickup({file:'tenwon.mp3'}),false);audio.enabled=true;audio.voiceEnabled=false;assert.equal(await audio.playPickup({file:'tenwon.mp3'}),false);assert.equal(clips.length,0);
+ audio.voiceEnabled=true;const failed=audio.playPickup({file:'tenwon.mp3'});clips[0].reject(Error('blocked'));assert.equal(await failed,false);assert.equal(audio.pickupVoice,null);
+ const retry=audio.playPickup({file:'tenwon.mp3'});clips[1].resolve();assert.equal(await retry,true);audio.stop();
+});
+test('stage clear may preserve the final bread voice, while leaving the game stops it',async t=>{
+ const {audio,clips}=fixture(t);const pickup=audio.playPickup({file:'tenwon.mp3'});clips[0].resolve();await pickup;
+ audio.stop({preservePickup:true});assert.equal(audio.pickupVoice,clips[0]);assert.notEqual(clips[0].paused,true);audio.stop();assert.equal(clips[0].paused,true);
+});

@@ -144,3 +144,6 @@ export const SCORE_SONGS={
  zena:{kind:'song',file:'./voices/zena-song.mp3?v=continuous',title:'Life’s Too Short',start:10,end:70,loop:false,itemSeconds:60,source:'https://www.youtube.com/watch?v=OybCC65kqEw&t=10s'},
  liv:{...LIV_SONG,kind:'song',title:'내 남자 친구에게'},
 };
+
+// User-supplied reel: original voice, no synthesis or pitch alteration.
+export const TENWON_VOICE={file:'./voices/zena-tenwon.mp3',spoken:'십원빵 아이가',start:11.75,end:13.4,source:'https://www.instagram.com/reel/Dav06LrTqEj/'};
