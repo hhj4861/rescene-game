@@ -13,7 +13,8 @@ sys.dont_write_bytecode = True
 spec = importlib.util.spec_from_file_location('repair', Path(__file__).with_name('repair-task-finish-worktree-containers.py'))
 repair = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(repair)
-gate = repair.load_gate(Path.home() / '.codex/hooks/task-finish/gate.py')
+baseline = Path(os.environ.get('TASK_FINISH_BASELINE', str(Path.home() / '.codex/hooks/task-finish/gate.py')))
+gate = repair.load_gate(baseline)
 
 
 def git(root, *args):
@@ -94,10 +95,47 @@ class ContainerRecovery(unittest.TestCase):
         with self.assertRaises(gate.GuardError): self.proof()
 
     def test_changed_during_remote_check_fails(self):
-        def remote(*args):
-            (self.child / 'extra.txt').write_text('concurrent work')
-        with patch.object(gate, 'remote_contains', side_effect=remote):
+        original_run = gate.run
+        def remote(root, *args, **kwargs):
+            result = original_run(root, *args, **kwargs)
+            if args[0] == 'ls-remote':
+                (self.child / 'extra.txt').write_text('concurrent work')
+            return result
+        with patch.object(gate, 'run', side_effect=remote):
             with self.assertRaises(gate.GuardError): self.proof()
+
+    def test_remote_snapshot_shared_only_when_explicitly_passed(self):
+        original_run = gate.run
+        lookups = []
+        def observe(root, *args, **kwargs):
+            if args[0] == 'ls-remote': lookups.append(args)
+            return original_run(root, *args, **kwargs)
+        with patch.object(gate, 'run', side_effect=observe):
+            cache = {}
+            for _ in range(2):
+                gate.published_worktree_container(str(self.root), self.path, self.call, self.data, cache)
+            self.assertEqual(len(lookups), 1)
+            self.proof()
+            self.assertEqual(len(lookups), 2)
+
+    def test_new_remote_identity_never_uses_old_snapshot(self):
+        cache = {}
+        gate.published_worktree_container(str(self.root), self.path, self.call, self.data, cache)
+        git(self.root, 'remote', 'set-url', 'origin', str(self.base / 'missing.git'))
+        with self.assertRaises(gate.GuardError):
+            gate.published_worktree_container(str(self.root), self.path, self.call, self.data, cache)
+
+    def test_relative_remote_keeps_worktree_resolution(self):
+        git(self.root, 'remote', 'set-url', 'origin', '../../../remote.git')
+        proof = self.proof()
+        self.assertEqual(proof['head'], gate.head(str(self.child)))
+        cache = {}
+        gate.published_worktree_container(str(self.root), self.path, self.call, self.data, cache)
+        self.assertEqual(list(cache)[0], (str(self.child), '../../../remote.git'))
+
+    def test_missing_remote_branch_fails(self):
+        git(self.root, 'push', 'origin', '--delete', 'feature')
+        with self.assertRaises(gate.GuardError): self.proof()
 
     def test_unknown_or_explicit_directory_is_never_adopted(self):
         for key in ('files', 'unknown'):
@@ -111,8 +149,14 @@ class ContainerRecovery(unittest.TestCase):
                 self.assertIsNone(self.proof())
                 self.call[key] = {} if key == 'known_before' else []
 
-    def test_missing_legacy_snapshot_fails_closed(self):
+    def test_worktree_created_after_snapshot_requires_current_proof(self):
         self.call['snapshot'] = {}
+        self.assertEqual(self.proof()['head'], gate.head(str(self.child)))
+        (self.child / 'extra.txt').write_text('unfinished')
+        with self.assertRaises(gate.GuardError): self.proof()
+
+    def test_unexpected_snapshot_marker_fails_closed(self):
+        self.call['snapshot'] = {self.path: 'different-evidence'}
         self.assertIsNone(self.proof())
 
     def test_ordinary_directory_fails_closed(self):
@@ -185,7 +229,7 @@ class ContainerRecovery(unittest.TestCase):
         self.assertEqual(result['status'], 'pending')
 
     def test_duplicate_patch_rejected(self):
-        source = (Path.home() / '.codex/hooks/task-finish/gate.py').read_text()
+        source = baseline.read_text()
         with self.assertRaises(ValueError): repair.patched(repair.patched(source))
 
 
