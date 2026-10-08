@@ -3,7 +3,7 @@
 - 목표/담당: 현재 Codex 세션이 배포 후 남은 과거 `unsupported` 디렉터리 관찰 오류를 실제 Git·도구 종료 근거로 복구한다.
 - 범위: 복구 패치 생성기, 격리 회귀 검사, 승인된 실제 검사기 적용과 연결 파일 네 개 정리. 게임 기능 변경은 없다.
 - 구현 기준: main `eb38f92`, 작업 브랜치 `fix/task-finish-worktree-containers-20261008`, 최종 코드 `404c1c24b7c983ec117a3ca6d090bb149485f2ef`.
-- 현재 결과: 사용자 명시 승인 후 [PR #29](https://github.com/hhj4861/rescene-game/pull/29)를 머지하고 실제 검사기에 적용했다. 운영도 재배포했다. 별개 승인 검토 실패 기록 한 건의 후속 복구는 PR #30 승인 대기다.
+- 현재 결과: 사용자 명시 승인 후 [PR #29](https://github.com/hhj4861/rescene-game/pull/29)를 머지하고 실제 검사기에 적용했다. 운영도 재배포했다. 별개 승인 검토 실패 기록 한 건도 2026-10-09 승인된 PR #30을 적용해 정상 복구했다.
 
 ## 반영한 동작
 
@@ -24,7 +24,7 @@
 
 최종 CI 산출물을 기존 Cloudflare Pages의 **Production / main / source `0ff29bc`**로 배포했다. 배포 ID는 `8538a4c1-85dd-40ef-a760-ef72fa3a34ac`이며 [공개 게임](https://rescene-arcade.pages.dev/)과 [고정 배포](https://8538a4c1.rescene-arcade.pages.dev)에서 제공한다. 배포 후 정적 파일 **40개 모두 최신 CI 산출물과 SHA-256이 일치**했다. 게임 파일은 PR #28 운영본과도 동일하다. 이전 운영 브라우저 120개 통과 증거는 동일 파일에 대한 기존 검증이며, 이번 재배포에서 새로 120개를 실행한 것은 아니다.
 
-## 관찰 복구 결과와 남은 단계
+## 2026-10-08 관찰 복구 결과와 당시 남은 단계
 
 - 설치된 검사기의 정상 `reconcile_calls` 및 CLI `reconcile`로 과거 592건을 점검하고, 동시 변경 때문에 남은 기록을 재검사했다. 실제 종료 기록을 대조했으며 가짜 종료·성공 영수증을 만들지 않았다.
 - 최종 조회에서 소유 미확인 파일은 **0개**다. 실행 중인 조회 명령 자체를 제외하면 과거 미해결 기록은 **1개**다. 이전 미리보기 서버는 정상 종료 기록으로 복구했다.
@@ -35,3 +35,7 @@
 ## 증거 위치
 
 사용자 iCloud 작업 루트 `rescene-game/task-finish-containers-20261008/`의 `tests-final.log`, `container-probe.json`, `approved-link-cleanup.json`, `ci-watch.log`, `site/`, `wrangler.log`, `deployments-after-merge.txt`, `production-assets-after-deploy.json`, `capacity-readonly-proof.json`에 보관한다. 코드와 Git은 로컬 프로젝트 및 해당 작업 worktree에 유지한다.
+
+## 후속 복구 완료 — 2026-10-09
+
+사용자 승인 후 PR #30을 머지·설치하고 정상 reconcile을 실행했다. 위의 과거 미해결 호출 한 건은 원본 호스트 증거에 따른 `not_started` / `exit_code: null`로 복구됐다. 과거 미해결 호출·소유 미확인 파일은 0개이며 승인 대기 단계는 종료됐다. 운영도 source `4cd3806`, 배포 `c3f0925f-3bef-4f93-94c4-678698030567`로 갱신하고 공개 파일 40개 일치를 검증했다. [상세 적용·검증 결과](20261008-task-finish-review-capacity.md).
