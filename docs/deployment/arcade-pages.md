@@ -4,6 +4,15 @@
 
 
 
+## PR #29 승인 후 운영 재배포 — 2026-10-08
+
+- 사용자 명시 승인 후 [PR #29](https://github.com/hhj4861/rescene-game/pull/29)를 머지했다. 운영 소스는 `0ff29bcf752bef86ff82529c6135a5e8f6eefee3`이며 검증 head `404c1c2`와 Git 트리 `fc1c5add1804a2e82ddf066a592a0318babf2288`가 동일하다.
+- [CI 37782048124](https://github.com/hhj4861/rescene-game/actions/runs/37782048124): 단위 184개, 브라우저 433개 통과·기존 환경 전용 5개 제외, 린트·빌드 성공. 이 실행의 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `8538a4c1-85dd-40ef-a760-ef72fa3a34ac`: **Production / main / source `0ff29bc`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://8538a4c1.rescene-arcade.pages.dev).
+- 배포 후 공개 파일 **40개 모두 최신 CI 산출물과 SHA-256 일치**. 게임 파일은 아래 PR #28 배포와도 동일하다. 이전 공개 브라우저 120개 통과 증거는 동일 파일에 대한 기존 검증이며 이번 재배포에서 새로 실행한 검사는 아니다.
+- 기존 Wrangler 로그인으로 배포했으며 인증·도메인·자동 배포 설정은 변경하지 않았다. 증거는 사용자 iCloud 작업 루트 `rescene-game/task-finish-containers-20261008/`의 `site/`, `wrangler.log`, `deployments-after-merge.txt`, `production-assets-after-deploy.json`에 보관한다.
+- PR #29의 완료 검사기 복구는 실제 적용했다. 별개 과거 승인 검토 실패 기록 한 건의 [PR #30](https://github.com/hhj4861/rescene-game/pull/30)은 검증·push를 마쳤으나 별도 머지 승인 대기이며 운영 게임과 무관하다. [적용 결과와 남은 단계](../tasks/20261008-task-finish-containers.md).
+
 ## 게임 규칙·원이와 별이·제나 십원빵 운영 배포 — 2026-10-08
 
 - 사용자 명시 승인 후 [PR #28](https://github.com/hhj4861/rescene-game/pull/28)을 머지했다. 운영 소스는 `f5a9c34d38f995920e9a843b0098dd6950789fa8`이며 검증한 PR head `6229008`과 Git 트리 `35474e1de1dda2f2feead724a7bb40e9d1563455`가 동일하다.

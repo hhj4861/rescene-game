@@ -1,37 +1,37 @@
 # 완료 검사기의 중첩 worktree 관찰 복구
 
-- 목표: 배포 완료 이후 남은 legacy `unsupported` 디렉터리 관찰 오류를 근거 기반으로 처리한다.
-- 범위/담당: 현재 Codex 세션. 복구 패치 생성기와 격리 회귀 테스트만 구현. 게임·운영 배포 변경 없음.
-- 기준: main `eb38f92`. 별도 `fix/task-finish-worktree-containers-20261008` worktree.
-- 완료 기준: 정상/실패 사례 검증, 본인 파일 커밋·push, 검토 가능한 PR. 전역 훅 설치와 실제 reconcile 성공은 별도 단계로 보고.
-- 원인: `dirty()`가 중첩 worktree를 `unsupported` 디렉터리로 반환하고 `reconcile_calls()`가 파일 비교 단계에서 중단한다.
-- 설계: 기존 snapshot에 이미 있던 등록 linked worktree만 허용. Git 공통 디렉터리, 경로, clean 상태(미추적 포함), HEAD/브랜치/upstream 및 실제 원격 포함 여부를 검사하고 재확인한다. 통과 근거는 기존 종료 영수증에 추가하며 파일 소유권·커밋·원격 검사와 실패 기록은 유지한다.
-- 비대상: 임의 디렉터리, 별도 중첩 저장소, symlink, 새로 생긴 디렉터리, dirty/unpushed 작업 폴더, 증거 없는 도구 종료.
-- 성능: 한 도구 호출의 파일 관찰에서 같은 실제 원격 URL의 브랜치 ref들을 한 번에 조회한다. 원격 근거를 서로 다른 도구 호출/관찰 사이에 캐시하지 않으며 파일·HEAD·브랜치·URL은 다시 확인한다.
-- 현재: 검토용 구현과 회귀 검증 완료. 설치 스크립트는 제공하지 않으며 전역 훅/신뢰 설정/상태 DB는 변경하지 않음.
-- 다음: 검토용 PR을 준비한다. 사용자 승인 전 PR 머지·전역 훅 설치를 하지 않는다. 실제 reconcile은 아직 성공하지 않았으며 완료로 보고하지 않는다.
+- 목표/담당: 현재 Codex 세션이 배포 후 남은 과거 `unsupported` 디렉터리 관찰 오류를 실제 Git·도구 종료 근거로 복구한다.
+- 범위: 복구 패치 생성기, 격리 회귀 검사, 승인된 실제 검사기 적용과 연결 파일 네 개 정리. 게임 기능 변경은 없다.
+- 구현 기준: main `eb38f92`, 작업 브랜치 `fix/task-finish-worktree-containers-20261008`, 최종 코드 `404c1c24b7c983ec117a3ca6d090bb149485f2ef`.
+- 현재 결과: 사용자 명시 승인 후 [PR #29](https://github.com/hhj4861/rescene-game/pull/29)를 머지하고 실제 검사기에 적용했다. 운영도 재배포했다. 별개 승인 검토 실패 기록 한 건의 후속 복구는 PR #30 승인 대기다.
 
-- 첫 검사: 21개 중 12개 실패. iCloud의 NFD 한글 부모 경로와 Git이 기록한 NFC linked worktree 경로가 달라 기존 `registered_worktrees()`가 빈 목록을 반환함. 실제 영문 프로젝트 경로의 복구와 별개인 fixture 문제로 확인했으며, 격리 저장소에만 `core.precomposeUnicode=false`를 설정해 동일 경로 표기를 보장한다.
+## 반영한 동작
 
-## 검증과 남은 조건
+`dirty()`가 중첩 worktree를 일반 파일로 비교하다 중단하던 문제를 수정했다. 같은 Git 공통 디렉터리의 등록 linked worktree만 대상으로 현재 경로, 미추적 파일을 포함한 clean 상태, HEAD·브랜치·upstream, 실제 원격의 HEAD 포함 여부를 확인하고 상태를 재검사한다. 과거 snapshot의 `unsupported` 또는 당시 생성 전으로 인한 snapshot 부재를 처리하며, snapshot 부재 자체를 완료 근거로 사용하지 않는다.
 
-- 격리 회귀 테스트 21개 통과: 정상 published worktree, 수정/staged/미추적/삭제/미푸시/원격 실패, detached HEAD, 검사 중 변경, 소유 파일 보존, 종료 증거 누락, 상위 저장소 소유 미확인 변경 보존 등.
-- 패치 생성/컴파일 및 `git diff --check` 통과.
-- 기준 전역 훅 SHA-256: `bfb482d404fa693490ce47232ce4c9f688acccde752738b1bdfe1df4d36f3926`.
-- 후보 SHA-256: `31c9d1127c480f53f02f05fa99ed16260fed57c2387916d6752feec851c6226f`.
-- 실제 기존 worktree 22개 읽기 전용 점검: 18개는 clean 상태와 실제 upstream 반영 확인. 4개는 미추적 `node_modules` symlink 때문에 의도적으로 거부. 링크나 작업 폴더를 삭제/이동하지 않음.
-- 해당 4개: `.worktrees/liv-difficulty`, `.worktrees/may-bubble-difficulty`, `.worktrees/pump-rescene-songs`, `.worktrees/pump-score-only`. 모두 `.worktrees/member-reactions/node_modules`를 가리킨다.
-- 이 후보만 설치해도 4개 폴더의 관찰은 계속 막힌다. 해당 링크의 기존 소유·사용 상태 확인과 정상 파일 단위 관찰 처리가 선행돼야 한다. 자동 무시/성공 처리로 해결하지 않는다.
-- 로그/증거: 사용자 iCloud 작업 루트의 `rescene-game/task-finish-containers-20261008/tests.log`, `container-probe.json`. Git/검사 상태 DB에는 복구 성공을 기록하지 않았다.
-- 게임은 PR #28과 운영 Pages에 이미 반영됨. 이 작업은 게임 코드·배포를 변경하지 않는다.
+명시 편집 경로·소유 파일, 임의 디렉터리, 별도 저장소, symlink, dirty 또는 미푸시 worktree는 계속 거부한다. 종료 증거·소유권·커밋·원격 검사를 유지하고 검증 근거를 기존 종료 영수증에 추가한다. 원격 ref 조회는 한 파일 관찰 안에서만 실제 URL 기준으로 공유하며 상대 경로 원격은 저장소 경로까지 구분한다. 서로 다른 관찰 간에는 재사용하지 않는다.
 
-## 승인 후 실제 복구 보완
+## 실제 적용과 검증
 
-- 사용자가 PR #29 머지, 실제 검사기 적용, 연결 파일 4개 정리를 승인함. 네 링크만 제거했고 대상 `.worktrees/member-reactions/node_modules`는 보존했다.
-- 첫 후보를 원본 백업 후 실제 검사기에 적용. 원래 훅 정의와 신뢰 설정은 그대로 유지했다.
-- 실제 복구에서 오래된 snapshot 이후 생성된 `pump-direct-tap` 폴더가 확인됨. 당시 snapshot에 없는 등록 worktree도 현재 Git 연결/clean 상태/실제 upstream 검증을 모두 통과할 때만 관찰한다. 기존 소유 파일·명시 편집 경로와 예상 밖 snapshot 값은 계속 거부한다.
-- 이 보완은 snapshot 부재를 완료 증거로 취급하지 않으며, 동일한 현재 원격 검증을 필수로 유지한다. 관련 회귀 사례를 추가한다.
+- 사용자 승인 후 `liv-difficulty`, `may-bubble-difficulty`, `pump-rescene-songs`, `pump-score-only`의 미추적 `node_modules` symlink 네 개만 제거했다. 공통 대상 `.worktrees/member-reactions/node_modules`는 보존했다. 제거 전 정확한 링크 대상과 복원 정보를 저장했다.
+- 전역 검사기 `/Users/admin/.codex/hooks/task-finish/gate.py`를 원본 백업 후 적용했다. 최종 SHA-256은 `4c958fce582601a6411caba9f058448fa9707f5664bc8ca96285037949c40e38`이다. 훅 정의·신뢰 설정을 바꾸거나 상태 DB를 직접 편집하지 않았다.
+- 원본 SHA-256은 `bfb482d404fa693490ce47232ce4c9f688acccde752738b1bdfe1df4d36f3926`이며 같은 훅 디렉터리의 `backups/`에 원본과 첫 후보를 보존했다.
+- 최종 격리 회귀 검사 **26개 통과**. 정상·dirty·staged·미추적·삭제·미푸시·원격 실패·detached HEAD·검사 중 변경·소유권·종료 증거 누락·snapshot 부재·원격 캐시 범위·상대 경로 원격을 검증했다. 패치 생성/컴파일과 `git diff --check`도 통과했다.
+- [최종 CI 37782048124](https://github.com/hhj4861/rescene-game/actions/runs/37782048124): 단위 **184개**, 브라우저 **433개 통과·기존 환경 전용 5개 제외**, 린트·빌드 성공. 초기 CI의 브라우저 설치 지연은 취소 후 재실행했고 최종 head 검사가 성공했다.
+- PR #29 머지 결과 `0ff29bcf752bef86ff82529c6135a5e8f6eefee3`와 검증 head의 Git 트리는 `fc1c5add1804a2e82ddf066a592a0318babf2288`로 동일하다.
 
-- 과거 기록의 폴더별 중복 네트워크 조회를 줄이도록, 동일 파일 관찰 안에서 원격 refs 스냅샷을 공유한다. 실제 원격 URL로 구분하고 다음 호출은 새 조회를 수행한다. 인증 정보가 포함될 수 있는 URL은 증거 파일/로그에 출력하지 않는다.
+## 운영 반영
 
-- 최종 보완 회귀 검사 26개 통과. 새 원격 식별자, 관찰 간 캐시 미공유, 상대 경로 원격, 누락된 원격 브랜치도 검증했다.
+최종 CI 산출물을 기존 Cloudflare Pages의 **Production / main / source `0ff29bc`**로 배포했다. 배포 ID는 `8538a4c1-85dd-40ef-a760-ef72fa3a34ac`이며 [공개 게임](https://rescene-arcade.pages.dev/)과 [고정 배포](https://8538a4c1.rescene-arcade.pages.dev)에서 제공한다. 배포 후 정적 파일 **40개 모두 최신 CI 산출물과 SHA-256이 일치**했다. 게임 파일은 PR #28 운영본과도 동일하다. 이전 운영 브라우저 120개 통과 증거는 동일 파일에 대한 기존 검증이며, 이번 재배포에서 새로 120개를 실행한 것은 아니다.
+
+## 관찰 복구 결과와 남은 단계
+
+- 설치된 검사기의 정상 `reconcile_calls` 및 CLI `reconcile`로 과거 592건을 점검하고, 동시 변경 때문에 남은 기록을 재검사했다. 실제 종료 기록을 대조했으며 가짜 종료·성공 영수증을 만들지 않았다.
+- 최종 조회에서 소유 미확인 파일은 **0개**다. 실행 중인 조회 명령 자체를 제외하면 과거 미해결 기록은 **1개**다. 이전 미리보기 서버는 정상 종료 기록으로 복구했다.
+- 남은 호출 `exec-83cb2d7b-3d55-4029-92f3-1c643f77e37d`는 과거 `yt-dlp` 메타데이터 조회가 자동 승인 검토 모델의 처리 용량 부족으로 **실행되지 않은** 기록이다. 현재 검사기가 해당 호스트 실패 응답을 인식하지 못한다. 게임 배포 실패가 아니다.
+- [후속 PR #30](https://github.com/hhj4861/rescene-game/pull/30), head `e69032dcb263c0070f2c068df9802b0705a5700b`에 정확한 실패 응답만 `not_started`로 분류하는 복구안을 커밋·push했다. 회귀 검사 **15개**, 실제 인증된 원본 기록의 읽기 전용 대조, [CI 37788088159](https://github.com/hhj4861/rescene-game/actions/runs/37788088159)가 통과했다. 실제 상태 복구·머지·전역 설치는 아직 하지 않았다.
+- 다음 단계: 해당 PR에 대한 명시적 사용자 승인 후 PR #30 머지·설치·정상 reconcile. 승인 전에는 자동 완료 기록까지 모두 해결됐다고 보고하지 않는다.
+
+## 증거 위치
+
+사용자 iCloud 작업 루트 `rescene-game/task-finish-containers-20261008/`의 `tests-final.log`, `container-probe.json`, `approved-link-cleanup.json`, `ci-watch.log`, `site/`, `wrangler.log`, `deployments-after-merge.txt`, `production-assets-after-deploy.json`, `capacity-readonly-proof.json`에 보관한다. 코드와 Git은 로컬 프로젝트 및 해당 작업 worktree에 유지한다.
