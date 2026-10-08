@@ -4,6 +4,16 @@
 
 
 
+## 게임 규칙·원이와 별이·제나 십원빵 운영 배포 — 2026-10-08
+
+- 사용자 명시 승인 후 [PR #28](https://github.com/hhj4861/rescene-game/pull/28)을 머지했다. 운영 소스는 `f5a9c34d38f995920e9a843b0098dd6950789fa8`이며 검증한 PR head `6229008`과 Git 트리 `35474e1de1dda2f2feead724a7bb40e9d1563455`가 동일하다.
+- [전체 CI 37753204164](https://github.com/hhj4861/rescene-game/actions/runs/37753204164): 단위 184개, 브라우저 433개 통과·기존 환경 전용 5개 제외, 린트·빌드 성공. 동일 `arcade-static-site` 산출물을 그대로 배포했다. 오래된 제나 테스트 fixture를 현재 교환 예산·숨은 빵 클리어 규칙에 맞췄고, 438개 전체 브라우저 검사의 실제 소요 시간이 기존 제한을 넘어 CI/수동 배포 실행 제한을 15분에서 25분으로 늘렸다. 검사 항목과 실패 조건은 유지했다.
+- Pages 배포 `22ea3009-baa1-4c07-bbfe-99a2506bec90`: **Production / main / source `f5a9c34`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://22ea3009.rescene-arcade.pages.dev).
+- 원이와 별이의 이동·몬스터 전투·파이리 변신·별이 캐리, 단계별 난이도, 노래 아이템의 최소 60초 보장과 재생 중 재등장 방지, 단계별 곡 순환을 포함한다. 메이·제나 가창 아이템은 연속 60초, 원이 원본 커버는 실제 전체 41초 한 번 재생한다. 메이 보글보글 백업 및 리트·매트 기획 초안은 유지하며 새 게임으로 교체한 상태는 아니다.
+- 제나는 6×6에서 매 단계 한 칸씩 상한 없이 커지며, 숨겨진 십원빵 영역을 완전히 지워야 획득한다. 획득 때 제공 Reel의 제나 원본 ‘십원빵 아이가’ 1.65초를 한 번 재생한다. 노래 공존·음소거·저장 복원·최종 클리어를 처리한다.
+- 공개 정적 파일 **40개 모두 CI 산출물과 SHA-256 일치**. 공개 주소의 브라우저 **120개 모두 통과**(PC Chromium·모바일 Chromium·iPhone WebKit). 십원빵 획득 원본 음성·저장/음소거, 노래 시간/중복 제한, 원이 전투·파이리·별이 캐리, 제나 판 확장과 다섯 게임 기본 흐름을 확인했다. 운영 캡처에서 십원빵 배경 노출·획득 문구를 확인했다. 모바일은 에뮬레이션이며 실제 기기 스피커 청음 검증은 아니다.
+- 증거: 사용자 지정 iCloud 작업 루트 `rescene-game/arcade-refresh-deploy-20261008/`의 `release.json`, `ci-release.log`, `site/`, `deploy.log`, `deployments.txt`, `production-asset-hashes.json`, `public-browser.log`, `public-browser/`. 기존 Wrangler 로그인으로 배포했다. 인증·도메인·자동 배포 설정은 변경하지 않았다.
+
 ## 노래 선물·리브 재생 간격·방울 점프·펌프 조작 운영 배포 — 2026-10-05
 
 - 사용자 승인 후 [PR #25](https://github.com/hhj4861/rescene-game/pull/25)를 머지했다. 운영 소스는 `435837111d2d6d64ddb04c40a3590ffb2dc266ba`이며 PR head `727d55e`와 Git 트리 `ce1f7988044c6d6e5ffc875240d61aea10322371`가 동일하다. [성공한 CI 37255889833](https://github.com/hhj4861/rescene-game/actions/runs/37255889833)의 `arcade-static-site`를 그대로 배포했다.
