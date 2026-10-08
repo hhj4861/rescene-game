@@ -19,7 +19,7 @@ test('each cascade falls into its cleared cells and new bread starts above the b
 });
 test('an invalid adjacent exchange animates back without charging a move',()=>{
  const s=createGame('photo',{seed:7}),before=[...s.board];let pair;
- for(let i=0;i<s.board.length-1;i++){if(i%20===19)continue;const trial=createGame('photo',{seed:7});if(!swapBread(trial,i,i+1)){pair=[i,i+1];break;}}
+ for(let i=0;i<s.board.length-1;i++){if(i%boardSize(s)===boardSize(s)-1)continue;const trial=createGame('photo',{seed:7});if(!swapBread(trial,i,i+1)){pair=[i,i+1];break;}}
  assert.ok(pair);assert.equal(swapBread(s,...pair),false);assert.deepEqual(s.board,before);assert.equal(s.moves,36);assert.equal(s.breadFrames.length,2);stepGame(s,.17);assert.equal(breadFrame(s).kind,'swap');stepGame(s,.2);assert.equal(s.flash,0);
 });
 test('saving during a fall preserves the settled board, score and RNG without replaying rewards',()=>{
