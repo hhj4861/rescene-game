@@ -25,7 +25,7 @@ export const SIGNATURES={
   woni:{line:'오이쉬에~',label:'원이의 힘찬 응원',motion:'cheer'},
   may:{line:'클리어는 그립감이 좋다',adapted:true,label:'메이의 윙크',motion:'wink'},
   zena:{line:'내는 원래 이 순간을 싸랑해~',adapted:true,label:'제나의 볼꽃 포즈',motion:'cheek'},
-  minami:{line:'거제 야호~',label:'미나미의 댄스 브이',motion:'dance'},
+  minami:{line:'덴사이샨데슈!',label:'미나미의 댄스 브이',motion:'dance'},
   liv:{line:'너도? 아 나도!' ,label:'리브의 손하트',motion:'heart'},
 };
 
