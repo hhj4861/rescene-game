@@ -1,3 +1,4 @@
+import {prankActive,stepPranks} from './walk-pranks.js';
 import {collectSongTime} from './song-time.js';
 export const WALK_LANES=[100,240,380];
 export const WALK_TIME_BONUS=10;
@@ -9,20 +10,22 @@ export function walkDifficulty(stage,speed){return {spawn:Math.max(.4,.95/Math.p
 // Every cycle guarantees music, extra time, a transformation and monsters.
 const ROUTE=['treat','monster','song','log','treat','charmander','monster','clock','puddle','treat','monster','treat','byeol','monster'];
 export function createWalk(){
- return {walkVersion:1,lane:1,x:240,objects:[],spawn:.5,shield:0,fever:0,heat:0,hits:0,combo:0,bestCombo:0,misses:0,nextObject:0,jumpTime:0,jumpCooldown:0,songPickups:0,timeBonus:0,clockPickups:0,rewardTime:0,lastReward:'',byeolTime:0,byeolCooldown:0,transformTime:0,attackCooldown:0,shots:[],effects:[],defeated:0};
+ return {walkVersion:1,prankIndex:0,prank:null,lane:1,x:240,objects:[],spawn:.5,shield:0,fever:0,heat:0,hits:0,combo:0,bestCombo:0,misses:0,nextObject:0,jumpTime:0,jumpCooldown:0,songPickups:0,timeBonus:0,clockPickups:0,rewardTime:0,lastReward:'',byeolTime:0,byeolCooldown:0,transformTime:0,attackCooldown:0,shots:[],effects:[],defeated:0};
 }
 function attack(s){
  if(s.attackCooldown||s.shots.length>=32)return;
  const fire=s.transformTime>0;s.shots.push({x:s.x,y:465,kind:fire?'fire':'star'});s.attackCooldown=fire?.18:.38;
 }
 export function walkAction(s,a){
+ if(prankActive(s,'minami'))a=a==='left'?'right':a==='right'?'left':Number.isInteger(a)&&a>=0&&a<3?2-a:a;
  if(a==='left'||a==='right')s.lane=Math.max(0,Math.min(2,s.lane+(a==='left'?-1:1)));
  else if(Number.isInteger(a)&&a>=0&&a<3)s.lane=a;
  else if(a==='jump'&&!s.jumpCooldown){s.jumpTime=.8;s.jumpCooldown=1.05;}
  else if(a==='attack')attack(s);
 }
 export function stepWalk(s,dt,speed,loseLife){
- s.x+=Math.sign(WALK_LANES[s.lane]-s.x)*Math.min(Math.abs(WALK_LANES[s.lane]-s.x),850*dt);
+ stepPranks(s,dt);
+ s.x+=Math.sign(WALK_LANES[s.lane]-s.x)*Math.min(Math.abs(WALK_LANES[s.lane]-s.x),(prankActive(s,'may')?340:850)*dt);
  for(const key of ['spawn','shield','fever','jumpTime','jumpCooldown','rewardTime','transformTime','attackCooldown','byeolTime','byeolCooldown'])s[key]=Math.max(0,s[key]-dt);
  for(const e of s.effects)e.ttl-=dt;s.effects=s.effects.filter(e=>e.ttl>0);
  if(s.transformTime)attack(s);
@@ -43,8 +46,8 @@ export function stepWalk(s,dt,speed,loseLife){
  for(const shot of s.shots){
   if(shot.kind==='paw')shot.x+=Math.sign(shot.targetX-shot.x)*Math.min(Math.abs(shot.targetX-shot.x),1200*dt);
   const before=shot.y;shot.y-=(shot.kind==='paw'&&Math.abs(shot.targetX-shot.x)>32?0:shot.kind==='fire'?650:500)*dt;
-  const target=s.objects.filter(o=>!o.done&&o.kind==='monster'&&Math.abs(WALK_LANES[o.lane]-shot.x)<(shot.kind==='fire'?55:32)&&o.y>=shot.y-25&&o.y<=before+25).sort((a,b)=>b.y-a.y)[0];
-  if(target){shot.done=true;target.hp-=shot.kind==='fire'?3:shot.kind==='paw'?2:1;if(target.hp<=0){target.done=true;s.defeated++;s.score+=150;s.effects.push({x:WALK_LANES[target.lane],y:target.y,ttl:.45});s.event='walk-defeat';}}
+  const target=s.objects.filter(o=>!o.done&&['monster','bread'].includes(o.kind)&&Math.abs(WALK_LANES[o.lane]-shot.x)<(shot.kind==='fire'?55:32)&&o.y>=shot.y-25&&o.y<=before+25).sort((a,b)=>b.y-a.y)[0];
+  if(target){shot.done=true;target.hp-=shot.kind==='fire'?3:shot.kind==='paw'?2:1;if(target.hp<=0){target.done=true;if(target.kind==='monster'){s.defeated++;s.score+=150;s.effects.push({x:WALK_LANES[target.lane],y:target.y,ttl:.45});s.event='walk-defeat';}else{s.score+=20;s.event='walk-bread-clear';}}}
  }
  s.shots=s.shots.filter(b=>!b.done&&b.y>=100);
  for(const o of s.objects){
@@ -60,9 +63,9 @@ export function stepWalk(s,dt,speed,loseLife){
     else if(o.kind==='byeol'){s.byeolTime=WALK_BYEOL_SECONDS;s.byeolCooldown=0;s.score+=50;s.event='walk-byeol';}
     else if(o.kind==='charmander'){s.transformTime=WALK_TRANSFORM_SECONDS;s.attackCooldown=0;s.score+=50;s.event='walk-transform';}
     else{const bonus=Math.min(WALK_TIME_BONUS,WALK_MAX_BONUS-s.timeBonus);s.timeBonus+=bonus;s.remaining+=bonus;s.clockPickups++;s.score+=50;s.lastReward=bonus?'clock':'clock-max';s.event='walk-clock';}
-   }else if(!s.shield&&!s.fever&&!(o.kind==='log'&&s.jumpTime>0)){
+   }else if(!s.shield&&!s.fever&&!(['log','bread'].includes(o.kind)&&s.jumpTime>0)){
     loseLife(s);s.shield=1.4;s.combo=0;s.heat=0;s.misses++;s.event='walk-miss';if(s.ended)return;
-   }else if(o.kind==='log'&&s.jumpTime>0){s.score+=20;s.event='walk-jump';}
+   }else if(['log','bread'].includes(o.kind)&&s.jumpTime>0){s.score+=20;s.event='walk-jump';}
   }else if(o.y>560){o.done=true;if(o.kind==='treat'){s.combo=0;s.heat=0;}}
  }
  s.objects=s.objects.filter(o=>!o.done&&!(s.songItemTime&&o.kind==='song'));
