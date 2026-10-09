@@ -4,6 +4,16 @@
 
 
 
+## 게임판·모바일 영상·멤버 이벤트 운영 배포 — 2026-10-09
+
+- 사용자 명시 승인 후 [PR #31](https://github.com/hhj4861/rescene-game/pull/31)을 머지했다. 운영 소스 `ea53de2129c74d1afe2c1f5467a86543612206e7`와 검증 head `0e7fa05`의 Git 트리는 동일하다.
+- [성공한 PR CI 37897401874](https://github.com/hhj4861/rescene-game/actions/runs/37897401874): 단위 191개, 브라우저 478개 통과·환경 전용 5개 제외, 린트·빌드 성공. 해당 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `2bec0ba7-7dae-479d-9e0a-eb41edb5b181`: **Production / main / source `ea53de2`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://2bec0ba7.rescene-arcade.pages.dev).
+- 제나 판은 1–5단계 6×6, 6–10단계 7×7, 11단계부터 최대 8×8. 모바일 영상은 기본 접힌 재생 바에서 펼치며 PC 배치는 유지한다. 원이에는 네 멤버의 예고·서로 다른 방해·저장 복원을 추가했다. 미나미 클리어는 사용자 Shorts의 ‘덴사이샨데슈!’ 첫 1.74초 음성으로 교체했다.
+- 공개 정적 파일 **40개 모두 CI 산출물과 SHA-256 일치**. 첫 HTML 비교는 정규 주소 리다이렉트를 추적하지 않아 빈 응답과 비교했다. 두 HTML 주소의 리다이렉트를 따른 실제 응답으로 재확인해 모두 일치했다.
+- 공개 주소 브라우저 **87개 시나리오 검증 완료**: 첫 실행 86개 통과, 모바일 Chromium 미나미 방해 검사는 브라우저 종료 시 로컬 `ENOSPC`로 결과 저장 실패. 현재 여유 공간 3.6GiB를 확인하고 해당 1개를 별도 출력 폴더에서 단독 재실행해 통과했다. 코드·검사 조건은 변경하지 않았다. 세 브라우저에서 판 경계/저장 이전·320px 조작·접힌 영상·방해 효과·실제 MP3 신호/재생/음소거를 확인했다. 모바일 WebKit 운영 캡처도 시각 확인했다. YouTube 검사는 API 대역을 포함하며 실기기 스피커 청음은 수행하지 않았다.
+- 증거: 사용자 iCloud 작업 루트 `rescene-game/pr31-deploy-20261009/`의 `site/`, `ci.log`, `wrangler.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`, `public-recheck.log`, `public-recheck/`. 기존 Wrangler 로그인으로 배포했고 인증·도메인·자동 배포 설정은 변경하지 않았다. 공유 checkout의 기존 미추적 파일은 보존했다.
+
 ## PR #30 승인 후 운영 배포 — 2026-10-09
 
 - 사용자 명시 승인 후 [PR #30](https://github.com/hhj4861/rescene-game/pull/30)을 머지했다. 운영 소스는 `4cd380615b9a08a346644b2677fd3ef5d6f52697`. 검증 head `e69032d`와 차이는 이전 배포 기록 문서 두 개뿐이며 배포 소스는 동일하다.
