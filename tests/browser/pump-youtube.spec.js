@@ -28,7 +28,7 @@ test('API failure can recover without discarding the selected official song or s
 });
 
 test('focusing native video controls keeps the round active, but leaving the tab pauses it',async({page})=>{
- await fakeApi(page);await open(page);await begin(page);if(await page.locator('[data-video-toggle]').isVisible())await page.locator('[data-video-toggle]').click();await page.locator('#pump-video iframe').click();await page.clock.runFor(100);await expect(page.locator('#app')).toHaveAttribute('data-state','playing');await page.locator('#game').focus();await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.clock.runFor(50);await expect(page.locator('#app')).toHaveAttribute('data-state','paused');expect(await page.evaluate(()=>window.ytPlayers.at(-1).status)).toBe(2);
+ await fakeApi(page);await open(page);await begin(page);await page.locator('#pump-video iframe').click();await page.clock.runFor(100);await expect(page.locator('#app')).toHaveAttribute('data-state','playing');await page.locator('#game').focus();await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.clock.runFor(50);await expect(page.locator('#app')).toHaveAttribute('data-state','paused');expect(await page.evaluate(()=>window.ytPlayers.at(-1).status)).toBe(2);
 });
 
 test('an official song pauses and then ends when missed notes drain the gauge',async({page})=>{
