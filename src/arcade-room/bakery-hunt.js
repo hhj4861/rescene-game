@@ -1,4 +1,5 @@
-export const bakerySize=stage=>5+stage;
+export const BAKERY_MAX_SIZE=8,BAKERY_GROWTH_STAGES=5;
+export const bakerySize=stage=>Math.min(BAKERY_MAX_SIZE,6+Math.floor(((Number.isSafeInteger(stage)&&stage>=1?stage:1)-1)/BAKERY_GROWTH_STAGES));
 const areaCache=new Map();
 export function hiddenBreadAreas(size,stage=1){
  const key=`${size}:${stage}`;

@@ -129,3 +129,6 @@
 .bread-viewport{width:100%;max-height:600px;overflow:auto;overscroll-behavior:contain}.bread-board{position:relative;width:100%}.bread-board #game{width:100%;max-width:none}.bread-board .field-controls{position:absolute;inset:0}.bread-viewport:has(.bread-board[style]){max-height:min(70vh,600px)}
 
 .bread-board[style] #game,.bread-board[style] .field-controls button{touch-action:pan-x pan-y}#app[data-game=photo] .game-controls{flex-wrap:wrap}#app[data-game=photo] .game-controls button{font-size:13px;flex:1 1 40%;min-height:44px}
+
+/* Keep the compact bakery board readable on short mobile screens too. */
+#app[data-game=photo] .playfield{width:100%}

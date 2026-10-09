@@ -30,7 +30,7 @@ test('tenwon voice does not interrupt a one-minute item song and voice mute stop
 });
 test('finding the final bread plays the pickup and clears the stage without duplicate finds',async({page})=>{
  const s=near();s.breadCover.fill(true);s.breadCover[7]=false;await open(page,s);await dig(page);await expect.poll(()=>finds(page)).toBe(1);await page.clock.runFor(1200);await expect(page.locator('#result-title')).toHaveText('스테이지 1 클리어!');expect(await finds(page)).toBe(1);
- await expect(page.locator('.result-paper')).toContainText('십원빵 2개');await page.locator('.result-paper [data-start="photo"]').click();await expect(page.locator('.field-controls button')).toHaveCount(49);expect(await finds(page)).toBe(1);
+ await expect(page.locator('.result-paper')).toContainText('십원빵 2개');await page.locator('.result-paper [data-start="photo"]').click();await expect(page.locator('.field-controls button')).toHaveCount(36);expect(await finds(page)).toBe(1);
 });
 test('tenwon source clip decodes as an audible 1.65-second recording',async({page})=>{
  await page.goto('./');const signal=await page.evaluate(async()=>{const r=await window.fetch('./voices/zena-tenwon.mp3'),context=new window.AudioContext();try{const b=await context.decodeAudioData(await r.arrayBuffer());let power=0;for(const x of b.getChannelData(0))power+=x*x;return {ok:r.ok,duration:b.duration,rms:Math.sqrt(power/b.length)};}finally{await context.close();}});

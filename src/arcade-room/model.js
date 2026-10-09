@@ -1,4 +1,4 @@
-import {bakerySize,breadGoal,breadMoves,foundBread,breadHunt} from './bakery-hunt.js';
+import {bakerySize,hiddenBreadAreas,breadMoves,foundBread,breadHunt} from './bakery-hunt.js';
 import {collectSongTime,tickSongTime,SONG_ITEM_SECONDS} from './song-time.js';
 import {pumpNoteAt} from './pump-input.js';
 import {createMay,mayAction,stepMay} from './may.js';
@@ -12,7 +12,7 @@ export const validStage=n=>Number.isSafeInteger(n)&&n>=1;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export function stageSpeed(s){return 1+1.4*(1-1/(1+((validStage(s.stage)?s.stage:1)-1)*.35));}
 const GOALS={drive:[[12,16,20,24,28],48],blocks:[[18,24,30,36,42],72],photo:[[18,24,30,36,42],72],rhythm:[[16,22,28,34,40],80],catch:[[6,8,10,12,14],28]};
-export function stageTarget(kind,stage=1){if(kind==='photo')return breadGoal(validStage(stage)?stage:1);const [first,cap]=GOALS[kind];stage=validStage(stage)?stage:1;return stage<=5?first[stage-1]:first[4]+Math.floor((cap-first[4])*(1-1/(1+(stage-5)*.1)));}
+export function stageTarget(kind,stage=1){if(kind==='photo')return hiddenBreadAreas(bakerySize(stage),validStage(stage)?stage:1).length;const [first,cap]=GOALS[kind];stage=validStage(stage)?stage:1;return stage<=5?first[stage-1]:first[4]+Math.floor((cap-first[4])*(1-1/(1+(stage-5)*.1)));}
 export function roundDuration(kind){return kind==='catch'?300:['blocks','photo'].includes(kind)?180:kind==='drive'?90:60;}
 export function roundBudget(s){return roundDuration(s.kind)+(s.kind==='drive'?s.timeBonus:0)+(s.songTimeBonus||0);}
 export function boardSize(s){return Math.round(Math.sqrt(s.board.length));}
