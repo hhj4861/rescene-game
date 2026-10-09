@@ -4,6 +4,15 @@
 
 
 
+## 모바일 안내 팝오버·하단 영상 운영 배포 — 2026-10-09
+
+- 사용자 명시 승인 후 [PR #32](https://github.com/hhj4861/rescene-game/pull/32)를 머지했다. 운영 소스 `dde946ffc84a28a56342ab5c08aac8f2b441be5d`와 검증 head `70138c0`의 Git 트리가 동일하다.
+- [성공한 CI 37928210639](https://github.com/hhj4861/rescene-game/actions/runs/37928210639): 단위 191개, 브라우저 478개 통과·기존 환경 전용 5개 제외, 린트·빌드 성공. 해당 `arcade-static-site`를 그대로 배포했다.
+- Pages 배포 `c1f460c9-6d96-4bfd-80bd-b6d0a84e0902`: **Production / main / source `dde946f`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://c1f460c9.rescene-arcade.pages.dev).
+- 모바일 리브·미나미의 영상은 게임판과 조작·설정 아래에 바로 표시한다. 자동 저장·곡 정보·긴 가이드·재생 상태는 ‘게임 안내 ⓘ’ 팝오버로 모았다. 닫기·바깥 클릭·Escape·초점 복원을 지원하고 PC 배치와 동일 iframe의 재생을 유지한다.
+- 공개 주소 **브라우저 60개 모두 통과**, 공개 정적 파일 **40개 모두 CI 빌드와 SHA-256 일치**. Chromium·모바일 Chromium·모바일 WebKit에서 320/390px 배치, 팝오버 경계/닫기/초점, 화면 전환과 재생 유지, 기존 곡 선택·음소거·버퍼링·재시도·저장·결과 흐름을 확인했다. 운영 모바일 화면 캡처도 시각 확인했다. YouTube 검사는 API 대역이며 실기기 청음을 뜻하지 않는다.
+- 증거: 사용자 iCloud 작업 루트 `rescene-game/pr32-deploy-20261009/`의 `site/`, `ci.log`, `wrangler.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`. 기존 Wrangler 로그인으로 배포했다. 다른 세션의 미추적 파일과 인증·도메인·자동 배포 설정을 보존했다.
+
 ## 게임판·모바일 영상·멤버 이벤트 운영 배포 — 2026-10-09
 
 - 사용자 명시 승인 후 [PR #31](https://github.com/hhj4861/rescene-game/pull/31)을 머지했다. 운영 소스 `ea53de2129c74d1afe2c1f5467a86543612206e7`와 검증 head `0e7fa05`의 Git 트리는 동일하다.
