@@ -133,14 +133,20 @@
 /* Keep the compact bakery board readable on short mobile screens too. */
 #app[data-game=photo] .playfield{width:100%}
 
-.mobile-video-toggle{display:none}
+/* Mobile information stays in a touch popover; the same player follows controls. */
+.game-info-toggle,.game-info-heading{display:none}
+.game-info>small{display:block;font-size:10px;line-height:1.8}
 @media(max-width:700px){
- .has-video>.pump-video-card{max-width:none!important;padding:0;border:1px solid #23445433;overflow:hidden}
- .has-video>.pump-video-card>.mobile-video-toggle{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:8px 10px;background:var(--paper);color:var(--ink);text-align:left;font-size:11px}
- .mobile-video-toggle>b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
- .mobile-video-toggle>[data-video-toggle-label]{flex:none;font-weight:700}
- .mobile-video-toggle:focus-visible{outline:3px solid var(--ink);outline-offset:-3px}
- .has-video>.pump-video-card>.video-panel{display:none;padding:5px}
- .has-video>.pump-video-card.video-expanded>.video-panel{display:block}
+ .has-video>.pump-video-card{order:3;max-width:none!important;width:100%;padding:5px;margin-top:4px}
+ .has-video .side-note{justify-content:flex-start}
+ .has-video .utility-buttons{margin-left:0}
+ .has-video .game-info-toggle{display:inline-block;min-height:44px}
+ .game-info[popover]{position:fixed;inset:auto 12px 12px;margin:0 auto;width:calc(100% - 24px);max-width:420px;max-height:70svh;overflow-y:auto;overscroll-behavior:contain;padding:16px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:16px;box-shadow:0 8px 24px #23445433;text-align:left}
+ .game-info[popover]::backdrop{background:#23445433}
+ .game-info-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+ .game-info-heading b{font:22px 'Jua',sans-serif}
+ .game-info-heading button{min-height:44px;margin:0}
+ .game-info[popover]>small,.game-info[popover]>p,.side-note .game-info[popover] .short-guide{font-size:13px;line-height:1.8;margin:10px 0;max-width:none}
+ .game-info-toggle:focus-visible,.game-info-heading button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
  #app[data-game=catch] .has-video .playfield{width:clamp(200px,calc((100svh - 255px)*.8),100%)}
 }
