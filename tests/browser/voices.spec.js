@@ -6,11 +6,11 @@ import {GAMES,SIGNATURES} from '../../src/arcade-room/catalog.js';
 import {VOICES} from '../../src/arcade-room/voices.js';
 import {emptyProgress,snapshotRound,stageGoal,PROGRESS_KEY} from '../../src/arcade-room/progress.js';
 
-async function readyToClear(page,kind){
+async function readyToClear(page,kind,remaining=.02){
   const state=createGame(kind,{stage:1,seed:7}),progress=emptyProgress();
   state[{drive:'hits',blocks:'popped',photo:'collected',rhythm:'hits',catch:'defeated'}[kind]]=stageGoal(kind,1).target;
   if(kind==='photo')state.breadCover.fill(true);
-  if(kind==='rhythm'){state.elapsed=59.98;state.remaining=.02;state.notes.forEach(n=>n.status='hit');}if(kind==='catch'){state.bossSpawned=true;state.bossDefeated=1;}progress.games[kind].snapshot=snapshotRound(state);
+  if(kind==='rhythm'){state.elapsed=60-remaining;state.remaining=remaining;state.notes.forEach(n=>n.status='hit');}if(kind==='catch'){state.bossSpawned=true;state.bossDefeated=1;}progress.games[kind].snapshot=snapshotRound(state);
   await page.addInitScript(({key,value})=>localStorage.setItem(key,value),{key:PROGRESS_KEY,value:JSON.stringify(progress)});
   await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});
   await page.goto('./');await expect(page.locator(`[data-start="${kind}"].start`)).toBeEnabled();
@@ -32,8 +32,8 @@ for(const [kind,game] of Object.entries(GAMES))test(`${game.member}: real record
   await expect(page.locator('.member-voice a')).toHaveAttribute('href',VOICES[game.member].source);
   // Actual native media element, bundled MP3 and browser decoder (not a playback stub).
   await expect.poll(()=>page.evaluate(()=>window.voiceElements.at(-1).currentTime)).toBeGreaterThan(0);
-  const clip=await page.evaluate(()=>{const a=window.voiceElements.at(-1);return {src:a.currentSrc,duration:a.duration,error:a.error?.code};});
-  expect(clip.src).toContain(`/voices/${game.member}.mp3`);expect(clip.duration).toBeGreaterThan(1);expect(clip.duration).toBeLessThan(4);expect(clip.error).toBeUndefined();
+  const clip=await page.evaluate(()=>{const a=window.voiceElements.at(-1);return {src:a.currentSrc,duration:a.duration,loop:a.loop,count:window.voiceElements.filter(v=>v.src===a.src).length,error:a.error?.code};});
+  expect(clip.src).toContain(`/voices/${game.member}.mp3`);expect(clip.duration).toBeGreaterThan(1);expect(clip.duration).toBeLessThan(4);expect(clip.error).toBeUndefined();expect(clip.loop).toBe(false);expect(clip.count).toBe(1);
   // A playing clock also advances for silent MP3s. Verify the decoded signal itself.
   const signal=await page.evaluate(async path=>{
     const context=new (window.AudioContext||window.webkitAudioContext)();
@@ -68,4 +68,13 @@ test('backgrounding a result stops voice and source link stays in the keyboard f
   expect(await page.evaluate(()=>window.clips.at(-1).paused)).toBe(true);
   await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new window.Event('visibilitychange'));});
   await page.locator('.song-gift a').focus();await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'다음 스테이지 ▶'})).toBeFocused();
+});
+
+for(const setting of ['voice','sound'])test(`Minami clear respects disabled ${setting} and keeps the next stage available`,async({page})=>{
+  const requests=[];page.on('request',r=>{if(r.url().includes('/voices/minami.mp3'))requests.push(r.url());});
+  await readyToClear(page,'rhythm',1);await page.getByRole('button',{name:'계속하기 ▶'}).click();await waitPump(page);
+  await page.locator(`[data-${setting}]`).click();await expect(page.locator(`[data-${setting}]`)).toHaveAttribute('aria-pressed','false');
+  await page.clock.runFor(1100);await expect(page.locator('#app')).toHaveAttribute('data-cleared','true');
+  await expect(page.locator('.result-message')).toHaveText('덴사이샨데슈!');expect(requests).toEqual([]);
+  await expect(page.getByRole('button',{name:'다음 스테이지 ▶'})).toBeEnabled();
 });
