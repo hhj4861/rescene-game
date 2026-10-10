@@ -2,8 +2,8 @@ import {collectSongTime} from './song-time.js';
 export const SURVIVAL_UPGRADES={star:{name:'별빛 연사',hint:'공격력과 발사 속도 증가'},orbit:{name:'수호 방울',hint:'주위를 도는 방울로 가까운 적 공격'},boots:{name:'가벼운 발걸음',hint:'이동 속도 증가'},magnet:{name:'별 조각 자석',hint:'경험치 수집 거리 증가'},heal:{name:'따뜻한 응원',hint:'목숨 1개 회복'}};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-export const survivalDifficulty=stage=>({speed:40+Math.min(45,(stage-1)*4),spawn:Math.max(.3,.9-(stage-1)*.05),hp:1+Math.min(4,Math.floor((stage-1)/3)),boss:36+Math.min(100,(stage-1)*10)});
-export function createSurvival(s){Object.assign(s,{mayVersion:3,songPickups:0,player:{x:240,y:360,dx:0,dy:0,walk:0,facing:1},popped:0,combo:0,enemies:[],shots:[],items:[],enemyShots:[],level:1,xp:0,upgrades:{star:1,orbit:0,boots:0,magnet:0},upgradeChoices:[],invincible:1.2,cooldown:0,orbitClock:0,spawn:.4,dash:0,dashCooldown:0,nextEnemy:0,bossSpawned:false,bossDefeated:false,bossClock:2,flash:0});return s;}
+export const survivalDifficulty=stage=>({speed:40+Math.min(32,(stage-1)*2),spawn:Math.max(.55,.9-(stage-1)*.018),hp:1+Math.min(3,Math.floor((stage-1)/5)),boss:36+Math.min(100,(stage-1)*7)});
+export function createSurvival(s){Object.assign(s,{mayVersion:3,songPickups:0,player:{x:240,y:360,dx:0,dy:0,walk:0,facing:1},popped:0,combo:0,enemies:[],shots:[],items:[],enemyShots:[],level:1,xp:0,upgrades:{star:Math.min(3,1+Math.floor((s.stage-1)/5)),orbit:s.stage>=8?1:0,boots:0,magnet:0},upgradeChoices:[],invincible:1.2,cooldown:0,orbitClock:0,spawn:.4,dash:0,dashCooldown:0,nextEnemy:0,bossSpawned:false,bossDefeated:false,bossClock:2,flash:0});return s;}
 export function survivalAction(s,a){
  if(typeof a==='string'&&a.startsWith('upgrade:')){const key=a.slice(8);if(!s.upgradeChoices.includes(key))return;if(key==='heal')s.hearts=Math.min(3,s.hearts+1);else s.upgrades[key]++;s.upgradeChoices=[];s.event='survival-upgrade';return;}
  if(s.upgradeChoices.length)return;
@@ -22,7 +22,7 @@ export function stepSurvival(s,dt,loseLife){
  const p=s.player,d=survivalDifficulty(s.stage),comet=s.upgrades.star>=3&&s.upgrades.orbit>=2;
  for(const key of ['invincible','cooldown','orbitClock','spawn','dash','dashCooldown','bossClock','flash'])s[key]=Math.max(0,s[key]-dt);
  const walk=Math.min(dt,p.walk),speed=s.dash?620:175+s.upgrades.boots*18;p.x=clamp(p.x+p.dx*speed*walk,24,456);p.y=clamp(p.y+p.dy*speed*walk,112,530);p.walk=Math.max(0,p.walk-dt);
- if(!s.spawn&&s.enemies.length<42){spawnEnemy(s);if(s.elapsed>20&&s.enemies.length<42)spawnEnemy(s);s.spawn=d.spawn;}
+ if(!s.spawn&&s.enemies.length<42){spawnEnemy(s);if(s.elapsed>20&&s.enemies.length<42)spawnEnemy(s);s.spawn=d.spawn+(s.elapsed<12?.35*(1-s.elapsed/12):0);}
  if(!s.bossSpawned&&s.elapsed>=45){spawnEnemy(s,true);s.bossSpawned=true;s.bossClock=2;}
  const nearest=s.enemies.filter(e=>e.hp>0).sort((a,b)=>distance(a,p)-distance(b,p))[0];
  if(!s.cooldown&&nearest&&s.shots.length<64){const angle=Math.atan2(nearest.y-p.y,nearest.x-p.x);for(const turn of comet?[-.15,0,.15]:[0])s.shots.push({x:p.x,y:p.y,vx:Math.cos(angle+turn)*360,vy:Math.sin(angle+turn)*360,ttl:1.6,power:1+Math.floor(s.upgrades.star/2),comet});s.cooldown=Math.max(.16,.65-s.upgrades.star*.1);}

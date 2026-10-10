@@ -8,6 +8,7 @@ import {emptyProgress,snapshotRound,stageGoal,PROGRESS_KEY} from '../../src/arca
 
 async function readyToClear(page,kind,remaining=.02){
   const state=createGame(kind,{stage:1,seed:7}),progress=emptyProgress();
+  if(kind==='drive')state.treatLanes=7;
   state[{drive:'hits',blocks:'popped',photo:'collected',rhythm:'hits',catch:'defeated'}[kind]]=stageGoal(kind,1).target;
   if(kind==='photo')state.breadCover.fill(true);
   if(kind==='rhythm'){state.elapsed=60-remaining;state.remaining=remaining;state.notes.forEach(n=>n.status='hit');}if(kind==='catch'){state.bossSpawned=true;state.bossDefeated=1;}progress.games[kind].snapshot=snapshotRound(state);
