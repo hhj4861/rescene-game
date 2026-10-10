@@ -4,6 +4,15 @@
 
 
 
+## 전투·성장·퍼즐·영상 배치 운영 배포 — 2026-10-10
+
+- 사용자 명시 승인 후 [PR #33](https://github.com/hhj4861/rescene-game/pull/33)을 머지했다. 운영 소스 `2963d03e89171e51e7865fe739f7e056c024058d`와 검증 head `2944532`의 Git 트리 `1e260c750826a37449a6289957d65e8304f12728`이 동일하다.
+- [성공 CI 38009770870](https://github.com/hhj4861/rescene-game/actions/runs/38009770870): 단위 203개, 브라우저 502개 통과·환경 전용 5개 제외, 린트·빌드 성공. 해당 `arcade-static-site` 41개 파일을 그대로 배포했다.
+- Pages 배포 `890f3f86-8fb2-41e4-a177-0aab9435888a`: **Production / main / source `2963d03`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://890f3f86.rescene-arcade.pages.dev).
+- 펌프는 10콤보마다 미나미 야호, 설정 그룹화·같은 스타일의 곡 변경 버튼·모바일 영상 게이지 위 배치. 원이는 파이리 2단계·별이 특수공격·노래 중 네 멤버 지원을 제공한다. 메이는 자동 공격·성장·조합·보스 생존전이며 이전 보글보글은 `?may=classic`으로 보존한다. 제나는 실제 빈칸·2×2 매치·남은 퍼즐 조작으로 변경했다. 리브 영상은 모바일 하트 아래, PC 왼쪽을 유지하며 PC 일시정지 팝업은 게임 안에 제한한다.
+- 공개 파일 **41개 모두 CI 빌드와 SHA-256 일치**. 공개 주소 브라우저 **57개 모두 통과**(PC Chromium·모바일 Chromium·모바일 WebKit): 펌프 음성/설정·메이 생존전/강화/보스·제나 빈칸/2×2/저장·원이 강화/지원/원본 가창·리브 배치/PC 팝업을 확인했다. 운영 모바일·PC 리브 캡처도 시각 확인했다. YouTube 제어 검사는 API 대역이며 실기기 청음을 뜻하지 않는다.
+- 증거: 사용자 iCloud 작업 루트 `rescene-game/pr33-deploy-20261010/`의 `site/`, `ci.log`, `wrangler-deploy.log`, `wrangler-list.log`, `production-assets.json`, `public-browser.log`, `public-browser/`. 기존 Wrangler 로그인으로 배포했고 인증·도메인·자동 배포 설정과 타 세션 미추적 파일을 보존했다.
+
 ## 모바일 안내 팝오버·하단 영상 운영 배포 — 2026-10-09
 
 - 사용자 명시 승인 후 [PR #32](https://github.com/hhj4861/rescene-game/pull/32)를 머지했다. 운영 소스 `dde946ffc84a28a56342ab5c08aac8f2b441be5d`와 검증 head `70138c0`의 Git 트리가 동일하다.
