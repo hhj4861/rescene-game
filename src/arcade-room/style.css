@@ -182,3 +182,17 @@
  #app[data-game=catch] .has-video .game-controls{grid-column:1;grid-row:6;margin:0 12px 12px}
  #app[data-game=catch] .has-video .side-note{grid-column:1;grid-row:7;margin-top:8px}
 }
+
+/* The same player keeps its place and playback while mobile users reclaim room. */
+.video-toggle{display:none}
+@media(max-width:700px){
+ .has-video .pump-video-card{position:relative;padding:0!important;overflow:hidden}
+ .has-video .video-toggle{display:block;min-height:44px;width:100%;padding:10px 14px;text-align:left;background:var(--paper);font-size:13px;font-weight:700}
+ .has-video .pump-video-card[data-expanded=false] .video-panel{display:none}
+ .has-video .companion{display:none!important}
+ #app[data-game=catch] .has-video .playfield{width:min(100%,calc((100svh - 265px)*.8));margin:0 auto}
+ #app[data-game=catch] .has-video .game-controls{margin-bottom:8px}
+ #app[data-game=catch] .has-video .stage-goal{padding-top:4px}
+ #app[data-game=photo] .field-controls button:focus-visible{outline:3px solid #80518b;outline-offset:-3px;background:#fff0a044}
+ #app[data-game=photo] .bread-board:not([style]) .field-controls button[aria-pressed=true]{outline:3px solid #80518b;outline-offset:-3px;background:#fff0a044}
+}

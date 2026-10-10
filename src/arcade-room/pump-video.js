@@ -29,7 +29,7 @@ export class PumpVideo{
    this.player=new YT.Player(mount,{width:'100%',height:'100%',videoId:this.song.videoId,playerVars:{playsinline:1,controls:1,rel:0,origin:window.location.origin},events:{
     onReady:()=>{if(this.disposed)return;clearTimeout(this.timer);this.ready=true;this.player.getIframe().title=`RESCENE · ${this.song.title} 공식 영상`;this.volume();if(this.wanted)this.play(this.position);},
     onStateChange:e=>{if(this.disposed)return;if(e.data===1&&!this.wanted){this.player.pauseVideo();return;}if(e.data===1)this.report(`재생 중 · ${this.song.title}`);else if(e.data===3)this.report('영상 불러오는 중…');else if(e.data===2&&this.wanted)this.report('영상 일시정지 · 영상의 ▶ 버튼으로 이어가요');},
-    onAutoplayBlocked:()=>{if(!this.disposed)this.report('영상의 ▶ 버튼을 눌러 시작해 주세요.');},
+    onAutoplayBlocked:()=>{if(!this.disposed){const card=this.host.closest('.pump-video-card');if(card){card.dataset.expanded='true';const toggle=card.querySelector('[data-video-toggle]');toggle?.setAttribute('aria-expanded','true');if(toggle)toggle.textContent='영상 접기 ▴';}this.report('영상의 ▶ 버튼을 눌러 시작해 주세요.');}},
     onError:()=>{if(!this.disposed){this.wanted=false;this.report('공식 영상을 재생하지 못했어요. 다시 켜거나 다른 곡을 골라 주세요.',true);}}
    }});
   }catch{if(!this.disposed)this.report('공식 영상을 불러오지 못했어요. 연결을 확인하고 다시 켜 주세요.',true);}
@@ -53,4 +53,4 @@ export class PumpVideo{
  pause(){this.wanted=false;if(this.ready)this.player.pauseVideo();this.report('공식 영상 일시정지');}
  destroy(){this.disposed=true;this.wanted=false;clearTimeout(this.timer);this.player?.destroy();this.player=null;this.host.replaceChildren();}
 }
-export function videoCard(song){return `<section class="pump-video-card" aria-label="${song?song.title+' 공식 영상':'리브 아이템 사운드트랙'}"><div class="video-panel" id="pump-video-panel"><div class="pump-video-host" id="pump-video"><span>${song?'♪ 공식 영상은 재생을 누르면 준비돼요':'♪ 곡 아이템을 먹으면 공식 영상과 특수공격이 시작돼요'}</span></div><p><b data-video-title>${song?'RESCENE · '+song.title:'아이템 사운드트랙'}</b><a ${song?`href="https://www.youtube.com/watch?v=${song.videoId}"`:'hidden'} target="_blank" rel="noopener noreferrer">YouTube에서 보기 ↗</a></p></div></section>`;}
+export function videoCard(song){return `<section class="pump-video-card" data-expanded="false" aria-label="${song?song.title+' 공식 영상':'리브 아이템 사운드트랙'}"><button class="video-toggle" data-video-toggle aria-expanded="false" aria-controls="pump-video-panel">영상 펼치기 ▾</button><div class="video-panel" id="pump-video-panel"><div class="pump-video-host" id="pump-video"><span>${song?'♪ 공식 영상은 재생을 누르면 준비돼요':'♪ 곡 아이템을 먹으면 공식 영상과 특수공격이 시작돼요'}</span></div><p><b data-video-title>${song?'RESCENE · '+song.title:'아이템 사운드트랙'}</b><a ${song?`href="https://www.youtube.com/watch?v=${song.videoId}"`:'hidden'} target="_blank" rel="noopener noreferrer">YouTube에서 보기 ↗</a></p></div></section>`;}
