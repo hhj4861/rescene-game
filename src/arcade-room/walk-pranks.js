@@ -9,6 +9,7 @@ export function validPranks(s){
  return Number.isInteger(s.prankIndex)&&s.prankIndex>=0&&s.prankIndex<=4&&(p===null||p&&s.prankIndex>0&&p.member===PRANK_MEMBERS[(s.prankIndex-1+(s.stage-1)%4)%4]&&Number.isFinite(p.warning)&&p.warning>=0&&p.warning<=1.5&&Number.isFinite(p.time)&&p.time>0&&p.time<=4&&Number.isInteger(p.lane)&&p.lane>=0&&p.lane<3);
 }
 export function stepPranks(s,dt){
+ if(s.songItemTime){s.prank=null;while(s.prankIndex<4&&s.elapsed>=10+s.prankIndex*15)s.prankIndex++;return;}
  if(s.prank){
   const p=s.prank;
   if(p.warning>0){p.warning=Math.max(0,p.warning-dt);if(p.warning===0&&p.member==='zena')s.objects.push({id:s.nextObject++,lane:p.lane,y:110,kind:'bread',hp:1});}

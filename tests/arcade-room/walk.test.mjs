@@ -49,3 +49,23 @@ test('combat snapshots restore deterministic projectiles and reject malformed co
  for(const patch of [{transformTime:21},{attackCooldown:1},{defeated:-1},{shots:[{x:240,y:300,kind:'unknown'}]},{objects:[{id:1,lane:1,y:180,kind:'monster',hp:0}]}])assert.equal(restoreRound({...saved,...patch}),null);
  const legacy=snapshotRound(createGame('drive',{seed:7}));for(const key of ['transformTime','attackCooldown','shots','effects','defeated'])delete legacy[key];assert.equal(restoreRound(legacy).transformTime,0);
 });
+
+
+test('three extra Charmanders evolve the active transformation, expire cleanly and restore old saves',()=>{
+ const s=createGame('drive',{seed:7});pickup(s,'charmander');assert.equal(s.firePickups,0);
+ for(let i=1;i<=3;i++){pickup(s,'charmander');assert.equal(s.firePickups,i);assert.equal(s.fireLevel,i===3?2:1);}
+ s.shots=[];s.attackCooldown=0;gameAction(s,'attack');assert.equal(s.shots.length,3);assert.ok(s.shots.every(b=>b.kind==='blaze'));
+ s.objects=[0,1,2].map(lane=>({id:lane,lane,y:400,kind:'monster',hp:5}));stepGame(s,.1);assert.equal(s.defeated,3);assert.ok(restoreRound(snapshotRound(s)));
+ s.transformTime=.01;stepGame(s,.025);assert.equal(s.fireLevel,1);assert.equal(s.firePickups,0);
+ const legacy=snapshotRound(createGame('drive'));for(const key of ['firePickups','fireLevel','byeolTreats','byeolPower','allyShotCooldown','allyClearCooldown'])delete legacy[key];assert.equal(restoreRound(legacy).fireLevel,1);
+ for(const patch of [{fireLevel:3},{fireLevel:2,firePickups:0},{firePickups:4},{byeolTreats:3},{byeolPower:7},{allyClearCooldown:5}])assert.equal(restoreRound({...legacy,...patch}),null);
+});
+test('every three treats triggers six seconds of powerful Byeol homing without needing a carry item',()=>{
+ const s=createGame('drive',{seed:7});pickup(s,'treat');pickup(s,'treat');assert.equal(s.byeolPower,0);pickup(s,'treat');assert.equal(s.byeolTreats,0);assert.equal(s.byeolPower,6);
+ s.objects=[{id:5,lane:0,y:360,kind:'monster',hp:4}];s.spawn=10;stepGame(s,.4);assert.equal(s.defeated,1);assert.ok(restoreRound(snapshotRound(s)));s.objects=[];s.byeolPower=.01;stepGame(s,.025);assert.equal(s.byeolPower,0);
+});
+test('song helpers attack, clear obstacles, accelerate movement, attract treats and stop with the song',()=>{
+ const s=createGame('drive',{seed:7});pickup(s,'song');s.objects=[{id:1,lane:0,y:340,kind:'monster',hp:2},{id:2,lane:2,y:200,kind:'log'},{id:3,lane:2,y:380,kind:'treat'}];s.spawn=10;stepGame(s,.025);
+ assert.ok(s.shots.some(b=>b.kind==='heart'));assert.equal(s.objects.some(o=>o.kind==='log'),false);assert.equal(s.objects.find(o=>o.kind==='treat').lane,s.lane);assert.ok(restoreRound(snapshotRound(s)));
+ gameAction(s,'left');const x=s.x;stepGame(s,.025);assert.ok(x-s.x>21.25);s.objects=[];s.shots=[];s.songItemTime=.01;stepGame(s,.025);assert.equal(s.songItemTime,0);s.objects=[{id:4,lane:2,y:200,kind:'log'},{id:5,lane:2,y:380,kind:'treat'}];stepGame(s,.025);assert.equal(s.objects.length,2);assert.equal(s.objects.find(o=>o.kind==='treat').lane,2);assert.equal(s.shots.length,0);
+});

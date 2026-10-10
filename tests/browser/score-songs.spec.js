@@ -14,7 +14,7 @@ async function setup(page,kind,{points=4990,clear=false}={}){
  if(clear&&kind==='catch'){s.bossSpawned=true;s.defeated=stageGoal(kind,1).target-1;s.enemies[0].boss=true;}if(clear&&kind==='photo'){s.breadCover.fill(true);s.breadCover[6]=false;};if(kind==='rhythm'){s.elapsed=59.95;s.remaining=.05;}
  p.games[kind].songs={points,claimed:Math.floor(points/5000)*5000,roundHigh:0};p.games[kind].snapshot=snapshotRound(s);
  await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);const Native=window.Audio;window.songClips=[];window.Audio=class extends Native{constructor(src){super(src);window.songClips.push({src,audio:this});}};},{key:PROGRESS_KEY,value:JSON.stringify(p)});
- await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.locator(`[data-start="${kind}"].start`).click();if(kind==='rhythm')await page.locator('[data-song-resume]').click();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-resume]').click();if(kind==='rhythm')await expect(page.locator('#music-status')).toContainText('재생 중');return {...s,testClear:clear};
+ await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./?may=classic');await page.locator(`[data-start="${kind}"].start`).click();if(kind==='rhythm')await page.locator('[data-song-resume]').click();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-resume]').click();if(kind==='rhythm')await expect(page.locator('#music-status')).toContainText('재생 중');return {...s,testClear:clear};
 }
 async function score(page,s){
  if(s.kind==='drive')await page.keyboard.press('2');
@@ -61,7 +61,7 @@ test('clear speech plays first and the singing gift starts only on request',asyn
  await page.route('**/voices/woni-song.mp3*',r=>r.abort());const s=await setup(page,'drive',{points:9990,clear:true});await score(page,s);expect(await page.evaluate(()=>window.songClips.map(c=>c.src))).toEqual([VOICES.woni.file]);await page.locator('[data-song-replay]').click();await expect(page.locator('#gift-status')).toContainText('다시 듣기');await page.unroute('**/voices/woni-song.mp3*');await page.locator('[data-song-replay]').click();await expect.poll(()=>page.evaluate(()=>window.songClips.at(-1)?.audio.currentTime||0)).toBeGreaterThan(0);
 });
 test('each score-song recording is audible, distinct and has the expected source duration',async({page})=>{
- await page.goto('./');const signals=await page.evaluate(async clips=>{
+ await page.goto('./?may=classic');const signals=await page.evaluate(async clips=>{
  const c=new (window.AudioContext||window.webkitAudioContext)();try{return await Promise.all(clips.map(async clip=>{const r=await window.fetch(clip.file);if(!r.ok)throw Error(clip.file);const bytes=await r.arrayBuffer(),hash=Array.from(new Uint8Array(await window.crypto.subtle.digest('SHA-256',bytes))).join(','),b=await c.decodeAudioData(bytes);let power=0;for(const x of b.getChannelData(0))power+=x*x;return {file:clip.file,duration:b.duration,rms:Math.sqrt(power/b.length),hash};}));}finally{await c.close();}
  },Object.values(SCORE_SONGS).filter(s=>s.file));expect(new Set(signals.map(s=>s.hash)).size).toBe(4);for(const s of signals){expect(s.duration).toBeGreaterThan(1);if(s.file.includes('woni-song')){expect(s.duration).toBeGreaterThan(40);expect(s.duration).toBeLessThan(42);}else if(/may-song|zena-song/.test(s.file))expect(s.duration).toBeCloseTo(60,1);else expect(s.duration).toBeLessThan(6);expect(s.rms).toBeGreaterThan(.003);}
 });

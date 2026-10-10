@@ -1,3 +1,4 @@
+import {createSurvival,stepSurvival,survivalAction} from './may-survival.js';
 import {bakerySize,hiddenBreadAreas,breadMoves,foundBread,breadHunt} from './bakery-hunt.js';
 import {collectSongTime,tickSongTime,SONG_ITEM_SECONDS} from './song-time.js';
 import {pumpNoteAt} from './pump-input.js';
@@ -39,20 +40,20 @@ export function createGame(kind,options={}){
  const s={schema:3,kind,stage:validStage(options.stage)?options.stage:1,elapsed:0,remaining:roundDuration(kind),score:0,hearts:Number.isInteger(options.hearts)?clamp(options.hearts,1,3):3,ended:false,event:null,damageCooldown:0,itemPickups:0,songTimeBonus:0,songItemTime:clamp(Number(options.songItemTime)||0,0,SONG_ITEM_SECONDS[kind]),rngState:(options.seed??Math.floor(Math.random()*4294967296))>>>0};
  s.random=options.random||(()=>{s.rngState=(Math.imul(s.rngState,1664525)+1013904223)>>>0;return s.rngState/4294967296;});
  if(kind==='drive')Object.assign(s,createWalk());
- if(kind==='blocks')createMay(s);
- if(kind==='photo'){Object.assign(s,{bakeryVersion:2,breadCover:Array(stageBoardSize(s.stage)**2).fill(false),songDrops:Number.isSafeInteger(options.songDrops)&&options.songDrops>=0?options.songDrops:0,songPickups:0,rollingPins:1,breadCharge:0,itemArmed:false,board:playableBoard(s),selected:-1,collected:0,combo:0,moves:breadMoves(s.stage),shuffles:2,flash:0,clearedCells:[],hint:[]});s.hint=availableSwap(s.board)||[];}
+ if(kind==='blocks')(options.survival?createSurvival:createMay)(s);
+ if(kind==='photo'){Object.assign(s,{bakeryVersion:3,breadCover:Array(stageBoardSize(s.stage)**2).fill(false),songDrops:Number.isSafeInteger(options.songDrops)&&options.songDrops>=0?options.songDrops:0,songPickups:0,rollingPins:1,breadCharge:0,itemArmed:false,board:playableBoard(s),selected:-1,collected:0,combo:0,moves:breadMoves(s.stage),shuffles:2,flash:0,clearedCells:[],hint:[]});s.hint=availableSwap(s.board)||[];}
  if(kind==='rhythm')Object.assign(s,{gauge:50,hearts:INITIAL_LIVES,songId:pumpSong(options.songId).id,beatShift:clamp(Number(options.beatShift)||0,-.6,.6),notes:makeRhythmNotes(s.stage,options.songId,clamp(Number(options.beatShift)||0,-.6,.6)),offset:clamp(Number(options.offsetMs)||0,-200,200)/1000,hits:0,misses:0,combo:0,bestCombo:0,lastTaps:Array(5).fill(-1),feedback:Array(5).fill(''),glows:Array(5).fill(0)});
  if(kind==='catch')Object.assign(s,createRunner(options));
  return s;
 }
-export function matches(board){const size=boardSize({board}),found=new Set();for(let row=0;row<size;row++)for(let col=0;col<size;col++){const i=row*size+col,color=board[i]%10;if(!color)continue;if(col<size-2&&board[i+1]%10===color&&board[i+2]%10===color){let c=col;while(c<size&&board[row*size+c]%10===color)found.add(row*size+c++);}if(row<size-2&&board[i+size]%10===color&&board[i+size*2]%10===color){let r=row;while(r<size&&board[r*size+col]%10===color)found.add(r++*size+col);}}return [...found];}
+export function matches(board){const size=boardSize({board}),found=new Set();for(let row=0;row<size;row++)for(let col=0;col<size;col++){const i=row*size+col,color=board[i]%10;if(!color)continue;if(row<size-1&&col<size-1&&board[i+1]%10===color&&board[i+size]%10===color&&board[i+size+1]%10===color)for(const j of [i,i+1,i+size,i+size+1])found.add(j);if(col<size-2&&board[i+1]%10===color&&board[i+2]%10===color){let c=col;while(c<size&&board[row*size+c]%10===color)found.add(row*size+c++);}if(row<size-2&&board[i+size]%10===color&&board[i+size*2]%10===color){let r=row;while(r<size&&board[r*size+col]%10===color)found.add(r++*size+col);}}return [...found];}
 const adjacent=(a,b,size)=>Number.isInteger(a)&&Number.isInteger(b)&&a>=0&&a<size*size&&b>=0&&b<size*size&&(Math.abs(a-b)===size||Math.floor(a/size)===Math.floor(b/size)&&Math.abs(a-b)===1);
-export function availableSwap(board){const size=boardSize({board});for(let i=0;i<board.length;i++)for(const j of [i+1,i+size]){if(!adjacent(i,j,size))continue;const b=[...board];[b[i],b[j]]=[b[j],b[i]];if(matches(b).length)return [i,j];}return null;}
-function playableBoard(s){const size=s.board?boardSize(s):stageBoardSize(s.stage);for(let attempt=0;attempt<40;attempt++){const board=[];for(let i=0;i<size*size;i++){const colors=[1,2,3,4,5].filter(c=>!(i%size>=2&&board[i-1]===c&&board[i-2]===c)&&!(i>=size*2&&board[i-size]===c&&board[i-size*2]===c));board.push(colors[Math.floor(s.random()*colors.length)]);}if(availableSwap(board))return board;}const board=Array.from({length:size*size},(_,i)=>1+(i%size+Math.floor(i/size)*2)%5);board[0]=1;board[1]=2;board[2]=1;board[size+1]=1;return board;}
+export function availableSwap(board){const size=boardSize({board});for(let i=0;i<board.length;i++)for(const j of [i+1,i+size]){if(!adjacent(i,j,size)||!board[i]||!board[j])continue;const b=[...board];[b[i],b[j]]=[b[j],b[i]];if(matches(b).length)return [i,j];}return null;}
+function playableBoard(s){const size=s.board?boardSize(s):stageBoardSize(s.stage);for(let attempt=0;attempt<40;attempt++){const board=[];for(let i=0;i<size*size;i++){const colors=[1,2,3,4,5].filter(c=>!(i%size>=2&&board[i-1]===c&&board[i-2]===c)&&!(i>=size*2&&board[i-size]===c&&board[i-size*2]===c)&&!(i>=size&&i%size&&board[i-1]===c&&board[i-size]===c&&board[i-size-1]===c));board.push(colors[Math.floor(s.random()*colors.length)]);}if(availableSwap(board))return board;}const board=Array.from({length:size*size},(_,i)=>1+(i%size+Math.floor(i/size)*2)%5);board[0]=1;board[1]=2;board[2]=1;board[size+1]=1;return board;}
 // Resolve the deterministic board once, then replay each swap/pop/fall in order.
 // A saved game keeps the settled board; cosmetic frames never alter its RNG.
 export function swapBread(s,a,b){
- if(s.ended||s.flash||!adjacent(a,b,boardSize(s)))return false;
+ if(s.ended||s.flash||s.moves<=0||!s.board[a]||!s.board[b]||!adjacent(a,b,boardSize(s)))return false;
  const frames=[],before=[...s.board];
  frames.push({kind:'swap',duration:.16,board:before,a,b});
  [s.board[a],s.board[b]]=[s.board[b],s.board[a]];
@@ -61,28 +62,23 @@ export function swapBread(s,a,b){
  s.moves--;return resolveBread(s,frames,found,b,true);
 }
 function resolveBread(s,frames,found,b=-1,earn=true){
- const size=boardSize(s);s.combo=0;s.clearedCells=[];
+ const size=boardSize(s);void b;s.combo=0;s.clearedCells=[];
  while(found.length&&s.combo<12){
   s.combo++;const remove=new Set(found),queue=[...found];
   for(let n=0;n<queue.length;n++){const i=queue[n];if(s.board[i]>10)for(let k=0;k<size;k++)for(const j of [Math.floor(i/size)*size+k,k*size+i%size])if(!remove.has(j)){remove.add(j);queue.push(j);}}
-  const special=earn&&s.combo===1&&found.length>=4?(found.includes(b)?b:found[0]):-1,color=special>=0?s.board[special]%10:0;
-  if(special>=0)remove.delete(special);
+  for(const i of [...remove])if(!s.board[i])remove.delete(i);
   frames.push({kind:'pop',duration:.24,board:[...s.board],removed:[...remove],combo:s.combo});
   for(const i of remove)s.breadCover[i]=true;
   s.collected+=remove.size;s.score+=remove.size*30*s.combo;s.clearedCells.push(...remove);
-  if(!s.songItemTime&&[...remove].some(i=>s.board[i]>10))s.songDrops++;
-  for(const i of remove)s.board[i]=0;if(special>=0)s.board[special]=color+10;
-  const fromRows=Array(size*size);
-  for(let col=0;col<size;col++){
-   const values=[];for(let row=size-1;row>=0;row--)if(s.board[row*size+col])values.push({value:s.board[row*size+col],row});
-   const missing=size-values.length;
-   for(let row=size-1;row>=0;row--){const item=values[size-1-row],i=row*size+col;s.board[i]=item?.value||1+Math.floor(s.random()*5);fromRows[i]=item?.row??row-missing;}
-  }
-  frames.push({kind:'fall',duration:.42,board:[...s.board],fromRows,combo:s.combo});found=matches(s.board);
+  if(!s.songItemTime&&([ ...remove].some(i=>s.board[i]>10)||earn&&remove.size>=4))s.songDrops++;
+  for(const i of remove)s.board[i]=0;
+  found=matches(s.board);
  }
- if(found.length||!availableSwap(s.board)){s.board=playableBoard(s);frames.push({kind:'fall',duration:.42,board:[...s.board],fromRows:Array.from({length:size*size},(_,i)=>Math.floor(i/size)-size),combo:0});}
+ // Cleared squares stay empty. No replacement tiles, falling tiles or RNG refills.
+ if(earn){s.breadCharge++;if(s.breadCharge>=3&&s.rollingPins<2){s.breadCharge-=3;s.rollingPins++;s.itemPickups++;}}
+ if(!availableSwap(s.board)&&s.board.some(Boolean)&&!s.rollingPins)s.rollingPins=1;
  if(earn&&s.combo>1){s.breadCharge+=s.combo-1;while(s.breadCharge>=3&&s.rollingPins<2){s.breadCharge-=3;s.rollingPins++;s.itemPickups++;}s.breadCharge=Math.min(3,s.breadCharge);}
- s.hint=availableSwap(s.board)||[];s.breadFrames=frames;s.flash=frames.reduce((sum,f)=>sum+f.duration,0);s.selected=-1;s.event=s.combo>1?'bread-chain':'bread-match';return true;
+ s.breadCharge=Math.min(3,s.breadCharge);s.hint=availableSwap(s.board)||[];s.breadFrames=frames;s.flash=frames.reduce((sum,f)=>sum+f.duration,0);s.selected=-1;s.event=s.combo>1?'bread-chain':'bread-match';return true;
 }
 export function breadFrame(s){
  if(!s.flash||!s.breadFrames?.length)return null;
@@ -90,12 +86,17 @@ export function breadFrame(s){
  for(const frame of s.breadFrames){if(t<frame.duration)return {...frame,progress:Math.max(0,t/frame.duration)};t-=frame.duration;}
  return null;
 }
-function stepBread(s,dt){s.flash=Math.max(0,s.flash-dt);if(!s.flash){s.breadFrames=null;if(!s.moves&&foundBread(s)<breadHunt(s).length)failRound(s,'moves');}}
-function breadAction(s,a){if(a==='song-pickup'){if(s.songDrops&&collectSongTime(s)){s.songDrops--;s.songPickups++;s.itemPickups++;s.event='bread-song';}return;}if(s.flash)return;if(a==='rolling-pin'){if(s.rollingPins)s.itemArmed=!s.itemArmed;return;}if(s.itemArmed&&Number.isInteger(a)&&a>=0&&a<s.board.length){s.rollingPins--;s.itemArmed=false;resolveBread(s,[],Array.from({length:boardSize(s)},(_,i)=>Math.floor(a/boardSize(s))*boardSize(s)+i),-1,false);s.event='bread-item';return;}if(a&&typeof a==='object'){swapBread(s,a.from,a.to);return;}if(a==='shuffle'){if(!s.shuffles)return;s.board=playableBoard(s);s.shuffles--;s.selected=-1;s.hint=availableSwap(s.board)||[];s.event='bread-shuffle';}else if(Number.isInteger(a)&&a>=0&&a<s.board.length){if(adjacent(s.selected,a,boardSize(s)))swapBread(s,s.selected,a);else s.selected=a;}}
+function shuffleRemaining(s){
+ const cells=s.board.map((value,i)=>value?i:-1).filter(i=>i>=0),values=cells.map(i=>s.board[i]);
+ for(let attempt=0;attempt<40;attempt++){for(let i=values.length-1;i>0;i--){const j=Math.floor(s.random()*(i+1));[values[i],values[j]]=[values[j],values[i]];}for(let i=0;i<cells.length;i++)s.board[cells[i]]=values[i];if(!matches(s.board).length&&availableSwap(s.board))break;}
+ if(matches(s.board).length)resolveBread(s,[],matches(s.board),-1,false);if(!availableSwap(s.board)&&s.board.some(Boolean)&&!s.rollingPins)s.rollingPins=1;
+}
+function stepBread(s,dt){s.flash=Math.max(0,s.flash-dt);if(!s.flash){s.breadFrames=null;if(!s.moves&&!s.rollingPins&&foundBread(s)<breadHunt(s).length)failRound(s,'moves');}}
+function breadAction(s,a){if(a==='song-pickup'){if(s.songDrops&&collectSongTime(s)){s.songDrops--;s.songPickups++;s.itemPickups++;s.event='bread-song';}return;}if(s.flash)return;if(a==='rolling-pin'){if(s.rollingPins)s.itemArmed=!s.itemArmed;return;}if(s.itemArmed&&Number.isInteger(a)&&a>=0&&a<s.board.length){s.rollingPins--;s.itemArmed=false;resolveBread(s,[],Array.from({length:boardSize(s)},(_,i)=>Math.floor(a/boardSize(s))*boardSize(s)+i),-1,false);s.event='bread-item';return;}if(a&&typeof a==='object'){swapBread(s,a.from,a.to);return;}if(a==='shuffle'){if(!s.shuffles)return;shuffleRemaining(s);s.shuffles--;s.selected=-1;s.hint=availableSwap(s.board)||[];s.event='bread-shuffle';}else if(Number.isInteger(a)&&a>=0&&a<s.board.length&&s.board[a]){if(adjacent(s.selected,a,boardSize(s)))swapBread(s,s.selected,a);else s.selected=a;}}
 export function tapRhythm(s,action){const targeted=action&&typeof action==='object',note=targeted?pumpNoteAt(s,action.x,action.y,action.height):null,lane=targeted?note?.lane:action;if(s.ended||!Number.isInteger(lane)||lane<0||lane>4||s.elapsed-s.lastTaps[lane]<.08)return;s.lastTaps[lane]=s.elapsed;const waiting=s.notes.filter(n=>n.lane===lane&&n.status==='waiting').sort((a,b)=>Math.abs(a.at+s.offset-s.elapsed)-Math.abs(b.at+s.offset-s.elapsed)),n=targeted?note:waiting[0],delta=n?Math.abs(n.at+s.offset-s.elapsed):Infinity;s.glows[lane]=.25;if(delta>rhythmWindow(s)){s.combo=0;s.feedback[lane]='WAIT';s.event='rhythm-early';return;}n.status='hit';s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);s.gauge=Math.min(100,s.gauge+2+Math.min(4,s.combo/10));const perfect=delta<.075;s.feedback[lane]=perfect?'PERFECT':'GOOD';s.score+=(perfect?100:60)+Math.min(10,s.combo)*5;s.event=perfect?'rhythm-perfect':'rhythm-good';}
 function stepPump(s,dt){s.glows=s.glows.map(n=>Math.max(0,n-dt));for(const n of s.notes)if(n.status==='waiting'&&s.elapsed-s.offset-n.at>rhythmWindow(s)){n.status='miss';s.misses++;s.combo=0;s.feedback[n.lane]='MISS';s.glows[n.lane]=.25;s.event='rhythm-miss';s.gauge=Math.max(0,s.gauge-12);if(!s.gauge){s.hearts=0;s.ended=true;s.endReason='gauge';return;}}}
-export function stepGame(s,dt){if(s.ended||!Number.isFinite(dt)||dt<=0)return;s.event=null;if(s.kind==='photo'&&foundBread(s)>=breadHunt(s).length){const advance=Math.min(dt,Math.max(0,s.remaining-.001));s.elapsed+=advance;s.remaining=roundBudget(s)-s.elapsed;tickSongTime(s,advance);stepBread(s,dt);return;}let remaining=Math.min(dt,s.remaining);while(remaining>1e-9&&!s.ended){const step=Math.min(.025,remaining);s.damageCooldown=Math.max(0,s.damageCooldown-step);s.elapsed+=step;tickSongTime(s,step);s.remaining=Math.max(0,roundBudget(s)-s.elapsed);remaining-=step;({drive:(s,dt)=>stepWalk(s,dt,stageSpeed(s),loseLife),blocks:(s,dt)=>stepMay(s,dt,loseLife,stageTarget(s.kind,s.stage)),photo:stepBread,rhythm:stepPump,catch:(s,dt)=>stepRunner(s,dt,stageSpeed(s),loseLife,stageTarget(s.kind,s.stage))})[s.kind](s,step);}if(!s.ended&&s.remaining<1e-7){s.remaining=0;s.elapsed=roundBudget(s);if(s.kind==='rhythm')s.ended=true;else failRound(s,'timeout');}}
-export function gameAction(s,action){if(s.ended)return;({drive:walkAction,blocks:mayAction,photo:breadAction,rhythm:tapRhythm,catch:runnerAction})[s.kind](s,action);}
+export function stepGame(s,dt){if(s.ended||s.mayVersion===3&&s.upgradeChoices.length||!Number.isFinite(dt)||dt<=0)return;s.event=null;if(s.kind==='photo'&&foundBread(s)>=breadHunt(s).length){const advance=Math.min(dt,Math.max(0,s.remaining-.001));s.elapsed+=advance;s.remaining=roundBudget(s)-s.elapsed;tickSongTime(s,advance);stepBread(s,dt);return;}let remaining=Math.min(dt,s.remaining);while(remaining>1e-9&&!s.ended&&!(s.mayVersion===3&&s.upgradeChoices.length)){const step=Math.min(.025,remaining);s.damageCooldown=Math.max(0,s.damageCooldown-step);s.elapsed+=step;tickSongTime(s,step);s.remaining=Math.max(0,roundBudget(s)-s.elapsed);remaining-=step;({drive:(s,dt)=>stepWalk(s,dt,stageSpeed(s),loseLife),blocks:(s,dt)=>s.mayVersion===3?stepSurvival(s,dt,loseLife):stepMay(s,dt,loseLife,stageTarget(s.kind,s.stage)),photo:stepBread,rhythm:stepPump,catch:(s,dt)=>stepRunner(s,dt,stageSpeed(s),loseLife,stageTarget(s.kind,s.stage))})[s.kind](s,step);}if(!s.ended&&s.remaining<1e-7){s.remaining=0;s.elapsed=roundBudget(s);if(s.kind==='rhythm')s.ended=true;else failRound(s,'timeout');}}
+export function gameAction(s,action){if(s.ended)return;({drive:walkAction,blocks:(s,a)=>s.mayVersion===3?survivalAction(s,a):mayAction(s,a),photo:breadAction,rhythm:tapRhythm,catch:runnerAction})[s.kind](s,action);}
 export const RECORD_KEY='rescene.small-arcade.v1';
 export function readRecords(storage){let data;try{data=JSON.parse(storage?.getItem(RECORD_KEY));}catch{/* Optional storage. */}return Object.fromEntries(GAME_IDS.map(k=>[k,Number.isSafeInteger(data?.[k])&&data[k]>=0?data[k]:0]));}
 export function saveRecord(storage,kind,score){const records=readRecords(storage);if(!GAME_IDS.includes(kind)||!Number.isSafeInteger(score)||score<0)return {records,saved:false};records[kind]=Math.max(records[kind],score);try{storage.setItem(RECORD_KEY,JSON.stringify(records));return {records,saved:true};}catch{return {records,saved:false};}}

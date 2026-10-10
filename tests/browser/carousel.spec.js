@@ -11,7 +11,7 @@ async function expectCentered(page,id){
 }
 
 test('member tabs center the actual cabinet at wide, narrow and mobile widths',async({page},info)=>{
- await page.goto('./');await expect(page.locator('[data-start="drive"].start')).toBeEnabled();
+ await page.goto('./?may=classic');await expect(page.locator('[data-start="drive"].start')).toBeEnabled();
  for(const width of [2200,1440,1065,700,390,320]){
   await page.setViewportSize({width,height:1000});
   for(const id of ['blocks','catch','photo','rhythm','drive']){
@@ -23,7 +23,7 @@ test('member tabs center the actual cabinet at wide, narrow and mobile widths',a
 });
 
 test('cabinet picker supports buttons, keyboard and remembers the game on return',async({page},info)=>{
- await page.goto('./');await expect(page.locator('[data-start="drive"].start')).toBeEnabled();
+ await page.goto('./?may=classic');await expect(page.locator('[data-start="drive"].start')).toBeEnabled();
  await expect(page.locator('[data-slide-status]')).toHaveText('1 / 5 · 미나미');await expect(page.getByRole('button',{name:'이전 게임',exact:true})).toBeDisabled();
  await page.getByRole('button',{name:'다음 게임',exact:true}).click();await expect(page.locator('[data-slide="drive"]')).toHaveAttribute('aria-current','true');
  await page.locator('.machines').focus();await page.keyboard.press('End');await expect(page.locator('[data-slide-status]')).toHaveText('5 / 5 · 리브');await expect(page.getByRole('button',{name:'다음 게임',exact:true})).toBeDisabled();
@@ -33,13 +33,13 @@ test('cabinet picker supports buttons, keyboard and remembers the game on return
  const fits=await page.locator('#machine-photo').evaluate(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=document.documentElement.clientWidth;});expect(fits).toBe(true);
 });
 test('horizontal scrolling selects a cabinet without launching it or overflowing the page',async({page},info)=>{
- await page.setViewportSize({width:320,height:720});await page.emulateMedia({reducedMotion:'reduce'});await page.goto('./');await expect(page.locator('[data-start="drive"].start')).toBeEnabled();
+ await page.setViewportSize({width:320,height:720});await page.emulateMedia({reducedMotion:'reduce'});await page.goto('./?may=classic');await expect(page.locator('[data-start="drive"].start')).toBeEnabled();
  await page.locator('.machines').evaluate(e=>e.scrollBy({left:e.querySelector('.machine').clientWidth+14,behavior:'instant'}));
  await expect(page.locator('[data-slide-status]')).toHaveText('2 / 5 · 원이');await expect(page.locator('#app')).toHaveAttribute('data-state','home');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);await page.screenshot({path:info.outputPath('carousel-small.png')});
 });
 test('native mobile swipe changes the selected cabinet',async({page,context,isMobile,browserName})=>{
- test.skip(!isMobile||browserName!=='chromium','CDP touch injection is Chromium-only');await page.goto('./');await expect(page.locator('[data-start="drive"].start')).toBeEnabled();
+ test.skip(!isMobile||browserName!=='chromium','CDP touch injection is Chromium-only');await page.goto('./?may=classic');await expect(page.locator('[data-start="drive"].start')).toBeEnabled();
  const box=await page.locator('.cabinet-screen').first().boundingBox(),y=box.y+box.height/2,session=await context.newCDPSession(page);
  await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:310,y}]});
  for(let x=290;x>=60;x-=23){await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y}]});await page.waitForTimeout(25);}
@@ -47,7 +47,7 @@ test('native mobile swipe changes the selected cabinet',async({page,context,isMo
 });
 
 test('resizing and leaving the picker preserve selection without observer errors',async({page})=>{
- const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await expect(page.locator('[data-start="rhythm"].start')).toBeEnabled();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-slide="rhythm"]').click();
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./?may=classic');await expect(page.locator('[data-start="rhythm"].start')).toBeEnabled();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-slide="rhythm"]').click();
  for(const [width,height] of [[390,844],[844,390],[320,568]]){
   await page.setViewportSize({width,height});await page.clock.runFor(100);await expect(page.locator('[data-slide-status]')).toHaveText('1 / 5 · 미나미');
   await page.locator('[data-start="rhythm"].start').click();await enterPump(page);if(await page.locator('#app').getAttribute('data-state')!=='paused')await page.locator('[data-pause]').click();await page.locator('[data-leave]').click();await page.clock.runFor(100);await expect(page.locator('[data-slide-status]')).toHaveText('1 / 5 · 미나미');

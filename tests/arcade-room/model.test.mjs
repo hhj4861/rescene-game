@@ -9,8 +9,8 @@ test('bread swaps require an adjacent match and charge a move only on success',(
  const s=createGame('photo',{seed:7}),before=[...s.board];assert.equal(swapBread(s,0,35),false);assert.deepEqual(s.board,before);assert.equal(s.moves,36);
  const pair=availableSwap(s.board);assert.ok(pair);assert.equal(swapBread(s,...pair),true);assert.equal(s.moves,35);assert.ok(s.collected>=3);assert.ok(availableSwap(s.board));
 });
-test('bread four-match creates a special bread and shuffle has limited charges',()=>{
- const s=createGame('photo',{seed:1});s.board=[1,1,2,1,3,4,2,3,1,4,5,2,3,4,5,2,1,3,4,5,2,3,4,1,5,2,3,4,1,2,2,3,4,1,2,3];assert.equal(swapBread(s,2,8),true);assert.ok(s.board.some(x=>x>10));
+test('bread four-match removes every matched tile and awards a song item and shuffle has limited charges',()=>{
+ const s=createGame('photo',{seed:1});s.board=[1,1,2,1,3,4,2,3,1,4,5,2,3,4,5,2,1,3,4,5,2,3,4,1,5,2,3,4,1,2,2,3,4,1,2,3];assert.equal(swapBread(s,2,8),true);assert.ok(s.songDrops>0);assert.ok(s.board.filter(v=>v===0).length>=4);
  s.flash=0;gameAction(s,'shuffle');gameAction(s,'shuffle');const board=[...s.board];gameAction(s,'shuffle');assert.deepEqual(s.board,board);assert.equal(s.shuffles,0);
 });
 test('pump uses all five lanes and accepts a simultaneous chord',()=>{

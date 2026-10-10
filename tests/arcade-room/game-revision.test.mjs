@@ -30,7 +30,7 @@ for(const stage of [1,2,3,4,5,20])test(`Zena stage ${stage}: matching, gravity, 
  const resumed=restoreRound(snapshotRound(s));assert.ok(resumed);assert.deepEqual(resumed.board,s.board);gameAction(resumed,'rolling-pin');gameAction(resumed,resumed.board.length-1);assert.deepEqual(resumed.breadFrames[0].removed,Array.from({length:size},(_,i)=>(size-1)*size+i));
 });
 test('Zena song drops require an explicit pickup rather than a match or a normal rolling pin',()=>{
- const s=createGame('photo',{seed:7});gameAction(s,'rolling-pin');gameAction(s,0);assert.equal(s.songPickups,0);assert.equal(s.songDrops,0);s.flash=0;s.rollingPins=1;s.board[0]+=10;gameAction(s,'rolling-pin');gameAction(s,0);assert.equal(s.songDrops,1);assert.equal(s.songPickups,0);const r=restoreRound(snapshotRound(s));gameAction(r,'song-pickup');assert.equal(r.songPickups,1);assert.equal(r.songDrops,0);gameAction(r,'song-pickup');assert.equal(r.songPickups,1);
+ const s=createGame('photo',{seed:7});gameAction(s,'rolling-pin');gameAction(s,0);assert.equal(s.songPickups,0);assert.equal(s.songDrops,0);s.flash=0;s.rollingPins=1;s.board[6]=11;gameAction(s,'rolling-pin');gameAction(s,6);assert.equal(s.songDrops,1);assert.equal(s.songPickups,0);const r=restoreRound(snapshotRound(s));gameAction(r,'song-pickup');assert.equal(r.songPickups,1);assert.equal(r.songDrops,0);gameAction(r,'song-pickup');assert.equal(r.songPickups,1);
 });
 test('stage backgrounds change for every game',()=>{for(const kind of GAME_IDS){const first=stageTheme({kind,stage:1});for(const stage of [2,3,4,5,6])assert.notDeepEqual(stageTheme({kind,stage}),first);}});
 

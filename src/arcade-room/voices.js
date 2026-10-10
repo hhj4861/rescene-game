@@ -147,3 +147,6 @@ export const SCORE_SONGS={
 
 // User-supplied reel: original voice, no synthesis or pitch alteration.
 export const TENWON_VOICE={file:'./voices/zena-tenwon.mp3',spoken:'십원빵 아이가',start:11.75,end:13.4,source:'https://www.instagram.com/reel/Dav06LrTqEj/'};
+
+// Original Minami cheer, preserved separately from the stage-clear recording.
+export const MINAMI_YAHO={file:'./voices/minami-yaho.mp3',spoken:'에~ 거제~ 야호!',start:137.25,end:140,source:source+'&t=137s'};
