@@ -7,7 +7,7 @@
 - 디자인: 기존 mint #b4d0c0, paper #fff9eb, ink #234454, pink #f4c5dd, gold #f6d782를 유지한다. Jua는 제목·게임 점수, Noto Sans KR는 설명에 사용한다. 모바일 순서는 하트/영상 바/점수/게임/조작이며 펌프는 영상 바/게이지/게임 순서를 유지한다. 재생 바를 펼쳐 같은 영상을 보며 돌아올 수 있도록 한다. 장식보다 게임판과 조작의 가독성을 우선한다.
 - 설계 검토: 기존 팬 오락실의 색·캐릭터를 유지하고 별도 대시보드나 카드 디자인을 추가하지 않는다.
 - 검증 산출물: iCloud gpt 작업/rescene-game/ux-balance-20261010/.
-- 현재: 구현·로컬 검증 완료. 작업 브랜치 커밋·push 및 PR 생성 단계. main·운영 미반영.
+- 현재: 구현·로컬 검증 완료. 구현 커밋 1fe86f6을 작업 브랜치 upstream에 push했고 PR #34를 생성했다. main·운영 미반영.
 
 ## 구현 및 검증 결과
 
@@ -36,4 +36,4 @@
 - 3개 브라우저 구성: PC Chromium, 모바일 Chromium, 모바일 WebKit. 320×568/390×844 화면을 별도로 확인했다. 물리 기기 손맛과 실제 YouTube 네트워크·재생은 이번 자동 검증에 포함하지 않았으며 YouTube API는 모킹했다. 로컬 음성 파일 디코딩 검사는 통과했다.
 - 최종 정적 빌드: site-release/ (app-B1kNaGni.js, app-C8zaF7Hz.css). 최종 lint·build 및 git diff --check 통과. 모델 비교 총 1,700회.
 - 근거: unit-second.log, browser-full.log, browser-recheck.log, browser-release.log, verification-summary.json, simulations.json, followup.json.
-- 다음 작업: 검증된 변경을 PR로 제공한다. 해당 PR의 명시적 머지 승인 전에는 main·운영을 변경하지 않는다.
+- PR: https://github.com/hhj4861/rescene-game/pull/34. 원격 CI는 PR 생성 후 별도로 실행된다. 해당 PR의 명시적 머지 승인 전에는 main·운영을 변경하지 않는다.
