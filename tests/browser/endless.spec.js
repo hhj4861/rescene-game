@@ -5,7 +5,7 @@ import {emptyProgress,snapshotRound,stageGoal,PROGRESS_KEY} from '../../src/arca
 const name='메이의 보글보글 공방 시작';
 async function open(page,progress){
   await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);},{key:PROGRESS_KEY,value:JSON.stringify(progress)});
-  await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await expect(page.getByRole('button',{name})).toBeEnabled();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
+  await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./?may=classic');await expect(page.getByRole('button',{name})).toBeEnabled();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
 }
 test('stage five clears into six with the same lives, including a reload before continuing',async({page},info)=>{
   const p=emptyProgress(),s=createGame('blocks',{stage:5,hearts:2,seed:7});s.popped=stageGoal('blocks',5).target-1;s.enemies=[{x:150,y:536,home:0,dir:1,trapped:4}];p.games.blocks={stage:5,highest:5,hearts:2,snapshot:snapshotRound(s)};

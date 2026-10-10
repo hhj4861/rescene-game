@@ -41,3 +41,10 @@ test('Charmander pickup transforms Woni, breathes fire, preserves Byeol and save
 test('the full Woni recording progresses beyond the old repeated phrase without looping',async({page})=>{
  const s=createGame('drive',{seed:7});s.spawn=10;s.objects=[{id:0,lane:1,y:455,kind:'song'}];await open(page,s);await page.clock.runFor(50);await expect.poll(()=>page.evaluate(()=>window.walkClips.find(c=>c.src.includes('woni-song'))?.audio.duration||0)).toBeGreaterThan(40);await expect.poll(()=>page.evaluate(()=>window.walkClips.find(c=>c.src.includes('woni-song'))?.audio.currentTime||0),{timeout:12000}).toBeGreaterThan(5);expect(await singing(page)).toEqual([{paused:false,loop:false}]);
 });
+
+
+test('evolved fire, Byeol skill and four song helpers are visible and survive pause/reload',async({page},info)=>{
+ const s=createGame('drive',{stage:9,seed:7});s.firePickups=2;s.transformTime=15;s.byeolTreats=2;s.spawn=15;s.objects=[{id:0,lane:1,y:455,kind:'charmander'},{id:1,lane:1,y:455,kind:'treat'},{id:2,lane:1,y:455,kind:'song'},{id:3,lane:0,y:250,kind:'monster',hp:5}];await open(page,s);await page.clock.runFor(100);
+ await expect(page.locator('#app')).toHaveAttribute('data-fire-level','2');await expect(page.locator('#app')).toHaveAttribute('data-byeol-power','true');await expect(page.locator('#app')).toHaveAttribute('data-song-helpers','true');await expect(page.locator('#powerup-status')).toContainText('리브 하트 / 메이 길 정리 / 미나미 가속 / 제나 간식');await expect(page.locator('[data-act="attack"]')).toContainText('세 갈래 불꽃');await page.screenshot({path:info.outputPath('woni-evolved-team.png'),fullPage:true});
+ await page.locator('[data-pause]').click();const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).games.drive.snapshot,PROGRESS_KEY);expect(saved.fireLevel).toBe(2);expect(saved.byeolPower).toBeGreaterThan(5);await page.reload();await page.locator('[data-start="drive"].start').click();await expect(page.locator('#app')).toHaveAttribute('data-fire-level','2');await expect(page.locator('#app')).toHaveAttribute('data-byeol-power','true');
+});

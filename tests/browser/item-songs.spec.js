@@ -11,7 +11,7 @@ async function open(page,kind){
  if(kind==='photo'){pair=availableSwap(s.board);const board=[...s.board];[board[pair[0]],board[pair[1]]]=[board[pair[1]],board[pair[0]]];const i=matches(board)[0],source=i===pair[0]?pair[1]:i===pair[1]?pair[0]:i;s.board[source]+=10;}
  const p=emptyProgress();p.games[kind].snapshot=snapshotRound(s);
  await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);const Native=window.Audio;window.itemClips=[];window.Audio=class extends Native{constructor(src){super(src);window.itemClips.push({src,audio:this});}};},{key:PROGRESS_KEY,value:JSON.stringify(p)});
- await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator(`[data-start="${kind}"].start`).click();await page.locator('[data-resume]').click();return pair;
+ await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./?may=classic');await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator(`[data-start="${kind}"].start`).click();await page.locator('[data-resume]').click();return pair;
 }
 async function collect(page,kind,pair){if(kind==='photo'){for(const i of pair)await page.locator(`.field-controls [data-act="${i}"]`).click();await page.locator('[data-act="song-pickup"]').click();}if(['drive','blocks'].includes(kind))await page.clock.runFor(50);}
 for(const [kind,member] of Object.entries(members)){

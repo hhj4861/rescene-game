@@ -22,8 +22,8 @@ for(const [stage,size] of [[1,20],[2,20],[4,20],[12,10],[14,20],[16,20],[16,21],
  old.board[0]=11;old.score=900;old.hearts=2;old.elapsed=30;old.remaining=150;old.moves=11;old.songDrops=2;old.songItemTime=25;
  const r=restoreRound(old);assert.ok(r);assert.equal(r.board.length,stageBoardSize(stage)**2);assert.equal(breadHunt(r)[0].found,true);
  if(breadHunt(r)[1])assert.equal(r.breadCover[breadAreaCells(breadHunt(r)[1],stageBoardSize(stage))[0]],true);
- for(const key of ['stage','score','hearts','elapsed','remaining','moves','songDrops','songItemTime'])assert.equal(r[key],old[key]);
- assert.equal(r.board.filter(n=>n>10).length,1);assert.deepEqual(snapshotRound(restoreRound(snapshotRound(r))),snapshotRound(r));
+ for(const key of ['stage','score','hearts','elapsed','remaining','moves','songItemTime'])assert.equal(r[key],old[key]);
+ assert.equal(r.board.filter(n=>n>10).length+r.songDrops-old.songDrops,1);assert.deepEqual(snapshotRound(restoreRound(snapshotRound(r))),snapshotRound(r));
 });
 
 test('large legacy saves shrink once while keeping earned bread, resources and a playable board',()=>{

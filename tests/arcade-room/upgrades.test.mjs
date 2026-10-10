@@ -35,11 +35,11 @@ test('Liv must beat the final boss; boss escape ends only this round with one li
  const s=createGame('catch',{seed:7});s.defeated=stageGoal('catch',1).target;s.elapsed=120;s.remaining=180;s.firstItemAt=0;s.enemies=[];stepGame(s,.025);assert.equal(isStageClear(s),false);const boss=s.enemies.find(e=>e.boss);assert.ok(boss);assert.ok(restoreRound(snapshotRound(s)));boss.hp=0;stepGame(s,.025);assert.equal(isStageClear(s),true);
  const loss=createGame('catch');loss.bossSpawned=true;loss.enemies=[{id:0,lane:0,y:479.9,hp:50,maxHp:50,boss:true}];stepGame(loss,.1);assert.equal(loss.hearts,2);assert.equal(loss.endReason,'boss');
 });
-test('rolling pin clears the selected row with falling frames, no move charge and no free refills',()=>{
- const s=createGame('photo',{seed:7});gameAction(s,'rolling-pin');gameAction(s,14);assert.equal(s.rollingPins,0);assert.equal(s.itemArmed,false);assert.equal(s.moves,36);assert.ok(s.collected>=6);assert.deepEqual(s.breadFrames[0].removed,[12,13,14,15,16,17]);assert.ok(s.breadFrames.some(f=>f.kind==='fall'));assert.equal(s.breadCharge,0);stepGame(s,5);gameAction(s,'rolling-pin');assert.equal(s.itemArmed,false);assert.ok(restoreRound(snapshotRound(s)));
+test('rolling pin removes a row without refill or move charge',()=>{
+ const s=createGame('photo',{seed:7});gameAction(s,'rolling-pin');gameAction(s,14);assert.equal(s.rollingPins,0);assert.equal(s.itemArmed,false);assert.equal(s.moves,36);assert.ok(s.collected>=6);assert.deepEqual(s.breadFrames[0].removed,[12,13,14,15,16,17]);assert.ok(s.board.slice(12,18).every(v=>v===0));assert.equal(s.breadCharge,0);stepGame(s,5);gameAction(s,'rolling-pin');assert.equal(s.itemArmed,false);assert.ok(restoreRound(snapshotRound(s)));
 });
-test('normal cascades earn a capped rolling pin and an item voice cue',()=>{
- let found=false;for(let seed=1;seed<100&&!found;seed++){const s=createGame('photo',{seed});s.breadCharge=2;s.rollingPins=0;gameAction(s,{from:availableSwap(s.board)[0],to:availableSwap(s.board)[1]});if(s.combo>1){assert.ok(s.rollingPins>0);assert.ok(s.itemPickups>0);found=true;}}assert.ok(found);
+test('three ordinary matches charge a capped rolling pin without adding tiles',()=>{
+ const s=createGame('photo',{seed:7});s.breadCharge=2;s.rollingPins=0;gameAction(s,{from:availableSwap(s.board)[0],to:availableSwap(s.board)[1]});assert.ok(s.rollingPins>0);assert.ok(s.itemPickups>0);assert.ok(s.board.filter(Boolean).length<36);
 });
 test('old active saves migrate upgrades without changing score, stage or lives',()=>{
  const fields={blocks:['mayVersion','items','speedBoost','sizeBoost'],photo:['bakeryVersion','rollingPins','breadCharge','itemArmed'],catch:['upgradeVersion','fireLevel','volley','bossSpawned','bossDefeated','pickups','item','itemTime','itemClock','itemCount']};

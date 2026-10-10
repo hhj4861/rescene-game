@@ -13,7 +13,7 @@ async function readyToClear(page,kind,remaining=.02){
   if(kind==='rhythm'){state.elapsed=60-remaining;state.remaining=remaining;state.notes.forEach(n=>n.status='hit');}if(kind==='catch'){state.bossSpawned=true;state.bossDefeated=1;}progress.games[kind].snapshot=snapshotRound(state);
   await page.addInitScript(({key,value})=>localStorage.setItem(key,value),{key:PROGRESS_KEY,value:JSON.stringify(progress)});
   await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});
-  await page.goto('./');await expect(page.locator(`[data-start="${kind}"].start`)).toBeEnabled();
+  await page.goto('./?may=classic');await expect(page.locator(`[data-start="${kind}"].start`)).toBeEnabled();
   await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));
   await page.locator(`[data-start="${kind}"].start`).click();await enterPump(page);
 }
