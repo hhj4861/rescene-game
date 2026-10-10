@@ -37,3 +37,16 @@
 - 최종 정적 빌드: site-release/ (app-B1kNaGni.js, app-C8zaF7Hz.css). 최종 lint·build 및 git diff --check 통과. 모델 비교 총 1,700회.
 - 근거: unit-second.log, browser-full.log, browser-recheck.log, browser-release.log, verification-summary.json, simulations.json, followup.json.
 - PR: https://github.com/hhj4861/rescene-game/pull/34. 원격 CI는 PR 생성 후 별도로 실행된다. 해당 PR의 명시적 머지 승인 전에는 main·운영을 변경하지 않는다.
+
+## 후속 개선: 목표·선택 피드백
+
+- 기준: baeddd5, PR #34 CI 성공 확인. 같은 구현 worktree에서 현재 Codex가 담당한다.
+- 범위: 원이의 길별 수집 상태, 제나의 퍼즐 종류·선택/이웃 교환 안내, 확대/축소 뒤 선택 테두리. 게임 난이도 수치는 유지한다.
+- 디자인: 기존 민트 #b4d0c0, 종이 #fff9eb, 잉크 #234454, 분홍 #f4c5dd, 선택 보라 #80518b를 유지한다. 기존 글꼴과 크기를 따르며 점수 아래에 짧은 안내 한 줄을 둔다. 원이는 세 길의 실제 순서대로 왼쪽/가운데/오른쪽을 표시하고 제나는 선택한 위치와 조작을 왼쪽 정렬한다. 장식 배지 대신 체크/빈 원과 문구로 상태를 구분한다.
+- 설계 검토: 팬 오락실의 화면에 필요한 정보만 더하고 신규 카드나 별도 화면을 만들지 않는다. 색에만 의존하지 않는 상태 표시를 사용한다.
+- 완료 기준: 수집·재개 시 길 표시 일치, 빈칸 제외한 교환 이웃 표시, 확대/축소·키보드 선택·모바일 가로 넘침 검증, 단위·린트·빌드 및 관련 E2E 후 커밋·push.
+- 결과: 길별 수집 체크, 퍼즐 종류의 접근성 이름, 선택 위치·이웃 점선·고립된 조각·밀대 안내를 구현했다. 확대 후 축소해도 선택 테두리를 유지하며 상태 문구는 실제 변경 때만 알린다.
+- 검증: 단위 207/207, lint·최종 build·diff check 통과. 기존 원이/제나와 신규 UX를 함께 검사해 52 통과·2 기존 CDP 조건부 제외; 마지막 고립 퍼즐 안내 수정 후 신규 UX 12/12 재검사 통과. 중복 제외 합계 55 통과·2 조건부 제외. PC Chromium/모바일 Chromium/모바일 WebKit에서 실행했다.
+- 화면 검토: 320px 원이 체크 상태와 제나 선택/이웃 강조를 직접 확인했다. 가로 넘침 없음. 실제 휴대전화의 손맛·YouTube 네트워크 재생은 검증 범위 밖이다.
+- 후속 증적: iCloud gpt 작업/rescene-game/interaction-hints-20261010/의 unit.log, browser.log, browser-final.log, browser-final/ 캡처, site-final/.
+- 후속 구현은 기존 PR #34에 커밋·push한다. main·운영은 미반영 상태다.

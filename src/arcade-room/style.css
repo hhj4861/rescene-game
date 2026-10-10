@@ -193,6 +193,12 @@
  #app[data-game=catch] .has-video .playfield{width:min(100%,calc((100svh - 265px)*.8));margin:0 auto}
  #app[data-game=catch] .has-video .game-controls{margin-bottom:8px}
  #app[data-game=catch] .has-video .stage-goal{padding-top:4px}
- #app[data-game=photo] .field-controls button:focus-visible{outline:3px solid #80518b;outline-offset:-3px;background:#fff0a044}
- #app[data-game=photo] .bread-board:not([style]) .field-controls button[aria-pressed=true]{outline:3px solid #80518b;outline-offset:-3px;background:#fff0a044}
 }
+
+/* Selection stays visible at either board scale and on keyboard navigation. */
+.play-guidance{margin:0;padding:6px 12px;background:var(--paper);color:var(--ink);font-size:12px;line-height:1.5;text-align:left;min-height:36px;box-sizing:border-box}
+.lane-stamps{display:flex;gap:6px;text-align:center}
+.lane-stamps span{flex:1;border-bottom:2px dashed #8a9c93;padding:2px 0}
+.lane-stamps [data-collected=true]{border-bottom-style:solid;background:#cfe6da;font-weight:700}
+#app[data-game=photo] .field-controls button[data-swap-target=true]{outline:2px dashed #80518b;outline-offset:-3px}
+#app[data-game=photo] .field-controls button[aria-pressed=true],#app[data-game=photo] .field-controls button:focus-visible{outline:3px solid #80518b;outline-offset:-3px;background:#fff0a044}
