@@ -202,3 +202,20 @@
 .lane-stamps [data-collected=true]{border-bottom-style:solid;background:#cfe6da;font-weight:700}
 #app[data-game=photo] .field-controls button[data-swap-target=true]{outline:2px dashed #80518b;outline-offset:-3px}
 #app[data-game=photo] .field-controls button[aria-pressed=true],#app[data-game=photo] .field-controls button:focus-visible{outline:3px solid #80518b;outline-offset:-3px;background:#fff0a044}
+
+/* Keep movement controls beside a complete, proportionally scaled portrait field. */
+@media(max-width:700px) and (orientation:portrait){
+ #app:is([data-game=drive],[data-game=blocks]) .topbar{height:52px;padding-top:4px;padding-bottom:4px}
+ #app:is([data-game=drive],[data-game=blocks]) .play-layout{margin-top:6px;gap:6px}
+ #app:is([data-game=drive],[data-game=blocks]) .companion{grid-template-columns:28px minmax(0,1fr);grid-template-rows:26px;align-items:center}
+ #app:is([data-game=drive],[data-game=blocks]) .companion .doll{width:26px;height:26px;grid-row:1}
+ #app:is([data-game=drive],[data-game=blocks]) .companion h1{grid-row:1;font-size:17px}
+ #app:is([data-game=drive],[data-game=blocks]) .companion :is(.host-name,.host-line){display:none}
+ #app:is([data-game=drive],[data-game=blocks]) .playfield{width:min(100%,max(160px,calc((100svh - 290px)*.8)));margin:0 auto}
+ #app[data-game=blocks] .playfield{width:min(100%,max(160px,calc((100svh - 234px)*.8)))}
+ #app:is([data-game=drive],[data-game=blocks]) .game-controls button{min-width:44px;min-height:48px}
+}
+@media(max-width:700px){
+ #app:is([data-game=drive],[data-game=blocks]):is([data-state=paused],[data-state=upgrading]) #overlay{position:fixed;inset:0;z-index:20;padding:16px;background:#23445499}
+ #app:is([data-game=drive],[data-game=blocks]) .pause-paper{max-width:400px;max-height:calc(100svh - 32px);overflow-y:auto;overscroll-behavior:contain}
+}
