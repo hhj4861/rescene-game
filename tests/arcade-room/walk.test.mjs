@@ -66,6 +66,6 @@ test('every three treats triggers six seconds of powerful Byeol homing without n
 });
 test('song helpers attack, clear obstacles, accelerate movement, attract treats and stop with the song',()=>{
  const s=createGame('drive',{seed:7});pickup(s,'song');s.objects=[{id:1,lane:0,y:340,kind:'monster',hp:2},{id:2,lane:2,y:200,kind:'log'},{id:3,lane:2,y:380,kind:'treat'}];s.spawn=10;stepGame(s,.025);
- assert.ok(s.shots.some(b=>b.kind==='heart'));assert.equal(s.objects.some(o=>o.kind==='log'),false);assert.equal(s.objects.find(o=>o.kind==='treat').lane,s.lane);assert.ok(restoreRound(snapshotRound(s)));
+ assert.ok(s.shots.some(b=>b.kind==='heart'));assert.equal(s.objects.some(o=>o.kind==='log'),false);assert.equal(s.objects.find(o=>o.kind==='treat').lane,2);s.x=310;s.lane=2;stepGame(s,.025);assert.equal(s.objects.find(o=>o.kind==='treat').lane,2);assert.ok(restoreRound(snapshotRound(s)));
  gameAction(s,'left');const x=s.x;stepGame(s,.025);assert.ok(x-s.x>21.25);s.objects=[];s.shots=[];s.songItemTime=.01;stepGame(s,.025);assert.equal(s.songItemTime,0);s.objects=[{id:4,lane:2,y:200,kind:'log'},{id:5,lane:2,y:380,kind:'treat'}];stepGame(s,.025);assert.equal(s.objects.length,2);assert.equal(s.objects.find(o=>o.kind==='treat').lane,2);assert.equal(s.shots.length,0);
 });

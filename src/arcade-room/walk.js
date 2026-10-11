@@ -10,7 +10,7 @@ export function walkDifficulty(stage,speed){return {spawn:Math.max(.4,.95/Math.p
 // Every cycle guarantees music, extra time, a transformation and monsters.
 const ROUTE=['treat','monster','song','log','treat','charmander','monster','clock','puddle','treat','monster','treat','byeol','monster'];
 export function createWalk(){
- return {firePickups:0,fireLevel:1,byeolTreats:0,byeolPower:0,allyShotCooldown:0,allyClearCooldown:0,walkVersion:1,prankIndex:0,prank:null,lane:1,x:240,objects:[],spawn:.5,shield:0,fever:0,heat:0,hits:0,combo:0,bestCombo:0,misses:0,nextObject:0,jumpTime:0,jumpCooldown:0,songPickups:0,timeBonus:0,clockPickups:0,rewardTime:0,lastReward:'',byeolTime:0,byeolCooldown:0,transformTime:0,attackCooldown:0,shots:[],effects:[],defeated:0};
+ return {treatLanes:0,firePickups:0,fireLevel:1,byeolTreats:0,byeolPower:0,allyShotCooldown:0,allyClearCooldown:0,walkVersion:1,prankIndex:0,prank:null,lane:1,x:240,objects:[],spawn:.5,shield:0,fever:0,heat:0,hits:0,combo:0,bestCombo:0,misses:0,nextObject:0,jumpTime:0,jumpCooldown:0,songPickups:0,timeBonus:0,clockPickups:0,rewardTime:0,lastReward:'',byeolTime:0,byeolCooldown:0,transformTime:0,attackCooldown:0,shots:[],effects:[],defeated:0};
 }
 function attack(s){
  if(s.attackCooldown||s.shots.length>=32)return;
@@ -55,7 +55,7 @@ export function stepWalk(s,dt,speed,loseLife){
    const obstacle=s.objects.filter(o=>!o.done&&['puddle','log','bread'].includes(o.kind)).sort((a,b)=>b.y-a.y)[0];
    if(obstacle){obstacle.done=true;s.allyClearCooldown=4;}
   }
-  for(const item of s.objects)if(item.kind==='treat'&&item.y>=340)item.lane=s.lane;
+  for(const item of s.objects)if(item.kind==='treat'&&item.y>=340&&Math.abs(WALK_LANES[item.lane]-s.x)<80)item.lane=s.lane;
  }else{s.allyShotCooldown=0;s.allyClearCooldown=0;}
  // Resolve the nearest crossed monster before player collisions, once per shot.
  for(const shot of s.shots){
@@ -73,7 +73,7 @@ export function stepWalk(s,dt,speed,loseLife){
    if(WALK_ITEMS.includes(o.kind)){
     s.itemPickups++;s.rewardTime=1.4;s.lastReward=o.kind;
     if(o.kind==='treat'){
-     s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);s.score+=100+Math.min(10,s.combo)*10;s.event='walk-treat';
+     s.treatLanes|=1<<o.lane;s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);s.score+=100+Math.min(10,s.combo)*10;s.event='walk-treat';
      if(++s.byeolTreats>=3){s.byeolTreats=0;s.byeolPower=6;s.byeolCooldown=0;s.event='walk-byeol-power';}
      if(++s.heat>=5){s.heat=0;s.fever=8;s.event='walk-fever';}
     }else if(o.kind==='song'){collectSongTime(s);s.songPickups++;s.prank=null;s.score+=50;s.event='walk-song';}

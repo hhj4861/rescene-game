@@ -8,7 +8,7 @@ const members={drive:'woni',blocks:'may',photo:'zena',rhythm:'minami',catch:'liv
 async function setup(page,kind,{points=4990,clear=false}={}){
  if(['catch','rhythm'].includes(kind))await fakeApi(page);
  const s=createGame(kind,{seed:7,stage:1}),p=emptyProgress();s.spawn=10;
- if(kind==='drive'){s.objects=[{id:0,lane:1,y:455,kind:'treat'}];if(clear)s.hits=stageGoal(kind,1).target-1;}
+ if(kind==='drive'){s.objects=[{id:0,lane:1,y:455,kind:'treat'}];if(clear){s.hits=stageGoal(kind,1).target-1;s.treatLanes=7;}}
  if(kind==='blocks'){if(clear)s.popped=stageGoal(kind,1).target-1;s.enemies=[{x:90,y:520,home:0,dir:1,trapped:4,vy:0,think:.8,angry:false}];}
  if(kind==='catch'){s.enemies=[{id:0,lane:1,y:190,hp:1,maxHp:1,boss:false}];s.charge=5;s.gates=[];s.pickups=[{lane:1,y:440,kind:'love-attack'}];}
  if(clear&&kind==='catch'){s.bossSpawned=true;s.defeated=stageGoal(kind,1).target-1;s.enemies[0].boss=true;}if(clear&&kind==='photo'){s.breadCover.fill(true);s.breadCover[6]=false;};if(kind==='rhythm'){s.elapsed=59.95;s.remaining=.05;}
