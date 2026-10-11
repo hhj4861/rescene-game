@@ -4,6 +4,15 @@
 
 
 
+## UX·난이도 개선 운영 배포 — 2026-10-11
+
+- 사용자 명시 승인 후 [PR #34](https://github.com/hhj4861/rescene-game/pull/34)를 main에 머지했다. 운영 소스 `6c3da1f448a997f73f70b83a01d1682c398cc9c9`와 검증 head `b97612f`의 Git 트리 `aa7a0847ada799488ea91cad9b729074cbeb659d`가 동일하다.
+- [성공 CI 38046971017](https://github.com/hhj4861/rescene-game/actions/runs/38046971017): 단위 207개, 브라우저 550개 통과·환경 전용 5개 제외, 린트·빌드 성공. 해당 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `4b48f9e2-a640-4eb1-baf7-a198acc7fba3`: **Production / main / source `6c3da1f`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://4b48f9e2.rescene-arcade.pages.dev).
+- 리브·펌프 모바일 영상은 접힌 바에서 펼치며 안내를 열면 게임과 음악을 정지한다. 원이는 세 길의 간식을 모두 수집하도록 바꾸고 길별 상태를 표시한다. 제나는 남은 퍼즐의 교환 기회와 선택·이웃 안내를 개선했다. 메이는 초기/후반 성장 난이도를 조정했다. 원이·메이 모바일은 작은 화면에도 게임판·조작과 정지/강화창 버튼이 보이도록 개선했다.
+- 공개 파일 **41개 모두 CI 빌드와 SHA-256 일치**. 운영 주소 브라우저 **48개 모두 통과**(PC Chromium·모바일 Chromium·모바일 WebKit): 320/390px 배치, 실제 버튼 입력, 정지/강화·재개, 원이 길 표시 저장, 제나 선택/확대, 영상 펼침/접기와 안내 정지를 확인했다. 운영 320px 메이 강화창 캡처도 시각 확인했다. YouTube 제어는 API 대역을 사용했으며 실제 휴대전화의 조작감·청음 검증은 포함하지 않는다.
+- 증거: 사용자 iCloud 작업 루트 `rescene-game/pr34-deploy-20261011/`의 `site/`, `ci.log`, `wrangler-deploy.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`. 기존 Wrangler 로그인과 설치된 Node 22를 사용했다. 인증·도메인·자동 배포 설정과 타 세션 미추적 파일은 보존했다.
+
 ## 전투·성장·퍼즐·영상 배치 운영 배포 — 2026-10-10
 
 - 사용자 명시 승인 후 [PR #33](https://github.com/hhj4861/rescene-game/pull/33)을 머지했다. 운영 소스 `2963d03e89171e51e7865fe739f7e056c024058d`와 검증 head `2944532`의 Git 트리 `1e260c750826a37449a6289957d65e8304f12728`이 동일하다.

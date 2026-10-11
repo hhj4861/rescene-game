@@ -65,3 +65,11 @@
 - 최종 재검사 24/24 통과. 전체 관련 실행과 후속 검사의 중복 제외 합계 84/84 통과(PC Chromium, 모바일 Chromium, 모바일 WebKit). lint·build·diff check 통과. 게임 로직은 변경하지 않았으며 단위 207건과 전체 CI는 기준 675ba20에서 통과한 기록을 유지한다.
 - 캡처 검토: 320px에서 원이·메이 게임판과 버튼이 한 화면에 보이며 버튼은 44px 이상이다. 390px 및 PC 전환도 확인했다. 실제 휴대전화의 엄지 조작감·가로 모드는 이번 검증 범위 밖이다.
 - 증적: iCloud gpt 작업/rescene-game/mobile-action-layout-20261010/의 browser-final.log, browser-recheck.log, browser-final/ 캡처, site-final/.
+
+
+## 승인 후 운영 반영 — 2026-10-11
+
+- 사용자 승인 후 PR #34를 main에 머지(`6c3da1f`)하고 운영 배포를 완료했다. 위 단계별 ‘미반영’ 표기는 당시 진행 기록이다.
+- 최종 head `b97612f` CI: 단위 207개·브라우저 550개 통과(환경 전용 5개 제외), 린트·빌드 성공. 머지와 동일 Git 트리의 CI 빌드를 배포했다.
+- https://rescene-arcade.pages.dev/ — Production/main 배포 `4b48f9e2-a640-4eb1-baf7-a198acc7fba3`. 공개 파일 41개 해시 일치, 운영 브라우저 48개 모두 통과. 320px 메이 강화창 캡처 시각 확인.
+- 상세 결과는 [배포 기록](../deployment/arcade-pages.md), 증적은 iCloud `rescene-game/pr34-deploy-20261011/`에 보관했다. 실제 휴대전화 청음·손 조작감은 별도 확인 대상이다.
