@@ -4,6 +4,14 @@
 
 
 
+## 동일 검증본 운영 재배포 — 2026-10-12
+
+- 사용자 ‘배포도 해줘’ 요청으로 현재 main `201c3c81dcb5919b513339c7e8e2afd3c5da9ea9`를 운영 재배포했다. PR #34 검증 head `b97612f` 이후 차이는 문서뿐이며 게임·의존성·빌드 설정 차이가 없음을 확인했다.
+- 기존 성공 CI `38046971017`의 동일 `arcade-static-site` 산출물을 재사용했다. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://8277dcc0.rescene-arcade.pages.dev).
+- 공개 파일 41개 모두 검증 빌드와 SHA-256 일치. 게임 동작은 이전 배포와 동일하다. 전날 운영 E2E 66개 통과는 동일 파일의 기존 검증이며 이번에 새로 실행한 E2E로 계산하지 않는다.
+- [E2E 감사 보고서](../design/arcade-e2e-audit-20261011.md)의 개선 후보는 아직 구현되지 않았으므로 이번 재배포에 포함되지 않았다. 새 코드 머지나 인증·도메인 변경은 수행하지 않았다.
+- 증거: 사용자 iCloud 작업 루트 `rescene-game/redeploy-20261012/`의 `deploy.log`, `deployments.txt`, `production-assets.json`.
+
 ## UX·난이도 개선 운영 배포 — 2026-10-11
 
 - 사용자 명시 승인 후 [PR #34](https://github.com/hhj4861/rescene-game/pull/34)를 main에 머지했다. 운영 소스 `6c3da1f448a997f73f70b83a01d1682c398cc9c9`와 검증 head `b97612f`의 Git 트리 `aa7a0847ada799488ea91cad9b729074cbeb659d`가 동일하다.
