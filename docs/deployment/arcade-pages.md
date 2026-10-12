@@ -4,6 +4,16 @@
 
 
 
+## E2E 개선 8개 운영 배포 — 2026-10-12
+
+- 사용자 명시 승인 후 [PR #35](https://github.com/hhj4861/rescene-game/pull/35)를 main에 머지했다. 운영 소스 `13234ea8cd3842707ebe0b3befe6b90c61d20d05`와 검증 head `3a6a6653935b215b5759bcdccecc8b9ab74d0d9c`의 Git 트리 `431531b26a2bf80f1669ace1362b77caa94e267b`가 동일하다.
+- [성공 CI 38224421480](https://github.com/hhj4861/rescene-game/actions/runs/38224421480): 단위 213개, E2E 604개 통과·5개 조건부 생략·실패 0개, 린트·빌드 통과. 해당 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `137c2ccb-3f62-416f-89a4-216f5ef2587b`: **Production / main / source `13234ea`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://137c2ccb.rescene-arcade.pages.dev).
+- 메이 겹침 입력·연속 난이도, 낮은 화면 조작 배치, 중간 폭 안내문, 원이 길별 간식 목표, 펌프 2단계 밀도, 리브 보스 조기 등장, 제나 상단 도구를 반영했다. [상세 변경과 비교](../tasks/e2e-improvements-20261012.md).
+- 공개 파일 **41개 모두 CI 빌드와 SHA-256 일치**. 공개 브라우저 개선 회귀는 PC Chromium·모바일 Chromium·모바일 WebKit에서 첫 실행 53개 통과/1개 실패. WebKit 펌프 시작 검사가 곡 선택 화면에 남아 5초 제한으로 실패했으나 독립 3회 재검사는 모두 통과했다. 원인은 미확정이며 수정됐다고 주장하지 않는다. 모바일 WebKit 메이 가로 화면 캡처를 시각 확인했다. 브라우저 에뮬레이션과 YouTube API 대역 검사로, 실기기 청음을 대체하지 않는다.
+- CI 배포 실행 `38243420653`은 기존 계정·토큰 미설정으로 업로드 전에 실패했다. 기존 Wrangler 로그인으로 배포를 완료했으며 CI 인증·도메인·자동 배포 설정은 변경하지 않았다.
+- 증거: iCloud 작업 루트 `rescene-game/pr35-deploy-20261012/`의 `deploy.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`, `public-recheck.log`, `public-recheck/`.
+
 ## 동일 검증본 운영 재배포 — 2026-10-12
 
 - 사용자 ‘배포도 해줘’ 요청으로 현재 main `201c3c81dcb5919b513339c7e8e2afd3c5da9ea9`를 운영 재배포했다. PR #34 검증 head `b97612f` 이후 차이는 문서뿐이며 게임·의존성·빌드 설정 차이가 없음을 확인했다.
