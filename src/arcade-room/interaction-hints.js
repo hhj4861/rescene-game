@@ -1,3 +1,4 @@
+import {walkLaneQuota} from './walk.js';
 const lanes=['왼쪽','가운데','오른쪽'];
 export const breadName=value=>['빈칸','식빵','도넛','컵케이크','소보로빵','말차빵'][value%10];
 export function interactionHints(kind){
@@ -9,10 +10,10 @@ export function syncInteractionHints(app,s){
  const hint=app.querySelector('#interaction-hint');if(!hint)return;
  let message;
  if(s.kind==='drive'){
-  const missing=lanes.filter((_,i)=>!(s.treatLanes&(1<<i)));
-  message=missing.length?`${missing.join('·')} 길의 간식을 모아요.`:'세 길 수집 완료! 목표 간식을 채워요.';
+  const missing=lanes.filter((_,i)=>s.laneTreats[i]<walkLaneQuota(s));
+  message=missing.length?`${missing.join('·')} 길의 간식을 각각 ${walkLaneQuota(s)}개 모아요.`:'세 길 수집 완료! 목표 간식을 채워요.';
   app.querySelectorAll('[data-lane-stamp]').forEach((el,i)=>{
-   const done=!!(s.treatLanes&(1<<i)),label=`${lanes[i]} ${done?'✓':'○'}`;
+   const quota=walkLaneQuota(s),done=s.laneTreats[i]>=quota,label=`${lanes[i]} ${Math.min(quota,s.laneTreats[i])}/${quota} ${done?'✓':'○'}`;
    if(el.textContent!==label)el.textContent=label;
    el.dataset.collected=String(done);el.setAttribute('aria-label',`${lanes[i]} 길: ${done?'수집 완료':'간식 필요'}`);
   });

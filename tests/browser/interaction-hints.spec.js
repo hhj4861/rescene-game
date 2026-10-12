@@ -8,10 +8,10 @@ async function open(page,s){
  await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator(`[data-start="${s.kind}"].start`).click();await page.locator('[data-resume]').click();
 }
 test('Woni lane stamps identify missing treats and survive pause and reload',async({page},info)=>{
- await page.setViewportSize({width:320,height:568});const s=createGame('drive',{seed:7});s.spawn=10;s.treatLanes=2;s.objects=[{id:0,lane:0,y:420,kind:'treat'}];await open(page,s);
- await expect(page.locator('#interaction-hint')).toHaveText('왼쪽·오른쪽 길의 간식을 모아요.');await expect(page.locator('[data-lane-stamp="1"]')).toHaveAttribute('data-collected','true');
- await page.locator('.field-controls [data-act="0"]').click();await page.clock.runFor(300);await expect(page.locator('[data-lane-stamp="0"]')).toHaveText('왼쪽 ✓');await expect(page.locator('#interaction-hint')).toHaveText('오른쪽 길의 간식을 모아요.');
- await page.locator('[data-pause]').click();await page.reload();await page.locator('[data-start="drive"].start').click();await page.locator('[data-resume]').click();await expect(page.locator('#interaction-hint')).toHaveText('오른쪽 길의 간식을 모아요.');
+ await page.setViewportSize({width:320,height:568});const s=createGame('drive',{seed:7});s.spawn=10;s.treatLanes=2;s.laneTreats=[3,4,0];s.objects=[{id:0,lane:0,y:420,kind:'treat'}];await open(page,s);
+ await expect(page.locator('#interaction-hint')).toHaveText('왼쪽·오른쪽 길의 간식을 각각 4개 모아요.');await expect(page.locator('[data-lane-stamp="1"]')).toHaveAttribute('data-collected','true');
+ await page.locator('.field-controls [data-act="0"]').click();await page.clock.runFor(300);await expect(page.locator('[data-lane-stamp="0"]')).toHaveText('왼쪽 4/4 ✓');await expect(page.locator('#interaction-hint')).toHaveText('오른쪽 길의 간식을 각각 4개 모아요.');
+ await page.locator('[data-pause]').click();await page.reload();await page.locator('[data-start="drive"].start').click();await page.locator('[data-resume]').click();await expect(page.locator('#interaction-hint')).toHaveText('오른쪽 길의 간식을 각각 4개 모아요.');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(320);await page.screenshot({path:info.outputPath('woni-stamps-320.png'),fullPage:true});
 });
 test('Zena selection and occupied neighbors stay clear after zooming in and back out',async({page},info)=>{

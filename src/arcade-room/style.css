@@ -219,3 +219,69 @@
  #app:is([data-game=drive],[data-game=blocks]):is([data-state=paused],[data-state=upgrading]) #overlay{position:fixed;inset:0;z-index:20;padding:16px;background:#23445499}
  #app:is([data-game=drive],[data-game=blocks]) .pause-paper{max-width:400px;max-height:calc(100svh - 32px);overflow-y:auto;overscroll-behavior:contain}
 }
+
+/* E2E: readable guide rows instead of one squeezed flex item at tablet widths. */
+@media(min-width:701px) and (max-width:1050px){
+ .play-layout:not(.has-video) .side-note{display:flex;flex-wrap:wrap;gap:12px;grid-column:1/-1;grid-row:auto;margin:0;padding:12px 0;align-items:center}
+ .play-layout:not(.has-video) .side-note>p{margin:0}
+ .play-layout:not(.has-video) .side-note .short-guide{flex:0 0 100%;width:100%;max-width:none;line-height:1.8}
+ .play-layout:not(.has-video) .side-note>small{flex:1 1 240px;max-width:none}
+}
+/* Tools precede the finite board in both DOM and visual order. */
+#app[data-game=photo] .game-controls{padding:4px 0 10px;position:sticky;top:0;z-index:3;background:inherit}
+#app[data-game=photo] .game-controls button{min-width:0}
+.song-levels{flex-wrap:wrap}.song-levels button{min-width:90px}
+@media(max-width:700px){
+ #app[data-game=photo] .topbar{height:52px;padding-top:4px;padding-bottom:4px}
+ #app[data-game=photo] .companion{display:none}
+ #app[data-game=photo] .play-layout{margin-top:6px}
+ #app[data-game=photo] .bread-viewport,#app[data-game=photo] .bread-viewport:has(.bread-board[style]){max-height:max(160px,calc(100svh - 315px))}
+ #app[data-game=photo] .playfield{max-width:100%;width:100%}
+ #app[data-game=photo] .mobile-hint{display:none}
+}
+/* Short desktop and landscape: full field + reachable controls, left video intact. */
+@media(min-width:701px) and (max-height:760px){
+ #app[data-game] .topbar{height:52px;padding:4px 20px}
+ #app[data-game] .play-layout{margin:6px auto;padding:0 12px;gap:12px;grid-template-columns:minmax(0,660px);max-width:1100px}
+ #app[data-game] .play-layout .companion{display:none}
+ #app[data-game] .has-video{grid-template-columns:minmax(220px,360px) minmax(0,600px)}
+ #app[data-game] .has-video .pump-video-card{grid-column:1;grid-row:1;margin:0}
+ #app[data-game] .has-video .pump-video-host{height:200px}
+ #app[data-game] .has-video .game-cabinet{grid-column:2;grid-row:1}
+ #app[data-game] .game-cabinet{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:4px 12px;padding:6px 10px 10px}
+ #app[data-game] .stage-goal,#app[data-game] .scoreboard,#app[data-game] .play-guidance{grid-column:1/-1;margin:0}
+ #app[data-game] .stage-goal{grid-row:1;padding:3px 4px 5px}
+ #app[data-game] .scoreboard{grid-row:2;padding:0 0 4px}
+ #app[data-game] .play-guidance{grid-row:3}
+ #app[data-game] .scoreboard strong{font-size:20px}
+ #app[data-game] .scoreboard small{margin-bottom:0}
+ #app[data-game] .playfield{grid-column:1;grid-row:4;align-self:start;margin:0 auto;min-width:0;max-width:100%;width:min(100%,calc((100svh - 192px)*.8))}
+ #app[data-game=blocks] .playfield,#app[data-game=catch] .playfield{width:min(100%,calc((100svh - 170px)*.8))}
+ #app[data-game=rhythm] .playfield{width:min(100%,calc((100svh - 156px)*1.3333))}
+ #app[data-game=rhythm] .play-layout:not(.has-video) .playfield{width:min(100%,calc((100svh - 170px)*.8))}
+ #app[data-game] .game-controls{grid-column:2;grid-row:4;align-self:center;display:grid;grid-template-columns:1fr;gap:6px;padding:0}
+ #app[data-game] .game-controls button{min-width:44px;min-height:44px;font-size:14px;margin:0;width:100%}
+ #app[data-game] .game-controls small{display:none}
+ #app[data-game] .game-controls .tap-instruction{font-size:12px}
+ #app[data-game] .game-cabinet>.mobile-hint{grid-column:1/-1;grid-row:5;margin:0;font-size:10px}
+ #app[data-game] .game-cabinet>.mobile-hint:not(#powerup-status){display:none}
+ #app[data-game] .play-layout .side-note{grid-column:1/-1;grid-row:auto;display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:8px 0 0;padding:0}
+ #app[data-game] .side-note>p{margin:0}
+ #app[data-game] .side-note .short-guide{flex:0 0 100%;width:100%;max-width:none}
+ #app[data-game] .side-note>small{flex:1 1 240px;max-width:none}
+ #app[data-game=photo] .game-controls{position:static}
+ #app[data-game=photo] .playfield{width:100%;grid-row:4}
+ #app[data-game=photo] .bread-viewport,#app[data-game=photo] .bread-viewport:has(.bread-board[style]){max-height:max(160px,calc(100svh - 210px))}
+ #app[data-game]:is([data-state=paused],[data-state=upgrading]) #overlay{position:fixed;inset:0;z-index:20;padding:12px}
+ #app[data-game] .pause-paper{max-width:440px;max-height:calc(100svh - 24px)}
+}
+
+@media(min-width:701px) and (max-height:760px){
+ #app[data-may-mode=survival] .game-cabinet{grid-template-columns:minmax(0,1fr) 144px}
+ #app[data-may-mode=survival] .game-controls{grid-template-columns:repeat(3,44px);gap:6px}
+ #app[data-may-mode=survival] .game-controls [data-act=left]{grid-column:1;grid-row:2}
+ #app[data-may-mode=survival] .game-controls [data-act=up]{grid-column:2;grid-row:1}
+ #app[data-may-mode=survival] .game-controls [data-act=dash]{grid-column:2;grid-row:2;font-size:10px}
+ #app[data-may-mode=survival] .game-controls [data-act=down]{grid-column:2;grid-row:3}
+ #app[data-may-mode=survival] .game-controls [data-act=right]{grid-column:3;grid-row:2}
+}

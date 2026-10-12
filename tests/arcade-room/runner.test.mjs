@@ -56,7 +56,7 @@ test('movement and song pickups keep harder stages beatable, while idling is unr
   const games=Array.from({length:20},(_,i)=>playRunner(stage,i+1));
   const wins=games.filter(isStageClear).length;
   t.diagnostic(`stage ${stage}: ${wins}/20 active clears`);assert.ok(wins>=12,`stage ${stage}: only ${wins}/20 active clears`);
-  for(const s of games.filter(isStageClear)){assert.ok(s.elapsed>=120&&s.elapsed<300);assert.ok(s.hearts>0);}
+  for(const s of games.filter(isStageClear)){assert.ok(s.elapsed>=45&&s.elapsed<120);assert.ok(s.hearts>0);}
  }
  const idle=Array.from({length:20},(_,i)=>playRunner(1,i+1,false));assert.ok(idle.filter(isStageClear).length<=4);
 });

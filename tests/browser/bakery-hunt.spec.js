@@ -39,8 +39,8 @@ for(const [stage,size] of [[5,6],[6,7],[10,7],[11,8],[100,8]])test(`compact stag
  await page.setViewportSize({width:320,height:568});await open(page,createGame('photo',{stage,seed:7}));
  const cells=page.locator('.field-controls button');await expect(cells).toHaveCount(size*size);
  const cell=await cells.last().boundingBox();expect(cell.width).toBeGreaterThanOrEqual(28);expect(cell.height).toBeGreaterThanOrEqual(28);
- expect(await page.locator('.bread-viewport').evaluate(el=>el.scrollWidth<=el.clientWidth&&el.scrollHeight<=el.clientHeight)).toBe(true);
+ expect(await page.locator('.bread-viewport').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
- await cells.last().click();await expect(cells.last()).toHaveAttribute('aria-pressed','true');
+ const viewport=await page.locator('.bread-viewport').boundingBox();expect(viewport.y+viewport.height).toBeLessThanOrEqual(568);await cells.last().click();await expect(cells.last()).toHaveAttribute('aria-pressed','true');
  if(stage===11)await page.screenshot({path:info.outputPath('compact-8x8-320px.png'),fullPage:true});
 });
