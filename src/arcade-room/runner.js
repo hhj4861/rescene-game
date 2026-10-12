@@ -13,6 +13,8 @@ export function runnerDifficulty(stage=1){
  const level=Number.isSafeInteger(stage)&&stage>0?stage:1,ramp=1-1/(1+(level-1)*.4);
  return {hp:12+Math.round(32*ramp),bossHp:240+Math.round(660*ramp),spawn:1.35-.65*ramp,enemySpeed:52+34*ramp,bossSpeed:22+10*ramp,penalty:4+Math.floor(2*ramp)};
 }
+export const runnerBossTarget=s=>Math.min(40,12+(s.stage-1)*2);
+export function runnerBossProgress(s){const age=s.elapsed-s.firstItemAt;return age<45?`보스 준비 ${Math.ceil(45-age)}초 · 격파 ${Math.min(s.defeated,runnerBossTarget(s))}/${runnerBossTarget(s)}`:`보스 격파 ${Math.min(s.defeated,runnerBossTarget(s))}/${runnerBossTarget(s)} · 늦어도 ${Math.max(0,Math.ceil(90-age))}초 뒤`;}
 export function createRunner(options={}){return {itemSongIndex:Number.isInteger(options.itemSongIndex)&&options.itemSongIndex>=0&&options.itemSongIndex<LIV_ITEMS.length?options.itemSongIndex:0,firstItemAt:null,runnerVersion:1,upgradeVersion:1,songVersion:1,songItem:'',songTime:0,itemCooldown:0,effects:[],fireLevel:0,volley:1,bossSpawned:false,bossDefeated:0,pickups:[],item:'',itemTime:0,itemClock:0,itemCount:0,lane:1,x:240,squad:3,gatesTaken:0,gates:[{y:230,options:[{op:'add',value:3},{op:'multiply',value:1.5},{op:'add',value:-2}]}],gateSpawn:6,enemies:[],shots:[],defeated:0,spawn:1,nextEnemy:0,shotClock:0,charge:0,burst:0,gateFlash:0,lastGate:''};}
 export function runnerAction(s,a){
  if(a==='left'||a==='right')s.lane=Math.max(0,Math.min(2,s.lane+(a==='left'?-1:1)));
@@ -29,7 +31,7 @@ export function stepRunner(s,dt,speed,loseLife,target){
  if(!s.itemTime)s.item='';
  if(!s.songTime)s.songItem='';
  s.effects=s.effects.map(e=>({...e,ttl:e.ttl-dt})).filter(e=>e.ttl>0).slice(-24);
- if(!s.bossSpawned&&s.firstItemAt!==null&&s.elapsed-s.firstItemAt>=120){
+ if(!s.bossSpawned&&s.firstItemAt!==null&&s.elapsed-s.firstItemAt>=45&&(s.defeated>=runnerBossTarget(s)||s.elapsed-s.firstItemAt>=90)){
   const hp=difficulty.bossHp;s.enemies.push({id:s.nextEnemy++,lane:1,y:105,hp,maxHp:hp,boss:true});s.bossSpawned=true;s.event='defense-boss';
  }
  if(!s.spawn&&(!s.bossSpawned||!s.bossDefeated||s.defeated<target)&&s.enemies.length<(s.bossSpawned?6:12)){

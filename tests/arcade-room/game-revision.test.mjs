@@ -11,11 +11,11 @@ test('Minami opens first and combo recovery grows, caps, persists and ends at ze
  assert.equal(s.gauge,100);assert.equal(restoreRound(snapshotRound(s)).gauge,100);
  s.gauge=12;s.notes.find(n=>n.status==='waiting').at=s.elapsed-.5;stepGame(s,.025);assert.equal(s.gauge,0);assert.equal(s.ended,true);assert.equal(s.hearts,0);assert.equal(isStageClear(s),false);
 });
-test('Liv boss waits 120 seconds after the first actual pickup; later items do not reset the clock',()=>{
+test('Liv boss waits at least 45 seconds and sufficient defeats after the first actual pickup; later items do not reset the clock',()=>{
  const s=createGame('catch',{seed:7});s.spawn=10;s.gates=[];s.defeated=100;stepGame(s,.025);assert.equal(s.bossSpawned,false);
  s.pickups=[{lane:1,y:440,kind:LIV_ITEMS[0]}];stepGame(s,.025);const first=s.firstItemAt;assert.equal(first,s.elapsed);
- s.elapsed=first+80;s.remaining=300-s.elapsed;s.itemCooldown=0;s.pickups=[{lane:1,y:440,kind:LIV_ITEMS[1]}];stepGame(s,.025);assert.equal(s.firstItemAt,first);
- const r=restoreRound(snapshotRound(s));assert.ok(r);r.enemies=[];r.elapsed=first+119.9;r.remaining=300-r.elapsed;stepGame(r,.05);assert.equal(r.bossSpawned,false);stepGame(r,.1);assert.equal(r.bossSpawned,true);assert.equal(r.enemies.filter(e=>e.boss).length,1);stepGame(r,.1);assert.equal(r.enemies.filter(e=>e.boss).length,1);
+ s.elapsed=first+20;s.remaining=300-s.elapsed;s.itemCooldown=0;s.pickups=[{lane:1,y:440,kind:LIV_ITEMS[1]}];stepGame(s,.025);assert.equal(s.firstItemAt,first);
+ const r=restoreRound(snapshotRound(s));assert.ok(r);r.enemies=[];r.elapsed=first+44.9;r.remaining=300-r.elapsed;stepGame(r,.05);assert.equal(r.bossSpawned,false);stepGame(r,.1);assert.equal(r.bossSpawned,true);assert.equal(r.enemies.filter(e=>e.boss).length,1);stepGame(r,.1);assert.equal(r.enemies.filter(e=>e.boss).length,1);
 });
 test('May has a longer round and target; only a collectible honey voice item awards a song',()=>{
  const s=createGame('blocks',{seed:7});assert.equal(s.remaining,180);assert.equal(stageTarget('blocks',1),18);s.enemies=[];s.spawn=10;

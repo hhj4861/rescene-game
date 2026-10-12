@@ -9,8 +9,10 @@ export const WALK_ITEMS=['treat','song','clock','charmander','byeol'];
 export function walkDifficulty(stage,speed){return {spawn:Math.max(.4,.95/Math.pow(speed,.7)),speed:100+70*speed,hp:Math.min(5,1+Math.floor((stage-1)/2)),pair:stage>=3};}
 // Every cycle guarantees music, extra time, a transformation and monsters.
 const ROUTE=['treat','monster','song','log','treat','charmander','monster','clock','puddle','treat','monster','treat','byeol','monster'];
+export const walkTarget=stage=>[12,16,20,24,28][stage-1]??(28+Math.floor(20*(1-1/(1+(stage-5)*.1))));
+export const walkLaneQuota=s=>Math.max(1,Math.floor(walkTarget(s.stage)/3));
 export function createWalk(){
- return {treatLanes:0,firePickups:0,fireLevel:1,byeolTreats:0,byeolPower:0,allyShotCooldown:0,allyClearCooldown:0,walkVersion:1,prankIndex:0,prank:null,lane:1,x:240,objects:[],spawn:.5,shield:0,fever:0,heat:0,hits:0,combo:0,bestCombo:0,misses:0,nextObject:0,jumpTime:0,jumpCooldown:0,songPickups:0,timeBonus:0,clockPickups:0,rewardTime:0,lastReward:'',byeolTime:0,byeolCooldown:0,transformTime:0,attackCooldown:0,shots:[],effects:[],defeated:0};
+ return {laneTreats:[0,0,0],treatLanes:0,firePickups:0,fireLevel:1,byeolTreats:0,byeolPower:0,allyShotCooldown:0,allyClearCooldown:0,walkVersion:1,prankIndex:0,prank:null,lane:1,x:240,objects:[],spawn:.5,shield:0,fever:0,heat:0,hits:0,combo:0,bestCombo:0,misses:0,nextObject:0,jumpTime:0,jumpCooldown:0,songPickups:0,timeBonus:0,clockPickups:0,rewardTime:0,lastReward:'',byeolTime:0,byeolCooldown:0,transformTime:0,attackCooldown:0,shots:[],effects:[],defeated:0};
 }
 function attack(s){
  if(s.attackCooldown||s.shots.length>=32)return;
@@ -73,7 +75,7 @@ export function stepWalk(s,dt,speed,loseLife){
    if(WALK_ITEMS.includes(o.kind)){
     s.itemPickups++;s.rewardTime=1.4;s.lastReward=o.kind;
     if(o.kind==='treat'){
-     s.treatLanes|=1<<o.lane;s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);s.score+=100+Math.min(10,s.combo)*10;s.event='walk-treat';
+     s.treatLanes|=1<<o.lane;s.laneTreats[o.lane]++;s.hits++;s.combo++;s.bestCombo=Math.max(s.bestCombo,s.combo);s.score+=100+Math.min(10,s.combo)*10;s.event='walk-treat';
      if(++s.byeolTreats>=3){s.byeolTreats=0;s.byeolPower=6;s.byeolCooldown=0;s.event='walk-byeol-power';}
      if(++s.heat>=5){s.heat=0;s.fever=8;s.event='walk-fever';}
     }else if(o.kind==='song'){collectSongTime(s);s.songPickups++;s.prank=null;s.score+=50;s.event='walk-song';}
