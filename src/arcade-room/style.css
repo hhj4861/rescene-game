@@ -289,3 +289,10 @@
  #app[data-may-mode=survival] .game-controls [data-act=down]{grid-column:2;grid-row:3}
  #app[data-may-mode=survival] .game-controls [data-act=right]{grid-column:3;grid-row:2}
 }
+
+/* Keep the recovery action beside the official video, outside the game controls. */
+.video-start{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;font-size:12px;line-height:1.5}
+.video-start:has([data-video-status]:empty){display:none}
+.video-start [data-video-status]{flex:1;min-width:140px}
+.video-start button{min-height:44px;flex:none}
+.video-start button[hidden]{display:none}
