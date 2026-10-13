@@ -12,14 +12,14 @@ export function loadYouTube(){
   script.src='https://www.youtube.com/iframe_api';script.onerror=fail;document.head.append(script);
  });return apiPromise;
 }
-// Only media time may advance a YouTube round. Seeking never consumes a burst of lives.
+// Media delta helper retained for preview/clock validation. Gameplay uses its own timeline.
 export function mediaAdvance(elapsed,time,playing){
  if(!playing||!Number.isFinite(time))return {dt:0,jump:false};
  const delta=time-elapsed;
  return {dt:delta<-.35||delta>1.25?0:Math.max(0,Math.min(60-elapsed,delta)),jump:delta<-.35||delta>1.25};
 }
 export class PumpVideo{
- constructor(host,song,report=()=>{}){this.clock=new MediaClock();this.host=host;this.song=song;this.report=(message,error=false)=>{const card=this.host.closest('.pump-video-card'),label=card?.querySelector('[data-video-status]'),button=card?.querySelector('[data-video-play]');if(label)label.textContent=message;if(button){button.hidden=!this.wanted||this.isPlaying(false);button.disabled=!this.ready||this.failed;}report(message,error);};this.player=null;this.disposed=false;this.ready=false;this.failed=false;this.position=0;this.wanted=false;this.muted=false;this.ducked=false;this.syncing=true;this.timer=0;}
+ constructor(host,song,report=()=>{}){this.clock=new MediaClock();this.host=host;this.song=song;this.report=(message,error=false)=>{const card=this.host.closest('.pump-video-card'),label=card?.querySelector('[data-video-status]'),button=card?.querySelector('[data-video-play]');if(label)label.textContent=message;if(button){button.hidden=!this.wanted||this.isPlaying(false);button.disabled=!this.ready||this.failed;}report(message,error);};this.player=null;this.disposed=false;this.ready=false;this.failed=false;this.position=0;this.wanted=false;this.muted=false;this.ducked=false;this.syncing=true;this.timer=0;this.lastFollow=-Infinity;}
  async mount(){
   this.report('공식 영상 준비 중…');
   try{
@@ -29,7 +29,7 @@ export class PumpVideo{
    this.player=new YT.Player(mount,{width:'100%',height:'100%',videoId:this.song.videoId,playerVars:{playsinline:1,controls:1,rel:0,origin:window.location.origin},events:{
     onReady:()=>{if(this.disposed)return;clearTimeout(this.timer);this.ready=true;this.failed=false;this.player.getIframe().title=`RESCENE · ${this.song.title} 공식 영상`;this.volume();if(this.wanted)this.play(this.position);},
     onStateChange:e=>{if(this.disposed)return;if(e.data===1&&!this.wanted){this.player.pauseVideo();return;}if(e.data===1)this.report(`재생 중 · ${this.song.title}`);else if(e.data===3)this.report('영상 불러오는 중…');else if(e.data===2&&this.wanted)this.report('영상 일시정지 · 영상의 ▶ 버튼으로 이어가요');},
-    onAutoplayBlocked:()=>{if(!this.disposed){const card=this.host.closest('.pump-video-card');if(card){card.dataset.expanded='true';const toggle=card.querySelector('[data-video-toggle]');toggle?.setAttribute('aria-expanded','true');if(toggle)toggle.textContent='영상 접기 ▴';}this.report('영상의 ▶ 버튼을 눌러 시작해 주세요.');}},
+    onAutoplayBlocked:()=>{if(!this.disposed){const card=this.host.closest('.pump-video-card');if(card&&!this.host.closest('[data-game="rhythm"]')){card.dataset.expanded='true';const toggle=card.querySelector('[data-video-toggle]');toggle?.setAttribute('aria-expanded','true');if(toggle)toggle.textContent='영상 접기 ▴';}this.report('음악은 ▶ 버튼으로 켤 수 있어요.');}},
     onError:()=>{if(!this.disposed){this.failed=true;this.wanted=false;this.report('공식 영상을 재생하지 못했어요. 다시 켜거나 다른 곡을 골라 주세요.',true);}}
    }});
   }catch{if(!this.disposed){this.failed=true;this.report('공식 영상을 불러오지 못했어요. 연결을 확인하고 다시 켜 주세요.',true);}}
@@ -37,7 +37,7 @@ export class PumpVideo{
  play(position=0){
   this.clock.reset();this.position=position;this.wanted=true;this.syncing=true;
   if(!this.ready)return;
-  this.report('음악 시작을 누르세요. 재생이 막히면 영상 안의 ▶를 눌러 주세요.');
+  this.report('음악을 켜려면 음악 시작이나 영상 안의 ▶를 눌러 주세요.');
   this.volume();if(this.loaded){this.player.seekTo(position,true);this.player.playVideo();}else{this.loaded=true;this.player.loadVideoById({videoId:this.song.videoId,startSeconds:position,endSeconds:60});}
  }
  volume(){if(!this.ready)return;this.player.setVolume(this.ducked?(this.songDucked?0:20):75);if(this.muted)this.player.mute();else this.player.unMute();}
@@ -45,6 +45,15 @@ export class PumpVideo{
  setDucked(value,song=false){this.ducked=value;this.songDucked=song;this.volume();}
  isPlaying(requireSync=true){return this.ready&&this.wanted&&(!requireSync||!this.syncing)&&this.player.getPlayerState()===1;}
  time(){return this.ready?this.clock.read(this.player.getCurrentTime(),this.isPlaying(false),performance.now()):null;}
+ // The round never waits for YouTube. Late playback catches up to the game.
+ follow(elapsed){
+  this.position=elapsed;
+  if(!this.isPlaying(false))return;
+  const now=performance.now(),time=this.time();
+  if(Number.isFinite(time)&&Math.abs(time-elapsed)>.35&&now-this.lastFollow>1000){
+   this.lastFollow=now;this.player.seekTo(elapsed,true);this.clock.reset();
+  }
+ }
  sample(elapsed){
   if(!this.ready||!this.wanted)return {dt:0,jump:false};
   const status=this.player.getPlayerState(),time=this.time();

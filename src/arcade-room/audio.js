@@ -8,8 +8,16 @@ export class ArcadeAudio {
     try{this.context??=new (window.AudioContext||window.webkitAudioContext)();if(!this.musicBus){this.musicBus=this.context.createGain();this.musicBus.connect(this.context.destination);this.musicBus.gain.value=this.voice?.paused===false?(this.voiceIsSong?0:.2):1;}await this.context.resume();return true;}
     catch{this.enabled=false;return false;}
   }
+  get effectsBlocked(){return !!(this.voiceIsSong||this.suppressEffects?.());}
+  stopTones(){for(const o of this.nodes){try{o.stop();}catch{/* Already ended. */}}this.nodes.clear();}
+  syncEffects(){
+    if(!this.effectsBlocked)return;
+    if(this.pickupVoice)this.stopPickup();
+    if(this.voice&&!this.voiceIsSong)this.cancelVoice();
+    this.stopTones();
+  }
   tone(frequency=600,delay=0,duration=.09){
-    if(!this.enabled||!this.context||this.context.state!=='running')return;
+    if(this.effectsBlocked||!this.enabled||!this.context||this.context.state!=='running')return;
     const c=this.context,o=c.createOscillator(),v=c.createGain(),at=c.currentTime+Math.max(0,delay);
     o.type='sine';o.frequency.value=frequency;v.gain.setValueAtTime(0,at);v.gain.linearRampToValueAtTime(.045,at+.008);v.gain.exponentialRampToValueAtTime(.001,at+duration);
     o.connect(v);v.connect(c.destination);this.nodes.add(o);o.onended=()=>{this.nodes.delete(o);o.disconnect();v.disconnect();};o.start(at);o.stop(at+duration+.01);
@@ -66,14 +74,14 @@ export class ArcadeAudio {
   playReaction(member,pool,report){
     // Rotate actual recordings. Suppressed events never consume a turn or queue audio.
     const now=this.now();
-    if(!this.voiceEnabled||this.voice||this.pickupVoice||!pool?.length||now-(this.reactionAt.get(member)??-Infinity)<4000)return Promise.resolve(false);
+    if(this.effectsBlocked||!this.voiceEnabled||this.voice||this.pickupVoice||!pool?.length||now-(this.reactionAt.get(member)??-Infinity)<4000)return Promise.resolve(false);
     const turn=this.reactionTurns.get(member)||0;
     this.reactionTurns.set(member,turn+1);this.reactionAt.set(member,now);
     return this.playVoice(pool[turn%pool.length],report);
   }
-  // A short discovery voice has its own channel so item singing keeps its clock.
+  // Discovery voices are dropped during songs, never queued for later.
   async playPickup(source,report=()=>{}){
-    if(!this.enabled||!this.voiceEnabled||this.pickupVoice||!source?.file)return false;
+    if(this.effectsBlocked||!this.enabled||!this.voiceEnabled||this.pickupVoice||!source?.file)return false;
     if(this.voice&&!this.voiceIsSong)this.cancelVoice();
     const clip=new window.Audio(source.file);this.pickupVoice=clip;clip.volume=.95;
     const current=()=>this.pickupVoice===clip;
@@ -95,8 +103,10 @@ export class ArcadeAudio {
   async playVoice(source,report=()=>{},{minIntervalMs=0,interrupt=false,durationSeconds=0,member=null}={}){
     // Drop frequent automatic rewards; never queue or restart the active clip.
     // Keep timestamps across stop/pause and stage changes. Explicit replay bypasses this.
+    if(source?.kind!=='song'&&this.effectsBlocked)return false;
     const now=this.now();
     if(minIntervalMs>0&&((this.voice&&!interrupt)||now-(this.voiceStartedAt.get(source?.file)??-Infinity)<minIntervalMs))return false;
+    if(source?.kind==='song'){this.stopPickup();this.stopTones();}
     this.cancelVoice();const request=this.voiceRequest;
     const current=()=>request===this.voiceRequest;
     if(!source?.file){report('연결된 음성이 없어요. 자막으로 확인해 주세요.');return false;}

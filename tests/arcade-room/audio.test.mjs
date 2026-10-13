@@ -126,11 +126,11 @@ test('remaining item song time follows playback, freezes on pause and expires fo
  t.mock.timers.enable({apis:['setTimeout']});const {audio,clips,setTime}=fixture(t);const play=audio.playVoice({kind:'song',file:'full-woni.mp3',loop:false},undefined,{durationSeconds:41,member:'woni'});clips[0].onplaying();clips[0].resolve();await play;setTime(10000);assert.equal(audio.itemSongSecondsRemaining,31);audio.pauseItemSong();setTime(30000);assert.equal(audio.itemSongSecondsRemaining,31);audio.stop();assert.equal(audio.itemSongSecondsRemaining,0);
 });
 
-test('bread discovery plays beside an item song without replacing it or resetting its timer',async t=>{
+test('songs suppress discovery, reaction and manual effects without replacing or queuing the song',async t=>{
  const {audio,clips}=fixture(t);const song=audio.playVoice({kind:'song',file:'song.mp3',loop:false},undefined,{durationSeconds:60,member:'zena'});clips[0].resolve();await song;
- const pickup=audio.playPickup({file:'tenwon.mp3',spoken:'십원빵 아이가'});clips[1].onplaying();clips[1].resolve();assert.equal(await pickup,true);
- assert.equal(audio.voice,clips[0]);assert.equal(audio.itemSongRemaining,60000);assert.equal(audio.itemSongMember,'zena');assert.notEqual(clips[0].paused,true);
- clips[1].onended();assert.equal(audio.pickupVoice,null);assert.equal(audio.voice,clips[0]);audio.stop();
+ assert.equal(await audio.playPickup({file:'tenwon.mp3'}),false);assert.equal(await audio.playReaction('zena',[{file:'reaction.mp3'}]),false);assert.equal(await audio.playVoice({file:'clear.mp3'}),false);
+ assert.equal(clips.length,1);assert.equal(audio.voice,clips[0]);assert.equal(audio.itemSongRemaining,60000);assert.equal(audio.itemSongMember,'zena');assert.equal(audio.reactionTurns.size,0);
+ clips[0].onended();assert.equal(clips.length,1);const pickup=audio.playPickup({file:'tenwon.mp3'});clips[1].resolve();assert.equal(await pickup,true);audio.stop();
 });
 test('bread discovery coalesces simultaneous finds, overrides a normal reaction and stops on pause',async t=>{
  const {audio,clips}=fixture(t);const reaction=audio.playVoice({file:'reaction.mp3'});clips[0].resolve();await reaction;
@@ -146,4 +146,16 @@ test('bread discovery respects both mute switches and can retry after a playback
 test('stage clear may preserve the final bread voice, while leaving the game stops it',async t=>{
  const {audio,clips}=fixture(t);const pickup=audio.playPickup({file:'tenwon.mp3'});clips[0].resolve();await pickup;
  audio.stop({preservePickup:true});assert.equal(audio.pickupVoice,clips[0]);assert.notEqual(clips[0].paused,true);audio.stop();assert.equal(clips[0].paused,true);
+});
+
+test('starting a song cancels active discovery and scheduled tones immediately',async t=>{
+ const {audio,clips}=fixture(t);const pickup=audio.playPickup({file:'tenwon.mp3'});clips[0].resolve();await pickup;let stopped=0;audio.nodes.add({stop(){stopped++;}});
+ const song=audio.playVoice({kind:'song',file:'song.mp3'});assert.equal(clips[0].paused,true);assert.equal(audio.pickupVoice,null);assert.equal(stopped,1);assert.equal(audio.nodes.size,0);clips[1].resolve();await song;audio.stop();
+});
+test('external songs stop in-flight effects, drop new effects and allow them only after ending',async t=>{
+ const {audio,clips}=fixture(t);let external=false,stopped=0;audio.suppressEffects=()=>external;
+ const reaction=audio.playVoice({file:'reaction.mp3'});clips[0].resolve();await reaction;audio.nodes.add({stop(){stopped++;}});external=true;audio.syncEffects();assert.equal(clips[0].paused,true);assert.equal(stopped,1);
+ audio.context={state:'running',createOscillator(){assert.fail('effect oscillator created during song');}};
+ audio.tone();assert.equal(await audio.playVoice({file:'clear.mp3'}),false);assert.equal(await audio.playPickup({file:'tenwon.mp3'}),false);assert.equal(await audio.playReaction('liv',[{file:'reaction.mp3'}]),false);assert.equal(clips.length,1);
+ external=false;const next=audio.playVoice({file:'clear.mp3'});clips[1].resolve();assert.equal(await next,true);audio.stop();
 });
