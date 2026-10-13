@@ -230,7 +230,11 @@
 /* Tools precede the finite board in both DOM and visual order. */
 #app[data-game=photo] .game-controls{padding:4px 0 10px;position:sticky;top:0;z-index:3;background:inherit}
 #app[data-game=photo] .game-controls button{min-width:0}
-.song-levels{flex-wrap:wrap}.song-levels button{min-width:90px}
+/* Keep the song picker steady when a delayed webfont replaces fallback text. */
+.song-room{line-height:1.5}.song-host h1,.song-now h2{line-height:1.3}
+.song-levels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.song-levels button{min-width:0}
+.song-actions .start{line-height:1.4}
+@media(max-width:700px){.song-levels{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){
  #app[data-game=photo] .topbar{height:52px;padding-top:4px;padding-bottom:4px}
  #app[data-game=photo] .companion{display:none}
