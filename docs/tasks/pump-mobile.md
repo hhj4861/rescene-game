@@ -41,3 +41,13 @@
 - 실제 영상 재생 화면과 차단 상태 모바일 버튼 캡처를 시각 확인했다. 기존 게임/설정 배치와 44px 버튼 유지.
 - 검증 빌드 app-Xy1xgYBf.js / app-JWkNGb3f.css. 근거: unit.log, build.log, browser.log/browser/, live.log, live-final.json, live-final-playing.png.
 - 현재: PR #26 최신 통합·로컬 검증 완료. 작업 브랜치에 커밋·push하며 원격 전체 CI 확인 후 별도 머지 승인을 받는다. main·운영 미반영.
+
+## 승인 후 운영 반영 — 2026-10-13
+
+- 사용자 ‘응 진행해줘’ 승인으로 PR #26을 머지하고 운영 배포했다. main `8e249eb957f52c3ef9a24d2030638a28d1260f51`은 검증 head `ccc91a5`와 동일한 Git 트리다.
+- 원격 전체 [CI 38357673458](https://github.com/hhj4861/rescene-game/actions/runs/38357673458)에서 단위 213개·E2E 642개 통과/6개 조건부 생략/실패 0개·린트·빌드 통과. 성공한 정적 산출물 그대로 배포했다.
+- [운영 게임](https://rescene-arcade.pages.dev/), Pages `40dd37ac-0536-4117-b54d-785b34e2641b`, Production/main/source 8e249eb. 공개 파일 41개 SHA-256 모두 일치.
+- 운영 실제 YouTube / 모바일 WebKit 에뮬레이션에서 차단 후 음악 시작 탭, 동일 iframe 재생(1.11초, paused=false/muted=false/volume>0), 게임 시간 진행, 정지·이어하기·저장·이탈 검증 통과. 물리 기기 청음은 미검증.
+- 운영 증거: iCloud 작업 루트 `rescene-game/pr26-deploy-20261013/`. 이전 절의 main·운영 미반영 표시는 당시 이력이며 이 배포로 완료했다.
+- 운영 관련 E2E 131개 통과·1개 조건부 생략·실패 0개(4.1분). PC Chromium·모바일 Chromium·모바일 WebKit의 차단/재시도·터치/Enter·오류 복구·저장·지연 폰트·영상 배치 회귀 검증. YouTube API 대역 검사이며 위 실제 영상 검사와 구분한다.
+- 현재: PR 머지·운영 반영·공개 검증 완료. 별도 남은 검증은 물리 iPhone/Android 조작·청음과 다섯 곡 전 구간 박자 확인이다.

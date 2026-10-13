@@ -4,6 +4,18 @@
 
 
 
+## 모바일 펌프 음악 시작·재시도 복구 운영 배포 — 2026-10-13
+
+- 사용자 명시 승인 후 [PR #26](https://github.com/hhj4861/rescene-game/pull/26)을 main에 머지했다. 운영 소스 `8e249eb957f52c3ef9a24d2030638a28d1260f51`와 검증 head `ccc91a59c4d01e50afdb16e9f81ce76b90d830b5`의 Git 트리 `fcc5d9d2c17d93535749dab8c53582258f0bd06c`가 동일하다.
+- [성공 CI 38357673458](https://github.com/hhj4861/rescene-game/actions/runs/38357673458): 단위 213개, E2E 642개 통과·6개 조건부 생략·실패 0개, 린트·빌드 통과. 해당 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `40dd37ac-0536-4117-b54d-785b34e2641b`: **Production / main / source `8e249eb`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://40dd37ac.rescene-arcade.pages.dev).
+- 펌프 영상 옆에 재생 상태와 ‘음악 시작 ▶’ 버튼을 제공한다. 자동재생이 차단돼도 준비된 iframe을 재사용해 직접 시작·재시도할 수 있고, 실제 오류 때만 플레이어를 다시 만든다. 최신 영상 접기·설정 그룹·게이지와 리브 배치를 유지했다. [상세 변경·검증](../tasks/pump-mobile.md).
+- 공개 파일 **41개 모두 CI 빌드와 SHA-256 일치**.
+- 운영 주소 관련 E2E **131개 통과·1개 조건부 생략·실패 0개**(4.1분). PC Chromium·모바일 Chromium·모바일 WebKit에서 자동재생 차단 복구, 동일 iframe 재시도, 터치/Enter 미리듣기, 오류 복구, 저장, 지연 폰트, 콤보 음성, 영상 접기·안내·리브 배치를 확인했다. PC의 모바일 탭 검사 1개는 생략했으며 이 회귀 검사의 YouTube API는 대역을 사용했다. 아래 실제 영상 검증과 구분한다.
+- 실제 YouTube LOVE ATTACK을 운영 주소 / iPhone 13 WebKit 에뮬레이션에서 확인했다. 차단 중 게임 60초 정지 → ‘음악 시작’ 탭 → 같은 iframe의 영상 1.11초·게임 59초, paused=false·muted=false·volume>0. 일시정지 시계 동결·이어하기·저장·오락실 이탈을 검증하고 화면 캡처를 확인했다. 물리 기기 청음이나 다섯 곡 전체 박자 검증은 아니다.
+- 기존 Wrangler 로그인으로 배포했다. CI 인증·도메인·자동 배포 설정과 타 세션 미추적 파일은 보존했다.
+- 증거: iCloud 작업 루트 `rescene-game/pr26-deploy-20261013/`의 `site/`, `deploy.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`, `live.log`, `live-final.json`, `live-final-playing.png`.
+
 ## 펌프 시작 안정성 운영 배포 — 2026-10-13
 
 - 사용자 명시 승인 후 [PR #36](https://github.com/hhj4861/rescene-game/pull/36)을 main에 머지했다. 운영 소스 `d43ad8a798a696e3886602cbf4fc9e669937c349`와 검증 head `08525123ac6bf6c9af53f01b0a86ef6ea6c9cf41`의 Git 트리 `575ea7325c839e47f159389fe7ccba500b08f428`가 동일하다.
