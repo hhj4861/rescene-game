@@ -97,3 +97,53 @@ test('song rewards silence both music buses and restore them on completion or ca
   const p=audio.playVoice({kind:'song',file:'score.mp3',title:'Cover'});const clip=clips.at(-1);clip.resolve();await p;clip.onplaying();assert.equal(ramps.at(-1),0);assert.deepEqual(external.at(-1),{active:true,song:true});if(end==='stop')audio.stop();else clip[end]();assert.equal(audio.voiceIsSong,false);assert.equal(ramps.at(-1),1);assert.equal(external.at(-1).active,false);
  }
 });
+
+test('item singing loops for a minute, survives stage cleanup, pauses and stops exactly at its remaining time',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});const {audio,clips,setTime}=fixture(t);
+ const playing=audio.playVoice({kind:'song',file:'may-song.mp3',title:'May'},undefined,{durationSeconds:60,member:'may'});clips[0].onplaying();clips[0].resolve();await playing;assert.equal(clips[0].loop,true);
+ setTime(20000);t.mock.timers.tick(20000);audio.stop({preserveSong:true});assert.equal(audio.voice,clips[0]);audio.pauseItemSong();assert.equal(audio.itemSongRemaining,40000);t.mock.timers.tick(60000);assert.equal(audio.voice,clips[0]);
+ const resumed=audio.resumeItemSong();clips[0].resolve();await resumed;t.mock.timers.tick(39999);assert.equal(audio.voice,clips[0]);t.mock.timers.tick(1);assert.equal(audio.voice,null);assert.equal(clips[0].paused,true);
+});
+
+test('pausing a pending item song keeps it resumable after WebKit AbortError',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});const {audio,clips}=fixture(t),abort=Object.assign(Error('play interrupted by pause'),{name:'AbortError'});
+ const first=audio.playVoice({kind:'song',file:'woni-song.mp3'},undefined,{durationSeconds:60,member:'woni'});audio.pauseItemSong();audio.stop({preserveSong:true});clips[0].reject(abort);await first;assert.equal(audio.voice,clips[0]);assert.equal(audio.itemSongRemaining,60000);
+ const resume=audio.resumeItemSong();audio.pauseItemSong();clips[0].reject(abort);await resume;assert.equal(audio.voice,clips[0]);
+ const next=audio.resumeItemSong();clips[0].onplaying();clips[0].resolve();await next;t.mock.timers.tick(60000);assert.equal(audio.voice,null);
+});
+test('a stale resume rejection never cancels a newer item song',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});const {audio,clips}=fixture(t);
+ const first=audio.playVoice({kind:'song',file:'woni-song.mp3'},undefined,{durationSeconds:60,member:'woni'});clips[0].resolve();await first;
+ const oldResume=audio.resumeItemSong(),next=audio.playVoice({kind:'song',file:'may-song.mp3'},undefined,{durationSeconds:60,member:'may'});clips[0].reject(Error('old failure'));await oldResume;assert.equal(audio.voice,clips[1]);clips[1].resolve();await next;audio.stop();
+});
+
+test('a full item song never loops and its natural end releases the song timer and music ducking',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});const {audio,clips}=fixture(t),messages=[];
+ const play=audio.playVoice({kind:'song',file:'full-woni.mp3',loop:false},message=>messages.push(message),{durationSeconds:41,member:'woni'});clips[0].onplaying();clips[0].resolve();await play;assert.equal(clips[0].loop,false);assert.equal(audio.itemSongRemaining,41000);clips[0].onended();assert.equal(audio.voice,null);assert.equal(audio.itemSongTimer,null);assert.equal(audio.itemSongMember,null);assert.equal(audio.voiceIsSong,false);const before=[...messages];t.mock.timers.tick(42000);assert.deepEqual(messages,before);
+});
+
+test('remaining item song time follows playback, freezes on pause and expires for next-stage item gating',async t=>{
+ t.mock.timers.enable({apis:['setTimeout']});const {audio,clips,setTime}=fixture(t);const play=audio.playVoice({kind:'song',file:'full-woni.mp3',loop:false},undefined,{durationSeconds:41,member:'woni'});clips[0].onplaying();clips[0].resolve();await play;setTime(10000);assert.equal(audio.itemSongSecondsRemaining,31);audio.pauseItemSong();setTime(30000);assert.equal(audio.itemSongSecondsRemaining,31);audio.stop();assert.equal(audio.itemSongSecondsRemaining,0);
+});
+
+test('bread discovery plays beside an item song without replacing it or resetting its timer',async t=>{
+ const {audio,clips}=fixture(t);const song=audio.playVoice({kind:'song',file:'song.mp3',loop:false},undefined,{durationSeconds:60,member:'zena'});clips[0].resolve();await song;
+ const pickup=audio.playPickup({file:'tenwon.mp3',spoken:'십원빵 아이가'});clips[1].onplaying();clips[1].resolve();assert.equal(await pickup,true);
+ assert.equal(audio.voice,clips[0]);assert.equal(audio.itemSongRemaining,60000);assert.equal(audio.itemSongMember,'zena');assert.notEqual(clips[0].paused,true);
+ clips[1].onended();assert.equal(audio.pickupVoice,null);assert.equal(audio.voice,clips[0]);audio.stop();
+});
+test('bread discovery coalesces simultaneous finds, overrides a normal reaction and stops on pause',async t=>{
+ const {audio,clips}=fixture(t);const reaction=audio.playVoice({file:'reaction.mp3'});clips[0].resolve();await reaction;
+ const pickup=audio.playPickup({file:'tenwon.mp3'});assert.equal(clips[0].paused,true);clips[1].resolve();await pickup;
+ assert.equal(await audio.playPickup({file:'tenwon.mp3'}),false);assert.equal(clips.length,2);
+ assert.equal(await audio.playReaction('zena',[{file:'reaction.mp3'}]),false);audio.stop({preserveSong:true});assert.equal(clips[1].paused,true);assert.equal(audio.pickupVoice,null);
+});
+test('bread discovery respects both mute switches and can retry after a playback error',async t=>{
+ const {audio,clips}=fixture(t);audio.enabled=false;assert.equal(await audio.playPickup({file:'tenwon.mp3'}),false);audio.enabled=true;audio.voiceEnabled=false;assert.equal(await audio.playPickup({file:'tenwon.mp3'}),false);assert.equal(clips.length,0);
+ audio.voiceEnabled=true;const failed=audio.playPickup({file:'tenwon.mp3'});clips[0].reject(Error('blocked'));assert.equal(await failed,false);assert.equal(audio.pickupVoice,null);
+ const retry=audio.playPickup({file:'tenwon.mp3'});clips[1].resolve();assert.equal(await retry,true);audio.stop();
+});
+test('stage clear may preserve the final bread voice, while leaving the game stops it',async t=>{
+ const {audio,clips}=fixture(t);const pickup=audio.playPickup({file:'tenwon.mp3'});clips[0].resolve();await pickup;
+ audio.stop({preservePickup:true});assert.equal(audio.pickupVoice,clips[0]);assert.notEqual(clips[0].paused,true);audio.stop();assert.equal(clips[0].paused,true);
+});

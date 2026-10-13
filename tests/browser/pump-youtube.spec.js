@@ -28,11 +28,11 @@ test('API failure can recover without discarding the selected official song or s
 });
 
 test('focusing native video controls keeps the round active, but leaving the tab pauses it',async({page})=>{
- await fakeApi(page);await open(page);await begin(page);await page.locator('#pump-video iframe').click();await page.clock.runFor(100);await expect(page.locator('#app')).toHaveAttribute('data-state','playing');await page.locator('#game').focus();await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.clock.runFor(50);await expect(page.locator('#app')).toHaveAttribute('data-state','paused');expect(await page.evaluate(()=>window.ytPlayers.at(-1).status)).toBe(2);
+ await fakeApi(page);await open(page);await begin(page);if(await page.locator('[data-video-toggle]').isVisible())await page.locator('[data-video-toggle]').click();await page.locator('#pump-video iframe').click();await page.clock.runFor(100);await expect(page.locator('#app')).toHaveAttribute('data-state','playing');await page.locator('#game').focus();await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.clock.runFor(50);await expect(page.locator('#app')).toHaveAttribute('data-state','paused');expect(await page.evaluate(()=>window.ytPlayers.at(-1).status)).toBe(2);
 });
 
-test('an official song reaches the result even if every note is missed',async({page})=>{
- await fakeApi(page);await open(page);await begin(page);await page.clock.runFor(15000);await expect(page.locator('#app')).toHaveAttribute('data-state','playing');await page.locator('[data-pause]').click();expect((await saved(page)).misses).toBeGreaterThan(3);await page.locator('[data-resume]').click();await page.clock.runFor(45100);await expect(page.locator('#result-title')).toHaveText('무대 완주!');await expect(page.locator('.result-paper h2')).toHaveText('0점');await expect(page.locator('.pump-result-summary')).toContainText('노트 적중률 0%');expect(await page.evaluate(()=>window.ytPlayers.every(p=>p.destroyed))).toBe(true);await page.locator('.result-paper [data-pump-picker]').click();await expect(page.locator('#app')).toHaveAttribute('data-state','songs');
+test('an official song pauses and then ends when missed notes drain the gauge',async({page})=>{
+ await fakeApi(page);await open(page);await begin(page);await page.clock.runFor(4000);await expect(page.locator('#app')).toHaveAttribute('data-state','playing');await page.locator('[data-pause]').click();expect((await saved(page)).misses).toBeGreaterThan(0);await page.locator('[data-resume]').click();await page.clock.runFor(45100);await expect(page.locator('#result-title')).toHaveText('게이지 소진 · GAME OVER');await expect(page.locator('.result-paper h2')).toHaveText('0점');await expect(page.locator('.pump-result-summary')).toContainText('노트 적중률 0%');expect(await page.evaluate(()=>window.ytPlayers.every(p=>p.destroyed))).toBe(true);await page.locator('.result-paper [data-pump-picker]').click();await expect(page.locator('#app')).toHaveAttribute('data-state','songs');
 });
 
 // A blocked, already-ready player must be reused so a mobile tap can authorize it.
@@ -44,4 +44,14 @@ test('blocked playback has an adjacent touch start and preserves progress on res
  await fakeApi(page,true);await open(page);await page.locator('[data-song-start]').click();const start=page.locator('[data-video-play]');await expect(start).toBeVisible();await expect(start).toBeEnabled();await page.clock.runFor(5000);await expect(page.locator('#time')).toHaveText('60초');
  await page.screenshot({path:info.outputPath('pump-tap-to-start.png'),fullPage:true});
  if(info.project.name==='desktop-chromium')await start.click();else await start.tap();await expect(page.locator('#music-status')).toContainText('재생 중');await expect(start).toBeHidden();await page.clock.runFor(1500);await expect(page.locator('#time')).toHaveText('59초');await page.locator('[data-pause]').click();const before=await saved(page);await page.locator('[data-resume]').click();await page.clock.runFor(500);await page.locator('[data-pause]').click();expect((await saved(page)).elapsed).toBeGreaterThan(before.elapsed);expect(await page.evaluate(()=>window.ytPlayers.length)).toBe(1);
+});
+
+test('blocked preview starts from its adjacent button with the keyboard',async({page})=>{
+ await fakeApi(page,true);await open(page);await page.locator('[data-song-preview]').click();const play=page.locator('[data-video-play]');await expect(play).toBeVisible();await play.focus();await page.keyboard.press('Enter');await expect(page.locator('#song-preview-status')).toContainText('재생 중');await expect(play).toBeHidden();expect(await page.evaluate(()=>window.ytPlayers.length)).toBe(1);
+ await page.clock.runFor(8100);expect(await page.evaluate(()=>window.ytPlayers.at(-1).status)).toBe(2);await expect(play).toBeHidden();
+});
+test('an errored ready player is replaced while the selected song and progress survive',async({page})=>{
+ await fakeApi(page);await open(page);await page.locator('[data-song="pinball"]').click();await begin(page);await page.clock.runFor(1200);
+ await page.evaluate(()=>window.ytPlayers.at(-1).events.onError({data:150}));await expect(page.locator('#app')).toHaveAttribute('data-state','paused');const before=await saved(page);
+ await page.locator('[data-retry-music]').click();await expect(page.locator('#music-status')).toContainText('재생 중 · Pinball');expect(await page.evaluate(()=>window.ytPlayers.length)).toBe(2);expect(await page.evaluate(()=>window.ytPlayers[0].destroyed)).toBe(true);expect(await page.evaluate(()=>window.ytPlayers.at(-1).loaded.startSeconds)).toBeCloseTo(before.elapsed,2);await page.clock.runFor(500);await page.locator('[data-pause]').click();expect((await saved(page)).elapsed).toBeGreaterThan(before.elapsed);
 });

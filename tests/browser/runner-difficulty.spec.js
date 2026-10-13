@@ -3,7 +3,7 @@ import {test,expect} from '@playwright/test';
 import {createGame} from '../../src/arcade-room/model.js';
 import {emptyProgress,snapshotRound,PROGRESS_KEY} from '../../src/arcade-room/progress.js';
 test('Liv strengthened boss and escorts persist through pause and reload, with working lane controls',async({page,isMobile},info)=>{
- const s=createGame('catch',{stage:5,seed:7});s.defeated=13;s.gatesTaken=2;s.spawn=0;s.gates=[];s.squad=12;s.volley=2;
+ const s=createGame('catch',{stage:5,seed:7});s.elapsed=120;s.remaining=180;s.firstItemAt=0;s.defeated=13;s.gatesTaken=2;s.spawn=0;s.gates=[];s.squad=12;s.volley=2;
  const p=emptyProgress();p.games.catch={stage:5,highest:5,hearts:3,snapshot:snapshotRound(s)};
  await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);},{key:PROGRESS_KEY,value:JSON.stringify(p)});
  await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.locator('[data-start="catch"].start').click();await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-resume]').click();

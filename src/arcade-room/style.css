@@ -35,12 +35,12 @@
 .journey-card{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:10px 12px;margin:8px 0 12px;background:#fff9e9;border-radius:12px;font-size:12px}.journey-card>span,#lives,.result-lives{color:#a94f55;letter-spacing:.1em}.journey-card small{flex-basis:100%;font-size:10px;color:#607c70}.stage-goal #lives{font-size:12px;white-space:nowrap}.result-paper .result-lives{font-size:12px;margin:9px 0}.stage-goal{gap:5px}
 
 /* Direct board input, platform buttons and the five-panel dance pad. */
-.field-controls{position:absolute;inset:0;pointer-events:none}.field-controls button{position:absolute;padding:0;background:transparent;border:0;border-radius:12px;pointer-events:auto;touch-action:none}.field-controls button:active{translate:none}.field-controls button:focus-visible{outline:3px solid #cb824d;outline-offset:-4px;background:#fff7d51c}.game-controls .tap-instruction{font-size:12px;min-height:35px;display:flex;align-items:center;justify-content:center;width:100%}.game-controls .skill-button{font-size:17px;background:#fff0b6;width:100%}.game-controls .jump{font-size:16px;background:#fff0c3}.game-controls .bubble-button{font-size:16px;background:#e1d5ef}.pump-pad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,48px);gap:5px;width:100%;max-width:310px;margin:auto}.pump-pad button{font-size:26px;border-radius:12px;min-height:44px;background:#92cbd3;position:relative}.pump-pad button small{font:10px sans-serif;position:absolute;right:8px;bottom:6px}.pump-pad .pad-0{grid-area:3/1;background:#edaec0}.pump-pad .pad-1{grid-area:1/1}.pump-pad .pad-2{grid-area:2/2;background:#f2d384}.pump-pad .pad-3{grid-area:1/3}.pump-pad .pad-4{grid-area:3/3;background:#edaec0}.pump-pad button.lit{box-shadow:0 0 14px #fff5b5;filter:brightness(1.17)}#app[data-game="rhythm"] .game-controls{padding:10px 0 0}.signature-toast{top:0;right:0;transform:scale(.75);transform-origin:top right}.playfield canvas{touch-action:none}
-@media(max-width:700px){.playfield,#app[data-game="blocks"] .playfield{width:100%}#app[data-game="blocks"] .playfield{max-width:calc((100svh - 265px)*.8);min-width:215px}#app[data-game="rhythm"] .playfield{max-width:calc((100svh - 385px)*.8);min-width:190px}.pump-pad{grid-template-rows:repeat(3,42px);max-width:280px;gap:4px}.pump-pad button{min-height:40px;font-size:24px}.pump-pad button small{display:block}.game-controls .jump,.game-controls .bubble-button{font-size:13px}.companion h1{font-size:20px}.field-controls button{border-radius:8px}}
+.field-controls{position:absolute;inset:0;pointer-events:none}.field-controls button{position:absolute;padding:0;background:transparent;border:0;border-radius:12px;pointer-events:auto;touch-action:none}.field-controls button:active{translate:none}.field-controls button:focus-visible{outline:3px solid #cb824d;outline-offset:-4px;background:#fff7d51c}.game-controls .tap-instruction{font-size:12px;min-height:35px;display:flex;align-items:center;justify-content:center;width:100%}.game-controls .skill-button{font-size:17px;background:#fff0b6;width:100%}.game-controls .jump{font-size:16px;background:#fff0c3}.game-controls .bubble-button{font-size:16px;background:#e1d5ef}#app[data-game="rhythm"] .game-controls{padding:10px 0 0}.signature-toast{top:0;right:0;transform:scale(.75);transform-origin:top right}.playfield canvas{touch-action:none}
+@media(max-width:700px){.playfield,#app[data-game="blocks"] .playfield{width:100%}#app[data-game="blocks"] .playfield{max-width:calc((100svh - 265px)*.8);min-width:215px}#app[data-game="rhythm"] .playfield{max-width:calc((100svh - 275px)*.8);min-width:190px}.game-controls .jump,.game-controls .bubble-button{font-size:13px}.companion h1{font-size:20px}.field-controls button{border-radius:8px}}
 
 /* The companion reacts outside the note lanes; no celebration covers a receptor. */
 #app[data-game="rhythm"] .signature-toast{display:none}
-@media(max-width:700px) and (max-height:650px){#app[data-game="rhythm"] .playfield{min-width:150px;max-width:calc((100svh - 385px)*.8)}#app[data-game] .topbar{height:60px;padding-top:8px;padding-bottom:8px}.pump-pad{grid-template-rows:repeat(3,44px)}#app[data-game="blocks"] .playfield{min-width:180px;max-width:calc((100svh - 300px)*.8)}}
+@media(max-width:700px) and (max-height:650px){#app[data-game="rhythm"] .playfield{min-width:150px;max-width:calc((100svh - 275px)*.8)}#app[data-game] .topbar{height:60px;padding-top:8px;padding-bottom:8px}#app[data-game="blocks"] .playfield{min-width:180px;max-width:calc((100svh - 300px)*.8)}}
 
 .game-controls .turn{font-size:12px;min-width:44px;background:#e6d8ed}
 
@@ -78,8 +78,8 @@
 @media(max-width:700px){.song-room{margin:18px auto;padding:0 14px;display:block;max-width:460px}.song-host{position:relative;padding-right:80px;min-height:90px}.song-host h1{font-size:28px;margin:5px 0}.song-host>p{font-size:11px;margin:4px 0}.song-host .doll{position:absolute;right:0;top:-6px;width:74px;height:96px}.song-host>p:last-child{display:none}.song-console{padding:16px;border-radius:22px}.song-now{gap:12px}.song-now h2{font-size:22px}.song-record{flex-basis:60px;height:60px;border-width:11px;font-size:23px}.song-list button{padding:12px}.song-actions{gap:8px}.song-actions .start{font-size:17px}.song-actions .quiet{padding:8px}.song-levels{margin:18px 0}.song-levels button{font-size:13px}}
 
 /* Keep the official player visible, unobscured and at least 200px tall. */
-.practice-songs{margin-top:14px;font-size:12px}.practice-songs summary{cursor:pointer;padding:12px}.pump-video-card{margin:14px 0 0;min-width:0;background:#fff9e9;border-radius:12px;padding:10px}.pump-video-host{width:100%;height:225px;min-width:200px;min-height:200px;background:#202638;color:#fff;display:grid;place-items:center}.pump-video-host>span{padding:16px;font-size:12px}.pump-video-host iframe{display:block;width:100%;height:100%;border:0;min-height:200px}.pump-video-card>p{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 0;font-size:11px}.pump-video-card a{color:var(--ink);padding:5px}.has-video{grid-template-columns:minmax(260px,400px) minmax(300px,440px);gap:18px 28px}.has-video .companion{grid-column:1;grid-row:1;display:grid;grid-template-columns:90px 1fr;grid-template-rows:auto auto}.has-video .companion .text-back,.has-video .companion .key-guide{display:none}.has-video .companion .doll{grid-column:1;grid-row:1/4;width:85px;height:100px;margin:0}.has-video .companion h1{font-size:25px;grid-column:2}.has-video .companion .host-name{grid-column:2}.has-video .companion .host-line{grid-column:2;font-size:13px;padding:8px;margin:6px 0}.has-video .pump-video-card{grid-column:1;grid-row:2;margin:0}.has-video .game-cabinet{grid-column:2;grid-row:1/4}.has-video .side-note{grid-column:1;grid-row:3;display:block;padding:0;margin:0}.has-video .side-note>p{margin:12px 0}.has-video .side-note>small{max-width:none}
-@media(max-width:700px){#app[data-game=rhythm] .has-video{max-width:440px;gap:6px;margin-top:6px}.has-video .companion{display:none}.has-video .pump-video-card{order:0;width:100%;padding:5px}.has-video .pump-video-host{height:200px}.has-video .pump-video-card>p{font-size:10px;margin:2px 0 0}.has-video .game-cabinet{order:1;padding:5px 8px}.has-video .side-note{order:2;display:flex;flex-wrap:wrap;gap:8px}.has-video .side-note>p{margin:0}#app[data-game=rhythm] .has-video .playfield{min-width:0;max-width:100%;width:100%}.has-video .scoreboard{padding:2px 0}.has-video .scoreboard strong{font-size:18px}.has-video .game-cabinet>.mobile-hint{display:none}.has-video .pump-pad{grid-template-rows:repeat(3,40px);max-width:300px}.has-video .game-controls{padding-top:5px!important}.has-video .stage-goal{font-size:11px}.has-video .pump-pad button{min-height:40px}#app:has(.has-video) .topbar{height:52px;padding-top:4px;padding-bottom:4px}}
+.practice-songs{margin-top:14px;font-size:12px}.practice-songs summary{cursor:pointer;padding:12px}.pump-video-card{margin:14px 0 0;min-width:0;background:#fff9e9;border-radius:12px;padding:10px}.pump-video-host{width:100%;height:225px;min-width:200px;min-height:200px;background:#202638;color:#fff;display:grid;place-items:center}.pump-video-host>span{padding:16px;font-size:12px}.pump-video-host iframe{display:block;width:100%;height:100%;border:0;min-height:200px}.pump-video-card p{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 0;font-size:11px}.pump-video-card a{color:var(--ink);padding:5px}.has-video{grid-template-columns:minmax(260px,400px) minmax(300px,440px);gap:18px 28px}.has-video .companion{grid-column:1;grid-row:1;display:grid;grid-template-columns:90px 1fr;grid-template-rows:auto auto}.has-video .companion .text-back,.has-video .companion .key-guide{display:none}.has-video .companion .doll{grid-column:1;grid-row:1/4;width:85px;height:100px;margin:0}.has-video .companion h1{font-size:25px;grid-column:2}.has-video .companion .host-name{grid-column:2}.has-video .companion .host-line{grid-column:2;font-size:13px;padding:8px;margin:6px 0}.has-video .pump-video-card{grid-column:1;grid-row:2;margin:0}.has-video .game-cabinet{grid-column:2;grid-row:1/4}.has-video .side-note{grid-column:1;grid-row:3;display:block;padding:0;margin:0}.has-video .side-note>p{margin:12px 0}.has-video .side-note>small{max-width:none}
+@media(max-width:700px){#app[data-game=rhythm] .has-video{max-width:440px;gap:6px;margin-top:6px}.has-video .companion{display:none}.has-video .pump-video-card{order:0;width:100%;padding:5px}.has-video .pump-video-host{height:200px}.has-video .pump-video-card p{font-size:10px;margin:2px 0 0}.has-video .game-cabinet{order:1;padding:5px 8px}.has-video .side-note{order:2;display:flex;flex-wrap:wrap;gap:8px}.has-video .side-note>p{margin:0}#app[data-game=rhythm] .has-video .playfield{min-width:0;max-width:100%;width:100%}.has-video .scoreboard{padding:2px 0}.has-video .scoreboard strong{font-size:18px}.has-video .game-cabinet>.mobile-hint{display:none}.has-video .game-controls{padding-top:5px!important}.has-video .stage-goal{font-size:11px}#app:has(.has-video) .topbar{height:52px;padding-top:4px;padding-bottom:4px}}
 
 @media(max-width:700px){.has-video .companion{display:grid;grid-template-columns:42px 1fr;grid-template-rows:16px 24px;order:-1;height:42px;min-height:42px}.has-video .companion .doll{width:38px;height:42px;grid-row:1/3}.has-video .companion .host-name{font-size:10px}.has-video .companion h1{font-size:19px}.has-video .companion .host-line{display:none}}
 
@@ -88,7 +88,7 @@
 @media(max-width:700px) and (max-height:700px){#app[data-game=catch] .has-video{gap:4px;margin-top:4px}#app[data-game=catch] .has-video .companion{display:none}#app[data-game=catch] .has-video .playfield{width:clamp(108px,calc((100svh - 440px)*.8),200px);min-width:0}#app[data-game=catch] .has-video .stage-goal{padding:1px 0 3px}#app[data-game=catch] .has-video .scoreboard small{margin-bottom:1px}}
 
 #app[data-game=catch] .pump-video-card a[hidden]{display:block;visibility:hidden}
-#app[data-game=catch][data-state=paused] #overlay{position:fixed;inset:0;z-index:20;padding:16px;background:#23445499}
+@media(max-width:700px){#app[data-game=catch][data-state=paused] #overlay{position:fixed;inset:0;z-index:20;padding:16px;background:#23445499}}
 
 @media(max-width:700px) and (max-height:700px){#app[data-game=catch] .has-video .signature-toast{transform:scale(.35)}}
 
@@ -112,12 +112,186 @@
 #app[data-game=catch][data-state=result] #overlay.with-song{flex-direction:column;gap:8px}
 #overlay.with-song>.pump-video-card{width:min(100%,320px);flex:none;margin:0;padding:6px}
 #overlay.with-song .result-paper{max-height:calc(100svh - 290px)}
-#overlay.with-song .pump-video-card>p{font-size:10px;margin:2px 0 0}
+#overlay.with-song .pump-video-card p{font-size:10px;margin:2px 0 0}
 
 .gift-link{display:inline-block;text-decoration:none;color:var(--ink)}
 
-/* Keep mobile playback recovery beside the native player, never over it. */
-.video-start{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;font-size:11px;line-height:1.5}
+#app[data-game=rhythm] #game{cursor:crosshair}
+/* Compact collectible and gauge controls remain usable beside the playfield. */
+.game-controls .song-pickup{width:100%;background:#f4c5dd;font-size:15px}
+#pump-gauge{color:#84e5b4;font-variant-numeric:tabular-nums}
+#pump-gauge[data-low="true"]{color:#ff91a8}
+
+#app[data-game="drive"] .game-controls{display:grid;grid-template-columns:44px 1fr 1.4fr 44px;gap:7px}
+#app[data-game="drive"] .game-controls .skill-button,#app[data-game="drive"] .game-controls .item-button{font-size:13px;width:auto}
+#app[data-game="drive"][data-transformed="true"] [data-act="attack"]{background:#ffcc7b}
+
+.bread-viewport{width:100%;max-height:600px;overflow:auto;overscroll-behavior:contain}.bread-board{position:relative;width:100%}.bread-board #game{width:100%;max-width:none}.bread-board .field-controls{position:absolute;inset:0}.bread-viewport:has(.bread-board[style]){max-height:min(70vh,600px)}
+
+.bread-board[style] #game,.bread-board[style] .field-controls button{touch-action:pan-x pan-y}#app[data-game=photo] .game-controls{flex-wrap:wrap}#app[data-game=photo] .game-controls button{font-size:13px;flex:1 1 40%;min-height:44px}
+
+/* Keep the compact bakery board readable on short mobile screens too. */
+#app[data-game=photo] .playfield{width:100%}
+
+/* Mobile information stays in a touch popover; the same player follows controls. */
+.game-info-toggle,.game-info-heading{display:none}
+.game-info>small{display:block;font-size:10px;line-height:1.8}
+@media(max-width:700px){
+ .has-video>.pump-video-card{order:3;max-width:none!important;width:100%;padding:5px;margin-top:4px}
+ .has-video .side-note{justify-content:flex-start}
+ .has-video .utility-buttons{margin-left:0}
+ .has-video .game-info-toggle{display:inline-block;min-height:44px}
+ .game-info[popover]{position:fixed;inset:auto 12px 12px;margin:0 auto;width:calc(100% - 24px);max-width:420px;max-height:70svh;overflow-y:auto;overscroll-behavior:contain;padding:16px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:16px;box-shadow:0 8px 24px #23445433;text-align:left}
+ .game-info[popover]::backdrop{background:#23445433}
+ .game-info-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+ .game-info-heading b{font:22px 'Jua',sans-serif}
+ .game-info-heading button{min-height:44px;margin:0}
+ .game-info[popover]>small,.game-info[popover]>p,.side-note .game-info[popover] .short-guide{font-size:13px;line-height:1.8;margin:10px 0;max-width:none}
+ .game-info-toggle:focus-visible,.game-info-heading button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+ #app[data-game=catch] .has-video .playfield{width:clamp(200px,calc((100svh - 255px)*.8),100%)}
+}
+
+/* Pump controls share the cabinet's paper, ink and start-button vocabulary. */
+#app[data-game=rhythm] .utility-buttons{display:grid;gap:14px;width:100%;margin:12px 0}
+.pump-help,.pump-sound-buttons{display:flex;flex-wrap:wrap;gap:8px}
+.pump-sound{min-width:0;margin:0;padding:12px;border:1px solid #23445433;border-radius:12px}
+.pump-sound legend{font-size:12px;padding:0 6px}
+.pump-sound-buttons .quiet{flex:1 1 calc(50% - 8px);min-height:44px;padding:10px 8px}
+.pump-change-song{margin-bottom:4px}
+@media(max-width:700px){
+ #app[data-game=rhythm] .has-video>.pump-video-card{order:0;margin:0}
+ #app[data-game=rhythm] .pump-help .quiet{min-height:44px}
+}
+
+.classic-link{display:block;font-size:11px;text-align:right;color:var(--ink);padding:8px 2px;margin-bottom:5px}
+#app[data-may-mode=survival] .game-controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+#app[data-may-mode=survival] .game-controls .skill-button{font-size:12px;width:auto}
+.upgrade-paper h2{font-size:24px}.upgrade-paper>button{display:block;width:100%;margin:8px 0;text-align:left;min-height:55px;border-radius:12px}
+.upgrade-paper b,.upgrade-paper small{display:block}.upgrade-paper small{font-size:11px;margin-top:4px}
+
+/* Keep Liv's same iframe between lives and gameplay on mobile, without reparenting. */
+@media(max-width:700px){
+ #app[data-game=catch] .has-video{display:grid;grid-template-columns:minmax(0,1fr);isolation:isolate}
+ #app[data-game=catch] .has-video::before{content:"";grid-column:1;grid-row:2/7;align-self:stretch;background:var(--mint);border:2px solid var(--ink);border-radius:17px;box-shadow:0 8px 0 #6d948a;z-index:-1}
+ #app[data-game=catch] .has-video .companion{grid-column:1;grid-row:1}
+ #app[data-game=catch] .has-video .game-cabinet{display:contents}
+ #app[data-game=catch] .has-video .stage-goal{grid-column:1;grid-row:2;margin:0 12px;padding-top:8px}
+ #app[data-game=catch] .has-video>.pump-video-card{grid-column:1;grid-row:3;width:calc(100% - 24px);margin:0 auto;max-width:none}
+ #app[data-game=catch] .has-video .scoreboard{grid-column:1;grid-row:4}
+ #app[data-game=catch] .has-video .playfield{grid-column:1;grid-row:5}
+ #app[data-game=catch] .has-video .game-controls{grid-column:1;grid-row:6;margin:0 12px 12px}
+ #app[data-game=catch] .has-video .side-note{grid-column:1;grid-row:7;margin-top:8px}
+}
+
+/* The same player keeps its place and playback while mobile users reclaim room. */
+.video-toggle{display:none}
+@media(max-width:700px){
+ .has-video .pump-video-card{position:relative;padding:0!important;overflow:hidden}
+ .has-video .video-toggle{display:block;min-height:44px;width:100%;padding:10px 14px;text-align:left;background:var(--paper);font-size:13px;font-weight:700}
+ .has-video .pump-video-card[data-expanded=false] .video-panel{display:none}
+ .has-video .companion{display:none!important}
+ #app[data-game=catch] .has-video .playfield{width:min(100%,calc((100svh - 265px)*.8));margin:0 auto}
+ #app[data-game=catch] .has-video .game-controls{margin-bottom:8px}
+ #app[data-game=catch] .has-video .stage-goal{padding-top:4px}
+}
+
+/* Selection stays visible at either board scale and on keyboard navigation. */
+.play-guidance{margin:0;padding:6px 12px;background:var(--paper);color:var(--ink);font-size:12px;line-height:1.5;text-align:left;min-height:36px;box-sizing:border-box}
+.lane-stamps{display:flex;gap:6px;text-align:center}
+.lane-stamps span{flex:1;border-bottom:2px dashed #8a9c93;padding:2px 0}
+.lane-stamps [data-collected=true]{border-bottom-style:solid;background:#cfe6da;font-weight:700}
+#app[data-game=photo] .field-controls button[data-swap-target=true]{outline:2px dashed #80518b;outline-offset:-3px}
+#app[data-game=photo] .field-controls button[aria-pressed=true],#app[data-game=photo] .field-controls button:focus-visible{outline:3px solid #80518b;outline-offset:-3px;background:#fff0a044}
+
+/* Keep movement controls beside a complete, proportionally scaled portrait field. */
+@media(max-width:700px) and (orientation:portrait){
+ #app:is([data-game=drive],[data-game=blocks]) .topbar{height:52px;padding-top:4px;padding-bottom:4px}
+ #app:is([data-game=drive],[data-game=blocks]) .play-layout{margin-top:6px;gap:6px}
+ #app:is([data-game=drive],[data-game=blocks]) .companion{grid-template-columns:28px minmax(0,1fr);grid-template-rows:26px;align-items:center}
+ #app:is([data-game=drive],[data-game=blocks]) .companion .doll{width:26px;height:26px;grid-row:1}
+ #app:is([data-game=drive],[data-game=blocks]) .companion h1{grid-row:1;font-size:17px}
+ #app:is([data-game=drive],[data-game=blocks]) .companion :is(.host-name,.host-line){display:none}
+ #app:is([data-game=drive],[data-game=blocks]) .playfield{width:min(100%,max(160px,calc((100svh - 290px)*.8)));margin:0 auto}
+ #app[data-game=blocks] .playfield{width:min(100%,max(160px,calc((100svh - 234px)*.8)))}
+ #app:is([data-game=drive],[data-game=blocks]) .game-controls button{min-width:44px;min-height:48px}
+}
+@media(max-width:700px){
+ #app:is([data-game=drive],[data-game=blocks]):is([data-state=paused],[data-state=upgrading]) #overlay{position:fixed;inset:0;z-index:20;padding:16px;background:#23445499}
+ #app:is([data-game=drive],[data-game=blocks]) .pause-paper{max-width:400px;max-height:calc(100svh - 32px);overflow-y:auto;overscroll-behavior:contain}
+}
+
+/* E2E: readable guide rows instead of one squeezed flex item at tablet widths. */
+@media(min-width:701px) and (max-width:1050px){
+ .play-layout:not(.has-video) .side-note{display:flex;flex-wrap:wrap;gap:12px;grid-column:1/-1;grid-row:auto;margin:0;padding:12px 0;align-items:center}
+ .play-layout:not(.has-video) .side-note>p{margin:0}
+ .play-layout:not(.has-video) .side-note .short-guide{flex:0 0 100%;width:100%;max-width:none;line-height:1.8}
+ .play-layout:not(.has-video) .side-note>small{flex:1 1 240px;max-width:none}
+}
+/* Tools precede the finite board in both DOM and visual order. */
+#app[data-game=photo] .game-controls{padding:4px 0 10px;position:sticky;top:0;z-index:3;background:inherit}
+#app[data-game=photo] .game-controls button{min-width:0}
+/* Keep the song picker steady when a delayed webfont replaces fallback text. */
+.song-room{line-height:1.5}.song-host h1,.song-now h2{line-height:1.3}
+.song-levels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.song-levels button{min-width:0}
+.song-actions .start{line-height:1.4}
+@media(max-width:700px){.song-levels{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){
+ #app[data-game=photo] .topbar{height:52px;padding-top:4px;padding-bottom:4px}
+ #app[data-game=photo] .companion{display:none}
+ #app[data-game=photo] .play-layout{margin-top:6px}
+ #app[data-game=photo] .bread-viewport,#app[data-game=photo] .bread-viewport:has(.bread-board[style]){max-height:max(160px,calc(100svh - 315px))}
+ #app[data-game=photo] .playfield{max-width:100%;width:100%}
+ #app[data-game=photo] .mobile-hint{display:none}
+}
+/* Short desktop and landscape: full field + reachable controls, left video intact. */
+@media(min-width:701px) and (max-height:760px){
+ #app[data-game] .topbar{height:52px;padding:4px 20px}
+ #app[data-game] .play-layout{margin:6px auto;padding:0 12px;gap:12px;grid-template-columns:minmax(0,660px);max-width:1100px}
+ #app[data-game] .play-layout .companion{display:none}
+ #app[data-game] .has-video{grid-template-columns:minmax(220px,360px) minmax(0,600px)}
+ #app[data-game] .has-video .pump-video-card{grid-column:1;grid-row:1;margin:0}
+ #app[data-game] .has-video .pump-video-host{height:200px}
+ #app[data-game] .has-video .game-cabinet{grid-column:2;grid-row:1}
+ #app[data-game] .game-cabinet{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:4px 12px;padding:6px 10px 10px}
+ #app[data-game] .stage-goal,#app[data-game] .scoreboard,#app[data-game] .play-guidance{grid-column:1/-1;margin:0}
+ #app[data-game] .stage-goal{grid-row:1;padding:3px 4px 5px}
+ #app[data-game] .scoreboard{grid-row:2;padding:0 0 4px}
+ #app[data-game] .play-guidance{grid-row:3}
+ #app[data-game] .scoreboard strong{font-size:20px}
+ #app[data-game] .scoreboard small{margin-bottom:0}
+ #app[data-game] .playfield{grid-column:1;grid-row:4;align-self:start;margin:0 auto;min-width:0;max-width:100%;width:min(100%,calc((100svh - 192px)*.8))}
+ #app[data-game=blocks] .playfield,#app[data-game=catch] .playfield{width:min(100%,calc((100svh - 170px)*.8))}
+ #app[data-game=rhythm] .playfield{width:min(100%,calc((100svh - 156px)*1.3333))}
+ #app[data-game=rhythm] .play-layout:not(.has-video) .playfield{width:min(100%,calc((100svh - 170px)*.8))}
+ #app[data-game] .game-controls{grid-column:2;grid-row:4;align-self:center;display:grid;grid-template-columns:1fr;gap:6px;padding:0}
+ #app[data-game] .game-controls button{min-width:44px;min-height:44px;font-size:14px;margin:0;width:100%}
+ #app[data-game] .game-controls small{display:none}
+ #app[data-game] .game-controls .tap-instruction{font-size:12px}
+ #app[data-game] .game-cabinet>.mobile-hint{grid-column:1/-1;grid-row:5;margin:0;font-size:10px}
+ #app[data-game] .game-cabinet>.mobile-hint:not(#powerup-status){display:none}
+ #app[data-game] .play-layout .side-note{grid-column:1/-1;grid-row:auto;display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:8px 0 0;padding:0}
+ #app[data-game] .side-note>p{margin:0}
+ #app[data-game] .side-note .short-guide{flex:0 0 100%;width:100%;max-width:none}
+ #app[data-game] .side-note>small{flex:1 1 240px;max-width:none}
+ #app[data-game=photo] .game-controls{position:static}
+ #app[data-game=photo] .playfield{width:100%;grid-row:4}
+ #app[data-game=photo] .bread-viewport,#app[data-game=photo] .bread-viewport:has(.bread-board[style]){max-height:max(160px,calc(100svh - 210px))}
+ #app[data-game]:is([data-state=paused],[data-state=upgrading]) #overlay{position:fixed;inset:0;z-index:20;padding:12px}
+ #app[data-game] .pause-paper{max-width:440px;max-height:calc(100svh - 24px)}
+}
+
+@media(min-width:701px) and (max-height:760px){
+ #app[data-may-mode=survival] .game-cabinet{grid-template-columns:minmax(0,1fr) 144px}
+ #app[data-may-mode=survival] .game-controls{grid-template-columns:repeat(3,44px);gap:6px}
+ #app[data-may-mode=survival] .game-controls [data-act=left]{grid-column:1;grid-row:2}
+ #app[data-may-mode=survival] .game-controls [data-act=up]{grid-column:2;grid-row:1}
+ #app[data-may-mode=survival] .game-controls [data-act=dash]{grid-column:2;grid-row:2;font-size:10px}
+ #app[data-may-mode=survival] .game-controls [data-act=down]{grid-column:2;grid-row:3}
+ #app[data-may-mode=survival] .game-controls [data-act=right]{grid-column:3;grid-row:2}
+}
+
+/* Keep the recovery action beside the official video, outside the game controls. */
+.video-start{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;font-size:12px;line-height:1.5}
 .video-start:has([data-video-status]:empty){display:none}
 .video-start [data-video-status]{flex:1;min-width:140px}
 .video-start button{min-height:44px;flex:none}

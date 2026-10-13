@@ -9,7 +9,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       ARCADE_TEST_OUTPUT: ${{ github.workspace }}/artifacts/browser
       ARCADE_BUILD_OUTPUT: ${{ github.workspace }}/dist-arcade-room

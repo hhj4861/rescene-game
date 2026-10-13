@@ -4,6 +4,99 @@
 
 
 
+## 펌프 시작 안정성 운영 배포 — 2026-10-13
+
+- 사용자 명시 승인 후 [PR #36](https://github.com/hhj4861/rescene-game/pull/36)을 main에 머지했다. 운영 소스 `d43ad8a798a696e3886602cbf4fc9e669937c349`와 검증 head `08525123ac6bf6c9af53f01b0a86ef6ea6c9cf41`의 Git 트리 `575ea7325c839e47f159389fe7ccba500b08f428`가 동일하다.
+- [성공 CI 38254619206](https://github.com/hhj4861/rescene-game/actions/runs/38254619206): 단위 213개, E2E 630개 통과·6개 조건부 생략·실패 0개, 린트·빌드 통과. 해당 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `02d68ef3-42bb-4b8d-9b4f-bbd7665ab47c`: **Production / main / source `d43ad8a`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://02d68ef3.rescene-arcade.pages.dev).
+- 웹폰트가 시작 버튼을 누르는 중 도착해 버튼이 이동하는 문제를 수정했다. 곡 선택 화면 줄 높이와 난이도 배치(모바일 2×2, PC 4열)를 고정했다. [상세 조사·수정](../tasks/pump-start-stability-20261012.md).
+- 공개 파일 **41개 모두 CI 빌드와 SHA-256 일치**. 운영 주소 브라우저 **110개 통과·1개 조건부 생략·실패 0개**(2.7분): PC Chromium·모바일 Chromium·모바일 WebKit에서 지연 폰트 320/390/700/701/768/1280px, Enter/Space, 모바일 탭, 곡 선택·음악 제어·10콤보 음성·종료와 기존 UX 개선 회귀를 확인했다. PC의 모바일 전용 탭 검사 1개를 생략했다. 브라우저 에뮬레이션과 Google 폰트/YouTube API 대역 검사이며 실기기 청음 검증은 아니다.
+- 첫 CI 산출물 다운로드는 OS 임시 저장 중 공간 부족으로 실패했다. 현재 여유 공간을 확인하고 프로세스 임시 경로를 지정 iCloud 폴더로 바꾼 뒤 재다운로드에 성공했다. 기존 Wrangler 로그인으로 배포했으며 CI 인증·도메인·자동 배포 설정은 변경하지 않았다.
+- 증거: iCloud 작업 루트 `rescene-game/pr36-deploy-20261013/`의 `site/`, `deploy.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`.
+
+## E2E 개선 8개 운영 배포 — 2026-10-12
+
+- 사용자 명시 승인 후 [PR #35](https://github.com/hhj4861/rescene-game/pull/35)를 main에 머지했다. 운영 소스 `13234ea8cd3842707ebe0b3befe6b90c61d20d05`와 검증 head `3a6a6653935b215b5759bcdccecc8b9ab74d0d9c`의 Git 트리 `431531b26a2bf80f1669ace1362b77caa94e267b`가 동일하다.
+- [성공 CI 38224421480](https://github.com/hhj4861/rescene-game/actions/runs/38224421480): 단위 213개, E2E 604개 통과·5개 조건부 생략·실패 0개, 린트·빌드 통과. 해당 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `137c2ccb-3f62-416f-89a4-216f5ef2587b`: **Production / main / source `13234ea`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://137c2ccb.rescene-arcade.pages.dev).
+- 메이 겹침 입력·연속 난이도, 낮은 화면 조작 배치, 중간 폭 안내문, 원이 길별 간식 목표, 펌프 2단계 밀도, 리브 보스 조기 등장, 제나 상단 도구를 반영했다. [상세 변경과 비교](../tasks/e2e-improvements-20261012.md).
+- 공개 파일 **41개 모두 CI 빌드와 SHA-256 일치**. 공개 브라우저 개선 회귀는 PC Chromium·모바일 Chromium·모바일 WebKit에서 첫 실행 53개 통과/1개 실패. WebKit 펌프 시작 검사가 곡 선택 화면에 남아 5초 제한으로 실패했으나 독립 3회 재검사는 모두 통과했다. 원인은 미확정이며 수정됐다고 주장하지 않는다. 모바일 WebKit 메이 가로 화면 캡처를 시각 확인했다. 브라우저 에뮬레이션과 YouTube API 대역 검사로, 실기기 청음을 대체하지 않는다.
+- CI 배포 실행 `38243420653`은 기존 계정·토큰 미설정으로 업로드 전에 실패했다. 기존 Wrangler 로그인으로 배포를 완료했으며 CI 인증·도메인·자동 배포 설정은 변경하지 않았다.
+- 증거: iCloud 작업 루트 `rescene-game/pr35-deploy-20261012/`의 `deploy.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`, `public-recheck.log`, `public-recheck/`.
+
+## 동일 검증본 운영 재배포 — 2026-10-12
+
+- 사용자 ‘배포도 해줘’ 요청으로 현재 main `201c3c81dcb5919b513339c7e8e2afd3c5da9ea9`를 운영 재배포했다. PR #34 검증 head `b97612f` 이후 차이는 문서뿐이며 게임·의존성·빌드 설정 차이가 없음을 확인했다.
+- 기존 성공 CI `38046971017`의 동일 `arcade-static-site` 산출물을 재사용했다. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://8277dcc0.rescene-arcade.pages.dev).
+- 공개 파일 41개 모두 검증 빌드와 SHA-256 일치. 게임 동작은 이전 배포와 동일하다. 전날 운영 E2E 66개 통과는 동일 파일의 기존 검증이며 이번에 새로 실행한 E2E로 계산하지 않는다.
+- [E2E 감사 보고서](../design/arcade-e2e-audit-20261011.md)의 개선 후보는 아직 구현되지 않았으므로 이번 재배포에 포함되지 않았다. 새 코드 머지나 인증·도메인 변경은 수행하지 않았다.
+- 증거: 사용자 iCloud 작업 루트 `rescene-game/redeploy-20261012/`의 `deploy.log`, `deployments.txt`, `production-assets.json`.
+
+## UX·난이도 개선 운영 배포 — 2026-10-11
+
+- 사용자 명시 승인 후 [PR #34](https://github.com/hhj4861/rescene-game/pull/34)를 main에 머지했다. 운영 소스 `6c3da1f448a997f73f70b83a01d1682c398cc9c9`와 검증 head `b97612f`의 Git 트리 `aa7a0847ada799488ea91cad9b729074cbeb659d`가 동일하다.
+- [성공 CI 38046971017](https://github.com/hhj4861/rescene-game/actions/runs/38046971017): 단위 207개, 브라우저 550개 통과·환경 전용 5개 제외, 린트·빌드 성공. 해당 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `4b48f9e2-a640-4eb1-baf7-a198acc7fba3`: **Production / main / source `6c3da1f`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://4b48f9e2.rescene-arcade.pages.dev).
+- 리브·펌프 모바일 영상은 접힌 바에서 펼치며 안내를 열면 게임과 음악을 정지한다. 원이는 세 길의 간식을 모두 수집하도록 바꾸고 길별 상태를 표시한다. 제나는 남은 퍼즐의 교환 기회와 선택·이웃 안내를 개선했다. 메이는 초기/후반 성장 난이도를 조정했다. 원이·메이 모바일은 작은 화면에도 게임판·조작과 정지/강화창 버튼이 보이도록 개선했다.
+- 공개 파일 **41개 모두 CI 빌드와 SHA-256 일치**. 운영 주소 브라우저 **48개 모두 통과**(PC Chromium·모바일 Chromium·모바일 WebKit): 320/390px 배치, 실제 버튼 입력, 정지/강화·재개, 원이 길 표시 저장, 제나 선택/확대, 영상 펼침/접기와 안내 정지를 확인했다. 운영 320px 메이 강화창 캡처도 시각 확인했다. YouTube 제어는 API 대역을 사용했으며 실제 휴대전화의 조작감·청음 검증은 포함하지 않는다.
+- 증거: 사용자 iCloud 작업 루트 `rescene-game/pr34-deploy-20261011/`의 `site/`, `ci.log`, `wrangler-deploy.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`. 기존 Wrangler 로그인과 설치된 Node 22를 사용했다. 인증·도메인·자동 배포 설정과 타 세션 미추적 파일은 보존했다.
+
+## 전투·성장·퍼즐·영상 배치 운영 배포 — 2026-10-10
+
+- 사용자 명시 승인 후 [PR #33](https://github.com/hhj4861/rescene-game/pull/33)을 머지했다. 운영 소스 `2963d03e89171e51e7865fe739f7e056c024058d`와 검증 head `2944532`의 Git 트리 `1e260c750826a37449a6289957d65e8304f12728`이 동일하다.
+- [성공 CI 38009770870](https://github.com/hhj4861/rescene-game/actions/runs/38009770870): 단위 203개, 브라우저 502개 통과·환경 전용 5개 제외, 린트·빌드 성공. 해당 `arcade-static-site` 41개 파일을 그대로 배포했다.
+- Pages 배포 `890f3f86-8fb2-41e4-a177-0aab9435888a`: **Production / main / source `2963d03`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://890f3f86.rescene-arcade.pages.dev).
+- 펌프는 10콤보마다 미나미 야호, 설정 그룹화·같은 스타일의 곡 변경 버튼·모바일 영상 게이지 위 배치. 원이는 파이리 2단계·별이 특수공격·노래 중 네 멤버 지원을 제공한다. 메이는 자동 공격·성장·조합·보스 생존전이며 이전 보글보글은 `?may=classic`으로 보존한다. 제나는 실제 빈칸·2×2 매치·남은 퍼즐 조작으로 변경했다. 리브 영상은 모바일 하트 아래, PC 왼쪽을 유지하며 PC 일시정지 팝업은 게임 안에 제한한다.
+- 공개 파일 **41개 모두 CI 빌드와 SHA-256 일치**. 공개 주소 브라우저 **57개 모두 통과**(PC Chromium·모바일 Chromium·모바일 WebKit): 펌프 음성/설정·메이 생존전/강화/보스·제나 빈칸/2×2/저장·원이 강화/지원/원본 가창·리브 배치/PC 팝업을 확인했다. 운영 모바일·PC 리브 캡처도 시각 확인했다. YouTube 제어 검사는 API 대역이며 실기기 청음을 뜻하지 않는다.
+- 증거: 사용자 iCloud 작업 루트 `rescene-game/pr33-deploy-20261010/`의 `site/`, `ci.log`, `wrangler-deploy.log`, `wrangler-list.log`, `production-assets.json`, `public-browser.log`, `public-browser/`. 기존 Wrangler 로그인으로 배포했고 인증·도메인·자동 배포 설정과 타 세션 미추적 파일을 보존했다.
+
+## 모바일 안내 팝오버·하단 영상 운영 배포 — 2026-10-09
+
+- 사용자 명시 승인 후 [PR #32](https://github.com/hhj4861/rescene-game/pull/32)를 머지했다. 운영 소스 `dde946ffc84a28a56342ab5c08aac8f2b441be5d`와 검증 head `70138c0`의 Git 트리가 동일하다.
+- [성공한 CI 37928210639](https://github.com/hhj4861/rescene-game/actions/runs/37928210639): 단위 191개, 브라우저 478개 통과·기존 환경 전용 5개 제외, 린트·빌드 성공. 해당 `arcade-static-site`를 그대로 배포했다.
+- Pages 배포 `c1f460c9-6d96-4bfd-80bd-b6d0a84e0902`: **Production / main / source `dde946f`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://c1f460c9.rescene-arcade.pages.dev).
+- 모바일 리브·미나미의 영상은 게임판과 조작·설정 아래에 바로 표시한다. 자동 저장·곡 정보·긴 가이드·재생 상태는 ‘게임 안내 ⓘ’ 팝오버로 모았다. 닫기·바깥 클릭·Escape·초점 복원을 지원하고 PC 배치와 동일 iframe의 재생을 유지한다.
+- 공개 주소 **브라우저 60개 모두 통과**, 공개 정적 파일 **40개 모두 CI 빌드와 SHA-256 일치**. Chromium·모바일 Chromium·모바일 WebKit에서 320/390px 배치, 팝오버 경계/닫기/초점, 화면 전환과 재생 유지, 기존 곡 선택·음소거·버퍼링·재시도·저장·결과 흐름을 확인했다. 운영 모바일 화면 캡처도 시각 확인했다. YouTube 검사는 API 대역이며 실기기 청음을 뜻하지 않는다.
+- 증거: 사용자 iCloud 작업 루트 `rescene-game/pr32-deploy-20261009/`의 `site/`, `ci.log`, `wrangler.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`. 기존 Wrangler 로그인으로 배포했다. 다른 세션의 미추적 파일과 인증·도메인·자동 배포 설정을 보존했다.
+
+## 게임판·모바일 영상·멤버 이벤트 운영 배포 — 2026-10-09
+
+- 사용자 명시 승인 후 [PR #31](https://github.com/hhj4861/rescene-game/pull/31)을 머지했다. 운영 소스 `ea53de2129c74d1afe2c1f5467a86543612206e7`와 검증 head `0e7fa05`의 Git 트리는 동일하다.
+- [성공한 PR CI 37897401874](https://github.com/hhj4861/rescene-game/actions/runs/37897401874): 단위 191개, 브라우저 478개 통과·환경 전용 5개 제외, 린트·빌드 성공. 해당 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `2bec0ba7-7dae-479d-9e0a-eb41edb5b181`: **Production / main / source `ea53de2`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://2bec0ba7.rescene-arcade.pages.dev).
+- 제나 판은 1–5단계 6×6, 6–10단계 7×7, 11단계부터 최대 8×8. 모바일 영상은 기본 접힌 재생 바에서 펼치며 PC 배치는 유지한다. 원이에는 네 멤버의 예고·서로 다른 방해·저장 복원을 추가했다. 미나미 클리어는 사용자 Shorts의 ‘덴사이샨데슈!’ 첫 1.74초 음성으로 교체했다.
+- 공개 정적 파일 **40개 모두 CI 산출물과 SHA-256 일치**. 첫 HTML 비교는 정규 주소 리다이렉트를 추적하지 않아 빈 응답과 비교했다. 두 HTML 주소의 리다이렉트를 따른 실제 응답으로 재확인해 모두 일치했다.
+- 공개 주소 브라우저 **87개 시나리오 검증 완료**: 첫 실행 86개 통과, 모바일 Chromium 미나미 방해 검사는 브라우저 종료 시 로컬 `ENOSPC`로 결과 저장 실패. 현재 여유 공간 3.6GiB를 확인하고 해당 1개를 별도 출력 폴더에서 단독 재실행해 통과했다. 코드·검사 조건은 변경하지 않았다. 세 브라우저에서 판 경계/저장 이전·320px 조작·접힌 영상·방해 효과·실제 MP3 신호/재생/음소거를 확인했다. 모바일 WebKit 운영 캡처도 시각 확인했다. YouTube 검사는 API 대역을 포함하며 실기기 스피커 청음은 수행하지 않았다.
+- 증거: 사용자 iCloud 작업 루트 `rescene-game/pr31-deploy-20261009/`의 `site/`, `ci.log`, `wrangler.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`, `public-recheck.log`, `public-recheck/`. 기존 Wrangler 로그인으로 배포했고 인증·도메인·자동 배포 설정은 변경하지 않았다. 공유 checkout의 기존 미추적 파일은 보존했다.
+
+## PR #30 승인 후 운영 배포 — 2026-10-09
+
+- 사용자 명시 승인 후 [PR #30](https://github.com/hhj4861/rescene-game/pull/30)을 머지했다. 운영 소스는 `4cd380615b9a08a346644b2677fd3ef5d6f52697`. 검증 head `e69032d`와 차이는 이전 배포 기록 문서 두 개뿐이며 배포 소스는 동일하다.
+- [성공한 CI 37788088159](https://github.com/hhj4861/rescene-game/actions/runs/37788088159)의 `arcade-static-site`를 그대로 배포했다. 검사기 회귀 테스트 15개도 설치 직전 다시 통과했다.
+- Pages 배포 `c3f0925f-3bef-4f93-94c4-678698030567`: **Production / main / source `4cd3806`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://c3f0925f.rescene-arcade.pages.dev).
+- 공개 정적 파일 **40개 모두 CI 산출물과 SHA-256 일치**. 이전 검증 배포와 게임 파일도 동일하다. 이번에는 공개 브라우저 테스트를 새로 실행하지 않았다.
+- 승인된 검사기 복구도 실제 적용하고 과거 미실행 호출 기록 한 건을 정상 reconcile했다. 남아 있던 PR #30 승인 대기·과거 관찰 복구는 해결됐다. [상세 결과](../tasks/20261008-task-finish-review-capacity.md).
+- 증거: 사용자 iCloud 작업 루트 `rescene-game/review-capacity-deploy-20261009/`의 `site/`, `wrangler.log`, `deployments.txt`, `production-assets.json`. 기존 Wrangler 로그인으로 배포했으며 인증·도메인·자동 배포 설정은 변경하지 않았다.
+
+## PR #29 승인 후 운영 재배포 — 2026-10-08
+
+- 사용자 명시 승인 후 [PR #29](https://github.com/hhj4861/rescene-game/pull/29)를 머지했다. 운영 소스는 `0ff29bcf752bef86ff82529c6135a5e8f6eefee3`이며 검증 head `404c1c2`와 Git 트리 `fc1c5add1804a2e82ddf066a592a0318babf2288`가 동일하다.
+- [CI 37782048124](https://github.com/hhj4861/rescene-game/actions/runs/37782048124): 단위 184개, 브라우저 433개 통과·기존 환경 전용 5개 제외, 린트·빌드 성공. 이 실행의 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `8538a4c1-85dd-40ef-a760-ef72fa3a34ac`: **Production / main / source `0ff29bc`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://8538a4c1.rescene-arcade.pages.dev).
+- 배포 후 공개 파일 **40개 모두 최신 CI 산출물과 SHA-256 일치**. 게임 파일은 아래 PR #28 배포와도 동일하다. 이전 공개 브라우저 120개 통과 증거는 동일 파일에 대한 기존 검증이며 이번 재배포에서 새로 실행한 검사는 아니다.
+- 기존 Wrangler 로그인으로 배포했으며 인증·도메인·자동 배포 설정은 변경하지 않았다. 증거는 사용자 iCloud 작업 루트 `rescene-game/task-finish-containers-20261008/`의 `site/`, `wrangler.log`, `deployments-after-merge.txt`, `production-assets-after-deploy.json`에 보관한다.
+- PR #29의 완료 검사기 복구는 실제 적용했다. 별개 과거 승인 검토 실패 기록 한 건의 [PR #30](https://github.com/hhj4861/rescene-game/pull/30)은 검증·push를 마쳤으나 별도 머지 승인 대기이며 운영 게임과 무관하다. [적용 결과와 남은 단계](../tasks/20261008-task-finish-containers.md).
+
+## 게임 규칙·원이와 별이·제나 십원빵 운영 배포 — 2026-10-08
+
+- 사용자 명시 승인 후 [PR #28](https://github.com/hhj4861/rescene-game/pull/28)을 머지했다. 운영 소스는 `f5a9c34d38f995920e9a843b0098dd6950789fa8`이며 검증한 PR head `6229008`과 Git 트리 `35474e1de1dda2f2feead724a7bb40e9d1563455`가 동일하다.
+- [전체 CI 37753204164](https://github.com/hhj4861/rescene-game/actions/runs/37753204164): 단위 184개, 브라우저 433개 통과·기존 환경 전용 5개 제외, 린트·빌드 성공. 동일 `arcade-static-site` 산출물을 그대로 배포했다. 오래된 제나 테스트 fixture를 현재 교환 예산·숨은 빵 클리어 규칙에 맞췄고, 438개 전체 브라우저 검사의 실제 소요 시간이 기존 제한을 넘어 CI/수동 배포 실행 제한을 15분에서 25분으로 늘렸다. 검사 항목과 실패 조건은 유지했다.
+- Pages 배포 `22ea3009-baa1-4c07-bbfe-99a2506bec90`: **Production / main / source `f5a9c34`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://22ea3009.rescene-arcade.pages.dev).
+- 원이와 별이의 이동·몬스터 전투·파이리 변신·별이 캐리, 단계별 난이도, 노래 아이템의 최소 60초 보장과 재생 중 재등장 방지, 단계별 곡 순환을 포함한다. 메이·제나 가창 아이템은 연속 60초, 원이 원본 커버는 실제 전체 41초 한 번 재생한다. 메이 보글보글 백업 및 리트·매트 기획 초안은 유지하며 새 게임으로 교체한 상태는 아니다.
+- 제나는 6×6에서 매 단계 한 칸씩 상한 없이 커지며, 숨겨진 십원빵 영역을 완전히 지워야 획득한다. 획득 때 제공 Reel의 제나 원본 ‘십원빵 아이가’ 1.65초를 한 번 재생한다. 노래 공존·음소거·저장 복원·최종 클리어를 처리한다.
+- 공개 정적 파일 **40개 모두 CI 산출물과 SHA-256 일치**. 공개 주소의 브라우저 **120개 모두 통과**(PC Chromium·모바일 Chromium·iPhone WebKit). 십원빵 획득 원본 음성·저장/음소거, 노래 시간/중복 제한, 원이 전투·파이리·별이 캐리, 제나 판 확장과 다섯 게임 기본 흐름을 확인했다. 운영 캡처에서 십원빵 배경 노출·획득 문구를 확인했다. 모바일은 에뮬레이션이며 실제 기기 스피커 청음 검증은 아니다.
+- 증거: 사용자 지정 iCloud 작업 루트 `rescene-game/arcade-refresh-deploy-20261008/`의 `release.json`, `ci-release.log`, `site/`, `deploy.log`, `deployments.txt`, `production-asset-hashes.json`, `public-browser.log`, `public-browser/`. 기존 Wrangler 로그인으로 배포했다. 인증·도메인·자동 배포 설정은 변경하지 않았다.
+
 ## 노래 선물·리브 재생 간격·방울 점프·펌프 조작 운영 배포 — 2026-10-05
 
 - 사용자 승인 후 [PR #25](https://github.com/hhj4861/rescene-game/pull/25)를 머지했다. 운영 소스는 `435837111d2d6d64ddb04c40a3590ffb2dc266ba`이며 PR head `727d55e`와 Git 트리 `ce1f7988044c6d6e5ffc875240d61aea10322371`가 동일하다. [성공한 CI 37255889833](https://github.com/hhj4861/rescene-game/actions/runs/37255889833)의 `arcade-static-site`를 그대로 배포했다.
