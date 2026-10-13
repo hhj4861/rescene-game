@@ -5,7 +5,7 @@
 - 범위: 곡·난이도 선택 뒤 시작 입력, 지연 웹폰트와 레이아웃 변화. CI 인증은 별도 범위.
 - 완료 기준: 실패 근거 분석, 제어된 재현/대조, 수정 시 관련 브라우저 회귀·린트·빌드, 본인 변경 커밋·push·PR. 새 PR 머지/배포는 별도 승인.
 - 근거: pr35-deploy-20261012/public-browser의 WebKit 추적. 시작 클릭 48922–49145ms 중 다수 웹폰트 응답이 도착했고 버튼 안정성 대기가 한 번 재시도됨. 곡 선택 화면 유지, JS 오류 없음. 후속 지연 폰트 실험에서 위치 변화로 입력 대상이 달라지는 것을 재현했다.
-- 현재: 원인 재현·CSS 수정·관련 검증 완료. 본인 변경 커밋·push·PR 준비, 운영에는 아직 미반영.
+- 현재: PR #36 커밋·push·CI 완료 후 사용자 승인으로 2026-10-13 main 머지·운영 배포 완료. 운영 파일 41개 일치, 공개 E2E 110개 통과·1개 조건부 생략. [배포 기록](../deployment/arcade-pages.md).
 - 산출물: iCloud 작업 루트 rescene-game/pump-start-stability-20261012/.
 
 ## 재현과 수정
@@ -18,3 +18,10 @@
 - 모바일 WebKit 320px의 2×2, PC Chromium 1280px의 4열 캡처 시각 확인. 테스트 폰트는 tests/fixtures에만 있으며 배포 빌드에 포함되지 않는다.
 - 최종 빌드: app-CaUjSiZ1.js / app-B9W7Z6fQ.css. 게임 모델·음악 재생·클릭 처리 코드는 변경하지 않았다.
 - 근거 로그: investigation.json(실제 폰트 6회), fixture-baseline.json(고정 폰트 6회), candidate.json(후보 6회), baseline-browser.log, unit.log, build.log, final-browser.log, boundary-browser.log, touch-browser.log. 원래 실패 추적과 새 실패 추적을 보존했다.
+
+## 통합·운영 확인 — 2026-10-13
+
+- CI 38254619206: 단위 213개, E2E 630개 통과·6개 조건부 생략, 린트·빌드 통과.
+- 승인된 PR #36 머지 소스 d43ad8a와 검증 head 0852512의 Git 트리 동일. CI 빌드 그대로 Pages Production/main 배포 02d68ef3.
+- 운영 관련 E2E 110개 통과·PC 모바일 탭 1개 생략(2.7분), 공개 파일 41개 모두 SHA-256 일치. 게임 코드 추가 변경 없음.
+- 운영 증적: iCloud 작업 루트 rescene-game/pr36-deploy-20261013/.

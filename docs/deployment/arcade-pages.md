@@ -4,6 +4,16 @@
 
 
 
+## 펌프 시작 안정성 운영 배포 — 2026-10-13
+
+- 사용자 명시 승인 후 [PR #36](https://github.com/hhj4861/rescene-game/pull/36)을 main에 머지했다. 운영 소스 `d43ad8a798a696e3886602cbf4fc9e669937c349`와 검증 head `08525123ac6bf6c9af53f01b0a86ef6ea6c9cf41`의 Git 트리 `575ea7325c839e47f159389fe7ccba500b08f428`가 동일하다.
+- [성공 CI 38254619206](https://github.com/hhj4861/rescene-game/actions/runs/38254619206): 단위 213개, E2E 630개 통과·6개 조건부 생략·실패 0개, 린트·빌드 통과. 해당 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `02d68ef3-42bb-4b8d-9b4f-bbd7665ab47c`: **Production / main / source `d43ad8a`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://02d68ef3.rescene-arcade.pages.dev).
+- 웹폰트가 시작 버튼을 누르는 중 도착해 버튼이 이동하는 문제를 수정했다. 곡 선택 화면 줄 높이와 난이도 배치(모바일 2×2, PC 4열)를 고정했다. [상세 조사·수정](../tasks/pump-start-stability-20261012.md).
+- 공개 파일 **41개 모두 CI 빌드와 SHA-256 일치**. 운영 주소 브라우저 **110개 통과·1개 조건부 생략·실패 0개**(2.7분): PC Chromium·모바일 Chromium·모바일 WebKit에서 지연 폰트 320/390/700/701/768/1280px, Enter/Space, 모바일 탭, 곡 선택·음악 제어·10콤보 음성·종료와 기존 UX 개선 회귀를 확인했다. PC의 모바일 전용 탭 검사 1개를 생략했다. 브라우저 에뮬레이션과 Google 폰트/YouTube API 대역 검사이며 실기기 청음 검증은 아니다.
+- 첫 CI 산출물 다운로드는 OS 임시 저장 중 공간 부족으로 실패했다. 현재 여유 공간을 확인하고 프로세스 임시 경로를 지정 iCloud 폴더로 바꾼 뒤 재다운로드에 성공했다. 기존 Wrangler 로그인으로 배포했으며 CI 인증·도메인·자동 배포 설정은 변경하지 않았다.
+- 증거: iCloud 작업 루트 `rescene-game/pr36-deploy-20261013/`의 `site/`, `deploy.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`.
+
 ## E2E 개선 8개 운영 배포 — 2026-10-12
 
 - 사용자 명시 승인 후 [PR #35](https://github.com/hhj4861/rescene-game/pull/35)를 main에 머지했다. 운영 소스 `13234ea8cd3842707ebe0b3befe6b90c61d20d05`와 검증 head `3a6a6653935b215b5759bcdccecc8b9ab74d0d9c`의 Git 트리 `431531b26a2bf80f1669ace1362b77caa94e267b`가 동일하다.
