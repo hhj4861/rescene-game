@@ -4,6 +4,18 @@
 
 
 
+## 게임팩·펌프 자동 시작 운영 배포 — 2026-10-14
+
+- 사용자 운영 반영 승인 후 [PR #38](https://github.com/hhj4861/rescene-game/pull/38)을 main에 머지했다. PR #37의 펌프 자동 시작·음성 정책 변경도 포함한다. 운영 소스 `70d7e374f372e6110cb2fe97a0c22e28a1127177`과 검증 head `8595c94c02d7f721fd5a6558407a2c5af687b787`의 Git 트리 `a7afd187875b8df42e176df747c4c36552574826`가 동일하다.
+- [성공 CI 38507488917](https://github.com/hhj4861/rescene-game/actions/runs/38507488917): 단위 **223개**, E2E **678개 통과·6개 조건부 생략·실패 0개**(19.4분), 린트·빌드 통과. 해당 `arcade-static-site` 41개 파일을 그대로 배포했다. 이전 실행은 모든 검사가 통과한 직후 job 25분 제한에 걸려 업로드가 취소돼, 검사 기준은 유지하고 제한만 35분으로 늘렸다.
+- Pages 배포 `d343142b-1ca9-4d3f-aabd-69b787ab3727`: **Production / main / source `70d7e37`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://d343142b.rescene-arcade.pages.dev).
+- 메이는 별빛 생존전·보글보글 공방을 화면에서 선택하고 각 팩의 진행·목숨·노래 진행·최고 기록을 따로 보관한다. 다른 멤버는 현재 기본팩 1개씩이다. 기존 저장 이전, 선택 유지, 모바일·키보드 조작을 포함한다. 펌프는 영상과 독립적으로 즉시 시작하며 플레이 효과음이 없다. 모든 게임에서 노래 재생 중 멤버 음성·발견 음성·합성 효과음을 차단한다. 320px 지연 폰트의 자동 스크롤 이동도 수정했다.
+- 운영 파일 **41개 모두 CI 빌드와 SHA-256 일치**. Python urllib 요청은 403을 받았지만 브라우저와 표준 curl은 정상 접근했고 curl로 전체 대조했다. 인증·도메인·보호 설정은 변경하지 않았다.
+- 운영 주소 E2E **149개 통과·1개 조건부 생략·실패 0개**(4.1분): PC Chromium·모바일 Chromium·모바일 WebKit에서 팩 교체·분리 저장·이전 기록 복원·빵판 단계 전환·폰트·펌프 자동 시작/차단 복구·노래 중 효과음 억제를 확인했다. 모바일 메이 팩 화면 캡처도 시각 확인했다. 이 회귀 검사에서 YouTube API는 대역을 사용한다.
+- 별도 실제 YouTube LOVE ATTACK / iPhone 13 WebKit 에뮬레이션: 음악 버튼을 누르기 전 60→59초 진행, 영상 바 펼침·음악 시작 후 실제 영상 1.58초/paused=false/muted=false/volume>0, 게임 일시정지·팩 저장·이어하기·오락실 복귀 통과. 물리 휴대전화 청음 검사는 아니다.
+- 기존 Wrangler 로그인으로 배포했다. 본인 임시 의존성 연결을 제거했고 타 세션의 미추적 파일은 보존했다. 증거: iCloud 작업 루트 `rescene-game/pr38-deploy-20261014/`의 `ci-success.log`, `site/`, `deploy.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`, `live-pump.json`, `live-pump-playing.png`.
+
+
 ## 모바일 펌프 음악 시작·재시도 복구 운영 배포 — 2026-10-13
 
 - 사용자 명시 승인 후 [PR #26](https://github.com/hhj4861/rescene-game/pull/26)을 main에 머지했다. 운영 소스 `8e249eb957f52c3ef9a24d2030638a28d1260f51`와 검증 head `ccc91a59c4d01e50afdb16e9f81ce76b90d830b5`의 Git 트리 `fcc5d9d2c17d93535749dab8c53582258f0bd06c`가 동일하다.
