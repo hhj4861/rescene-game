@@ -17,6 +17,9 @@ export function syncInteractionHints(app,s){
    if(el.textContent!==label)el.textContent=label;
    el.dataset.collected=String(done);el.setAttribute('aria-label',`${lanes[i]} 길: ${done?'수집 완료':'간식 필요'}`);
   });
+ }else if(s.linkVersion){
+  message=s.linkMessage||(s.selected>=0?`${breadName(s.board[s.selected])} 선택 · 같은 빵을 하나 더 눌러요.`:'같은 빵 두 개를 골라요. 선은 두 번까지 꺾을 수 있어요.');
+  app.querySelectorAll('.field-controls button').forEach(el=>{el.dataset.swapTarget='false';});
  }else{
   const size=Math.round(Math.sqrt(s.board.length)),selected=s.selected>=0&&s.board[s.selected]&&!s.flash&&!s.itemArmed;
   const neighbors=s.board.map((v,i)=>selected&&v&&Math.abs(Math.floor(i/size)-Math.floor(s.selected/size))+Math.abs(i%size-s.selected%size)===1);

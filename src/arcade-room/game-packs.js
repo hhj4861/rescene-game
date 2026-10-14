@@ -1,4 +1,4 @@
-import {GAMES,CLASSIC_MAY,SURVIVAL_MAY} from './catalog.js';
+import {GAMES,CLASSIC_MAY,SURVIVAL_MAY,LINK_ZENA} from './catalog.js';
 import {GAME_IDS,RECORD_KEY,readRecords} from './model.js';
 import {emptyProgress,readProgress,PROGRESS_KEY} from './progress.js';
 
@@ -10,6 +10,7 @@ export const GAME_PACKS=[
  {id:'may-survival',kind:'blocks',game:SURVIVAL_MAY,genre:'자동 공격 생존전',options:{survival:true}},
  {id:'may-bubbles',kind:'blocks',game:CLASSIC_MAY,genre:'방울 액션',options:{survival:false}},
  {id:'zena-bakery',kind:'photo',game:GAMES.photo,genre:'빵 퍼즐',options:{}},
+ {id:'zena-link',kind:'photo',game:LINK_ZENA,genre:'사천성 짝 연결',options:{link:true}},
  {id:'liv-shooter',kind:'catch',game:GAMES.catch,genre:'진격 슈팅',options:{}},
 ];
 export const packsFor=kind=>GAME_PACKS.filter(pack=>pack.kind===kind);
@@ -22,6 +23,7 @@ function validJourney(pack,journey){
  const entry=readProgress({getItem:()=>JSON.stringify({version:2,games:{[pack.kind]:journey}})}).games[pack.kind];
  // Never resume another engine variant under this pack's title and controls.
  if(pack.kind==='blocks'&&entry.snapshot&&(entry.snapshot.mayVersion===3)!==pack.options.survival)entry.snapshot=null;
+ if(pack.kind==='photo'&&entry.snapshot&&!!entry.snapshot.linkVersion!==!!pack.options.link)entry.snapshot=null;
  return entry;
 }
 export function readGamePacks(storage,{classicMay=false}={}){
