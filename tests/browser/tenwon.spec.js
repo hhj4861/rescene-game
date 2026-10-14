@@ -23,9 +23,9 @@ test('completing a buried bread plays the original phrase once and reload never 
 for(const toggle of ['sound','voice'])test(`tenwon discovery respects ${toggle} mute`,async({page})=>{
  await open(page,near());await page.locator(`[data-${toggle}]`).click();await dig(page);await expect(page.locator('#goal')).toHaveText('1 / 2 십원빵');expect(await finds(page)).toBe(0);
 });
-test('tenwon voice does not interrupt a one-minute item song and voice mute stops both',async({page})=>{
+test('tenwon discovery stays silent during a one-minute song and voice mute stops the song',async({page})=>{
  const s=near();s.songDrops=1;await open(page,s);await page.locator('[data-act="song-pickup"]').click();await expect.poll(()=>page.evaluate(()=>window.tenwonClips.find(c=>c.src.includes('zena-song'))?.audio.currentTime||0)).toBeGreaterThan(0);
- await dig(page);await expect.poll(()=>finds(page)).toBe(1);expect(await page.evaluate(()=>window.tenwonClips.find(c=>c.src.includes('zena-song')).audio.paused)).toBe(false);await expect(page.locator('[data-act="song-pickup"]')).toBeHidden();
+ await dig(page);expect(await finds(page)).toBe(0);expect(await page.evaluate(()=>window.tenwonClips.find(c=>c.src.includes('zena-song')).audio.paused)).toBe(false);await expect(page.locator('[data-act="song-pickup"]')).toBeHidden();
  await page.locator('[data-voice]').click();expect(await page.evaluate(()=>window.tenwonClips.every(c=>c.audio.paused))).toBe(true);
 });
 test('finding the final bread plays the pickup and clears the stage without duplicate finds',async({page})=>{

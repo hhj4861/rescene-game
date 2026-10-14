@@ -28,9 +28,9 @@ for(const kind of ['catch','rhythm'])test(`${kind} guide freezes time and media,
  await page.locator('[data-resume]').click();await expect(page.locator('#app')).toHaveAttribute('data-state','playing');
 });
 
-test('blocked mobile autoplay reveals the native player and retry starts the frozen round',async({page})=>{
+test('blocked mobile autoplay keeps the game visible and retry preserves the running round',async({page})=>{
  await page.setViewportSize({width:390,height:844});await open(page,'rhythm',true);
- await expect(page.locator('[data-video-toggle]')).toHaveAttribute('aria-expanded','true');await expect(page.locator('#pump-video iframe')).toBeVisible();
- await page.clock.runFor(3000);await expect(page.locator('#time')).toHaveText('60초');await expect(page.locator('#pump-gauge')).toHaveAttribute('aria-valuenow','50');
+ await expect(page.locator('[data-video-toggle]')).toHaveAttribute('aria-expanded','false');await expect(page.locator('#pump-video iframe')).toBeHidden();const field=await page.locator('.playfield').boundingBox();expect(field.y+field.height).toBeLessThanOrEqual(844);
+ await page.clock.runFor(3000);await expect(page.locator('#time')).toHaveText('57초');await expect(page.locator('#app')).toHaveAttribute('data-state','playing');
  await page.evaluate(()=>window.ytBlocked=false);await page.locator('[data-retry-music]').click();await page.clock.runFor(200);await expect(page.locator('#music-status')).toContainText('재생 중');
 });
