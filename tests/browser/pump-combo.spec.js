@@ -27,8 +27,10 @@ test('pump combos and sound toggles never play member effects',async({page})=>{
 
 test('pump settings are grouped and song change uses the start style',async({page},info)=>{
  await fakeApi(page);await page.goto('./');await page.locator('[data-start="rhythm"].start').click();
+ await page.mouse.move(0,0);
  const startStyle=await page.locator('[data-song-start]').evaluate(el=>{const s=getComputedStyle(el);return [s.backgroundColor,s.fontFamily,s.borderRadius,s.boxShadow];});
  await page.locator('[data-song-start]').click();await expect(page.getByRole('group',{name:'도움말'})).toContainText('하는 방법');const sound=page.getByRole('group',{name:'소리 설정'});await expect(sound.locator('button')).toHaveCount(4);
+ await page.mouse.move(0,0);
  const change=page.getByRole('button',{name:'곡 변경하기 ▶'});expect(await change.evaluate(el=>{const s=getComputedStyle(el);return [s.backgroundColor,s.fontFamily,s.borderRadius,s.boxShadow];})).toEqual(startStyle);
  await sound.locator('[data-music]').click();await expect(sound.locator('[data-music]')).toHaveAttribute('aria-pressed','false');await sound.locator('[data-retry-music]').click();await expect(sound.locator('[data-music]')).toHaveAttribute('aria-pressed','true');
  await page.screenshot({path:info.outputPath('pump-settings.png'),fullPage:true});await change.click();await expect(page.locator('#app')).toHaveAttribute('data-state','songs');await expect(page.locator('[data-song-start]')).toBeVisible();

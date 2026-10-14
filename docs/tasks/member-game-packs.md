@@ -30,3 +30,13 @@
 - 산출물: iCloud 공용 작업 루트의 rescene-game/member-game-packs-20261014/{unit.log,browser.log,recheck.log,integration.log,final-packs.log,site/}. 화면은 final-packs/game-packs-switches-both-M-7b831-separate-saves-after-reload-{desktop-chromium,mobile-webkit}/may-packs.png.
 - PR #37의 오래된 펌프 테스트 보정은 d7953e1로 별도 커밋. 게임팩 구현 커밋과 분리해 앞선 작업 브랜치에도 반영하며, 그 정확한 소스 빌드로 may-pump 검증 후 push한다.
 - 잔여 범위: 새 게임 제작은 이번 요청에 포함하지 않음. 메이 외 4명은 현재 기본팩 1개, 메이만 2개. 머지·운영 배포는 별도 명시적 승인 후 수행한다.
+
+## 운영 반영 요청 / CI 보정 — 2026-10-14
+
+- 사용자 운영 반영 승인. PR #38 첫 전체 CI 38481246518: 672 통과, 6 실패, 6 조건부 제외.
+- 원인: bakery-hunt가 마이그레이션 뒤 구 저장키만 수정(3), pump-combo가 hover 상태가 다른 버튼색 비교(1), 320px 지연 폰트 배치 이동(2). 저장 테스트는 packs.v1 원본을 수정하도록, 스타일은 같은 기본 상태로 비교하도록 보정. 폰트 이동은 레이아웃 계측 후 원인을 확인한다.
+- 완료 조건: 보정된 전체 CI 성공 → 승인된 PR #38 머지 → 동일 CI 산출물 운영 배포 → 공개 게임팩/펌프 회귀 및 자산 일치 확인.
+
+- 관련 회귀 로컬 74 통과 / 1 조건부 제외. Mac에서는 폰트가 바뀌어도 버튼의 기존 눌림 피드백 2px 외 이동 없음. Linux CI는 320px에서 5px 이동: 가변 폭 미리듣기 버튼과 수직 중앙 정렬의 영향을 제거하도록 미리듣기는 줄바꿈/축소를 막고 행을 상단 정렬했다. 원인 가설 검증을 위해 각 너비의 폰트 전후 배치 JSON을 테스트 산출물에 첨부한다. 기존 이동 허용치 3px 및 실제 시작 검증 유지.
+
+- 배포 보정 최종 로컬: lint·build·diff 검사 성공, bakery-hunt/pump-combo/pump-font-loading/game-packs 89 통과 / 데스크톱 터치 1 조건부 제외(2.7분). 산출물 pr38-deploy-20261014/final-local.log, final-local/, local-site/. 전체 CI 성공과 운영 검증은 아직 대기.

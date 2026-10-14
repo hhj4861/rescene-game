@@ -1,5 +1,6 @@
 /* global localStorage,document,window */
 import {test,expect} from '@playwright/test';
+import {PACKS_KEY} from '../../src/arcade-room/game-packs.js';
 import {createGame,stageBoardSize} from '../../src/arcade-room/model.js';
 import {emptyProgress,snapshotRound,PROGRESS_KEY} from '../../src/arcade-room/progress.js';
 async function open(page,s){const p=emptyProgress();p.games.photo={...p.games.photo,stage:s.stage,highest:s.stage,snapshot:snapshotRound(s)};await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);},{key:PROGRESS_KEY,value:JSON.stringify(p)});await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();}
@@ -12,7 +13,7 @@ test('clearing stages 15 and 16 keeps the maximum board at 8x8',async({page})=>{
  const s=createGame('photo',{stage:15,seed:7});s.breadCover.fill(true);s.breadCover[0]=false;await open(page,s);
  await page.locator('[data-act="rolling-pin"]').click();await page.locator('.field-controls [data-act="0"]').click();await page.clock.runFor(12000);
  await expect(page.locator('#result-title')).toHaveText('스테이지 15 클리어!');await page.locator('.result-paper [data-start="photo"]').click();await expect(page.locator('.field-controls button')).toHaveCount(64);
- await page.locator('[data-pause]').click();await page.addInitScript(key=>{const p=JSON.parse(localStorage.getItem(key));p.games.photo.snapshot.breadCover.fill(true);p.games.photo.snapshot.breadCover[0]=false;localStorage.setItem(key,JSON.stringify(p));},PROGRESS_KEY);
+ await page.locator('[data-pause]').click();await page.addInitScript(key=>{const p=JSON.parse(localStorage.getItem(key));p.packs['zena-bakery'].journey.snapshot.breadCover.fill(true);p.packs['zena-bakery'].journey.snapshot.breadCover[0]=false;localStorage.setItem(key,JSON.stringify(p));},PACKS_KEY);
  await page.reload();await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();await page.locator('[data-act="rolling-pin"]').click();await page.locator('.field-controls [data-act="0"]').click();await page.clock.runFor(12000);
  await expect(page.locator('#result-title')).toHaveText('스테이지 16 클리어!');await page.locator('.result-paper [data-start="photo"]').click();await expect(page.locator('.field-controls button')).toHaveCount(64);
 });
