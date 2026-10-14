@@ -147,4 +147,24 @@ function drawDefense(c,s){
  if(s.item){const attack=LIV_ATTACKS[s.item];ellipse(c,s.x,494,58,22,attack.color+'66');for(let i=0;i<3;i++){const a=s.elapsed*2+i*Math.PI*2/3;text(c,LIV_ITEM_ICONS[s.item],s.x+Math.cos(a)*50,485+Math.sin(a)*17,19,attack.color);}box(c,85,576,310,22,'#19364fdd',8);text(c,`${attack.name} · ${Math.ceil(s.itemTime)}초`,240,592,15,attack.color);}c.save();if(s.damageCooldown&&Math.floor(s.damageCooldown*10)%2)c.globalAlpha=.5;drawDoll(c,'liv',s.x,498,57,0);c.restore();box(c,s.x-34,550,68,28,'#fff4dc',10);text(c,`× ${s.squad}`,s.x,570,20);if(s.gateFlash)text(c,s.lastGate,s.x,439,28,'#ffdf82');
  if(s.burst>0){c.globalAlpha=s.burst;c.fillStyle='#fffbd1';c.fillRect(0,100,480,440);c.globalAlpha=1;}
 }
-export function drawGame(c,s){c.save();if(s.kind==='photo')c.scale(c.canvas.width/480,c.canvas.height/600);({drive:drawWalk,blocks:(c,s)=>s.mayVersion===3?drawSurvival(c,s):drawBubbles(c,s),photo:drawBakery,rhythm:drawPump,catch:drawDefense})[s.kind](c,s);c.restore();}
+export function drawGame(c,s){c.save();if(s.kind==='photo')c.scale(c.canvas.width/480,c.canvas.height/600);({drive:drawWalk,blocks:(c,s)=>s.mayVersion===3?drawSurvival(c,s):drawBubbles(c,s),photo:(c,s)=>s.linkVersion?drawLink(c,s):drawBakery(c,s),rhythm:drawPump,catch:drawDefense})[s.kind](c,s);c.restore();}
+
+function drawLink(c,s){
+ const size=boardSize(s),cell=420/size;
+ background(c,'#e2eee4','#b9d6c9',s);box(c,73,25,334,63,PAPER,15);
+ text(c,'제나의 빵 사천성',240,57,25,'#286b5c');text(c,'같은 빵 두 개 · 빈 길 · 두 번까지 꺾기',240,81,15,'#286b5c');
+ box(c,21,103,438,438,'#759d8e',17);
+ for(let i=0;i<s.board.length;i++){
+  const x=30+(i%size+.5)*cell,y=112+(Math.floor(i/size)+.5)*cell;
+  if(!s.board[i]){ellipse(c,x,y,2,2,'#cfe6da');continue;}
+  box(c,x-cell/2+3,y-cell/2+5,cell-6,cell-6,'#466d5f',8);
+  box(c,x-cell/2+3,y-cell/2+2,cell-6,cell-6,s.selected===i?'#fff0a0':'#fff6e4',8);
+  bread(c,x,y,s.board[i],cell*.65,false);
+  if(s.hint.includes(i)){c.strokeStyle='#286b5c';c.lineWidth=3;c.setLineDash([4,3]);c.strokeRect(x-cell/2+5,y-cell/2+4,cell-10,cell-10);c.setLineDash([]);}
+ }
+ if(s.flash&&s.path.length){
+  c.save();c.strokeStyle='#fff0a0';c.lineWidth=5;c.lineJoin='round';c.lineCap='round';c.beginPath();
+  s.path.forEach((p,i)=>{const x=Math.max(12,Math.min(468,30+(p.x+.5)*cell)),y=Math.max(94,Math.min(548,112+(p.y+.5)*cell));if(i)c.lineTo(x,y);else c.moveTo(x,y);});c.stroke();c.restore();
+ }
+ text(c,`${s.pairs} / ${s.board.length/2}쌍 완성`,240,568,20,'#286b5c');
+}

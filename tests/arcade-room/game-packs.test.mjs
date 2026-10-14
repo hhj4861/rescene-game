@@ -5,7 +5,7 @@ import {emptyProgress,snapshotRound,PROGRESS_KEY,saveRound,newRun,finishStage,st
 import {GAME_PACKS,PACKS_KEY,readGamePacks,packProgress,packRecords,activePack,selectPack,saveGamePacks,savePackRecord} from '../../src/arcade-room/game-packs.js';
 const memory=()=>{const data=new Map();return {getItem:key=>data.get(key)||null,setItem:(key,value)=>data.set(key,value)};};
 test('every member has a default pack; IDs and snapshots identify a compatible engine',()=>{
- const library=readGamePacks();assert.equal(new Set(GAME_PACKS.map(p=>p.id)).size,6);
+ const library=readGamePacks();assert.equal(new Set(GAME_PACKS.map(p=>p.id)).size,7);
  for(const kind of GAME_IDS){const pack=activePack(library,kind);assert.equal(pack.kind,kind);assert.equal(createGame(kind,pack.options).kind,kind);}
  assert.equal(activePack(library,'blocks').id,'may-survival');
  assert.equal(selectPack(library,'blocks','liv-shooter'),false);assert.equal(selectPack(library,'blocks','__proto__'),false);
