@@ -4,6 +4,16 @@
 
 
 
+## 제나 사천성·아이콘 조작 / 메이 노래 유지 운영 배포 — 2026-10-15
+
+- 사용자 승인 후 [PR #39](https://github.com/hhj4861/rescene-game/pull/39)를 main에 머지했다. 운영 소스 `1ff0f48dffa68374eb4c9ef15d224d3c987f696a`와 검증 head `4deaa19457d76a6e7e583d6276332288ab04699a`의 Git 트리 `c7bbbdfbbd33cf648d32ce07dd09c4460760f5c3`가 동일하다.
+- [성공 CI 38576768787](https://github.com/hhj4861/rescene-game/actions/runs/38576768787): 단위 **228개**, E2E **699개 통과·6개 조건부 생략·실패 0개**(24.3분), 린트·빌드 통과. 해당 `arcade-static-site` 산출물 그대로 배포했다.
+- Pages 배포 `452a6f49-6a31-4b75-9266-7f0ac0cbb247`: **Production / main / source `1ff0f48`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://452a6f49.rescene-arcade.pages.dev).
+- 제나의 도구를 아이콘·개수 배지·툴팁으로 변경했다. 좁은 세로 화면은 한 줄, 낮은 가로 화면은 우측 2×2 배치로 최소 44px 조작 영역을 확보한다. 기존 십원빵 팩과 독립 저장되는 **빵 사천성** 팩을 추가했다. 같은 빵을 빈 길로 최대 두 번 꺾어 연결하며, 1–5단계 6×6 / 이후 최대 8×8이다.
+- 메이 생존전은 강화 아이템 선택 중 게임 시계만 정지하고 아이템 노래는 계속 재생한다. 명시적 일시정지·창 이탈에서는 음악도 정지한다.
+- 공개 파일 **41개 모두 CI 빌드와 SHA-256 일치**. 운영 주소 E2E **117/117 통과**(1.9분): PC Chromium·Android Chromium·iPhone WebKit 에뮬레이션에서 제나 아이콘·가로/세로 배치·실제 연결·완주·팩 저장 격리, 메이 실제 오디오 시간 진행·재개·정지, 전체 게임 노래 중 효과음 억제를 확인했다. 모바일 제나 연결 화면도 시각 확인했다. 일부 영상 회귀는 YouTube API 대역을 사용하며 물리 휴대전화 청음 검증은 아니다.
+- 기존 Wrangler 로그인으로 배포했다. 인증·도메인 설정 변경 없이 본인 임시 의존성 연결을 제거하고 타 세션 파일은 보존했다. 증거: iCloud 작업 루트 `rescene-game/pr39-deploy-20261014/`의 `ci-success.log`, `site/`, `deploy.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`.
+
 ## 게임팩·펌프 자동 시작 운영 배포 — 2026-10-14
 
 - 사용자 운영 반영 승인 후 [PR #38](https://github.com/hhj4861/rescene-game/pull/38)을 main에 머지했다. PR #37의 펌프 자동 시작·음성 정책 변경도 포함한다. 운영 소스 `70d7e374f372e6110cb2fe97a0c22e28a1127177`과 검증 head `8595c94c02d7f721fd5a6558407a2c5af687b787`의 Git 트리 `a7afd187875b8df42e176df747c4c36552574826`가 동일하다.
