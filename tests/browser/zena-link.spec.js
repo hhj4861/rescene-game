@@ -4,20 +4,20 @@ import {createGame,gameAction,stepGame} from '../../src/arcade-room/model.js';
 import {linkPair} from '../../src/arcade-room/zena-link.js';
 import {snapshotRound} from '../../src/arcade-room/progress.js';
 import {readGamePacks,PACKS_KEY} from '../../src/arcade-room/game-packs.js';
-async function open(page,s){
- if(s){const data=readGamePacks();data.selected.photo='zena-link';Object.assign(data.packs['zena-link'].journey,{stage:s.stage,highest:s.stage,snapshot:snapshotRound(s)});await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);},{key:PACKS_KEY,value:JSON.stringify(data)});}
+async function open(page,s,pack='zena-link'){
+ if(s){const data=readGamePacks();data.selected.photo=pack;Object.assign(data.packs[pack].journey,{stage:s.stage,highest:s.stage,snapshot:snapshotRound(s)});await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);},{key:PACKS_KEY,value:JSON.stringify(data)});}
  await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.goto('./');await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.locator('[data-slide="photo"]').click();
 }
 const saved=page=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),PACKS_KEY);
 const tile=(page,i)=>page.locator(`.field-controls [data-act="${i}"]`);
 test('Zena icon tools fit a single 320px row, have accessible names and keep bakery controls working',async({page},info)=>{
- await page.setViewportSize({width:320,height:720});await open(page);await page.locator('[data-start="photo"].start').click();
+ await page.setViewportSize({width:320,height:720});await open(page,createGame('photo',{seed:7}),'zena-bakery');await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();
  const tools=page.locator('.game-controls .zena-tool');await expect(tools).toHaveCount(4);const boxes=[];
  for(let i=0;i<4;i++){const b=tools.nth(i);await expect(b.locator('svg')).toBeVisible();await expect(b).toHaveAttribute('aria-label',/.+/);const box=await b.boundingBox();expect(box.height).toBeGreaterThanOrEqual(44);expect(box.width).toBeGreaterThanOrEqual(44);expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(320);boxes.push(box);}
  expect(Math.max(...boxes.map(b=>b.y))-Math.min(...boxes.map(b=>b.y))).toBeLessThan(1);
  await page.getByRole('button',{name:'판 확대',exact:true}).click();await expect(page.locator('[data-bread-zoom]')).toHaveAttribute('aria-pressed','true');await page.getByRole('button',{name:'판 축소',exact:true}).click();
  await page.getByRole('button',{name:'빵 섞기 · 2회',exact:true}).click();await expect(page.getByRole('button',{name:'빵 섞기 · 1회',exact:true})).toBeVisible();
- await page.locator('.item-button').click();await expect(page.locator('.item-button')).toHaveAttribute('aria-pressed','true');await expect(page.locator('.item-button svg')).toBeVisible();
+ await page.clock.runFor(3500);await page.locator('.item-button').click();await expect(page.locator('.item-button')).toHaveAttribute('aria-pressed','true');await expect(page.locator('.item-button svg')).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(320);await page.screenshot({path:info.outputPath('zena-icon-toolbar.png'),fullPage:true});
 });
 test('link pack matches by touch or keyboard, draws a route and resumes independently of bakery',async({page,isMobile},info)=>{
@@ -39,7 +39,7 @@ test('all pairs clear the link stage; next stage and song reward belong to this 
  const data=await saved(page);expect(data.packs['zena-link'].journey.stage).toBe(2);expect(data.packs['zena-bakery'].journey.stage).toBe(1);expect(data.packs['zena-link'].record).toBeGreaterThan(0);
  await page.locator('.result-paper [data-start="photo"]').click();await expect(page.locator('#app')).toHaveAttribute('data-pack','zena-link');await expect(page.locator('.stage-goal b')).toHaveText('STAGE 2');
 });
-test('late-stage link board remains capped at 8 by 8 on mobile and incorrect pairs stay on the board',async({page},info)=>{
- const s=createGame('photo',{link:true,stage:16,seed:3});await page.setViewportSize({width:390,height:844});await open(page,s);await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();await expect(page.locator('.field-controls button')).toHaveCount(64);
- const b=s.board.findIndex(v=>v!==s.board[0]);await tile(page,0).click();await tile(page,b).click();await expect(page.locator('#score')).toHaveText('0');await expect(page.locator('#extra')).toHaveText('32');await expect(page.locator('#interaction-hint')).toContainText('최대 두 번');expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);await page.screenshot({path:info.outputPath('zena-link-stage16.png'),fullPage:true});
+for(const viewport of [{width:390,height:844},{width:844,height:390},{width:1280,height:720}])test(`late-stage link board and tools fit ${viewport.width}x${viewport.height} and incorrect pairs stay on the board`,async({page},info)=>{
+ const s=createGame('photo',{link:true,stage:16,seed:3});await page.setViewportSize(viewport);await open(page,s);await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();await expect(page.locator('.field-controls button')).toHaveCount(64);
+ const b=s.board.findIndex(v=>v!==s.board[0]);await tile(page,0).click();await tile(page,b).click();await expect(page.locator('#score')).toHaveText('0');await expect(page.locator('#extra')).toHaveText('32');await expect(page.locator('#interaction-hint')).toContainText('최대 두 번');expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(viewport.width);for(const button of await page.locator('.game-controls button').all()){const box=await button.boundingBox();expect(box.width).toBeGreaterThanOrEqual(44);expect(box.height).toBeGreaterThanOrEqual(44);expect(box.y+box.height).toBeLessThanOrEqual(viewport.height);}await page.screenshot({path:info.outputPath('zena-link-stage16.png'),fullPage:true});
 });
