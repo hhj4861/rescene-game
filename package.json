@@ -12,7 +12,11 @@
     "arcade:dev": "npm run dev",
     "arcade:build": "npm run build",
     "arcade:test": "npm test",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "app:check": "node scripts/mobile-workspace.mjs check",
+    "app:android": "node scripts/mobile-workspace.mjs android",
+    "app:ios": "node scripts/mobile-workspace.mjs ios",
+    "app:run": "node scripts/mobile-workspace.mjs run"
   },
   "devDependencies": {
     "@eslint/js": "9.39.1",

@@ -19,13 +19,13 @@ export function syncInteractionHints(app,s){
    el.dataset.collected=String(done);el.setAttribute('aria-label',`${lanes[i]} 길: ${done?'수집 완료':'간식 필요'}`);
   });
  }else if(s.linkVersion){
-  message=s.linkMessage||(s.selected>=0?`${linkFoodName(s.board[s.selected])} 선택 · 같은 음식을 하나 더 눌러요.`:'같은 음식 두 개를 골라요. 선은 두 번까지 꺾을 수 있어요.');
+  message=s.linkMessage||(s.selected>=0?`${linkFoodName(s.board[s.selected])} 선택`:'');
   app.querySelectorAll('.field-controls button').forEach(el=>{el.dataset.swapTarget='false';});
  }else{
   const size=Math.round(Math.sqrt(s.board.length)),selected=s.selected>=0&&s.board[s.selected]&&!s.flash&&!s.itemArmed;
   const neighbors=s.board.map((v,i)=>selected&&v&&Math.abs(Math.floor(i/size)-Math.floor(s.selected/size))+Math.abs(i%size-s.selected%size)===1);
-  message=s.itemArmed?'밀대로 지울 가로줄을 골라요.':s.flash?'퍼즐을 없애고 십원빵을 찾고 있어요.':selected&&!neighbors.some(Boolean)?'이 빵은 이웃이 없어요. 다른 빵이나 밀대를 골라요.':selected?`${Math.floor(s.selected/size)+1}행 ${s.selected%size+1}열 ${breadName(s.board[s.selected])} 선택 · 점선 칸과 교환해요.`:'빵 하나를 고른 뒤 이웃한 빵을 눌러요.';
-  if(!s.itemArmed&&!s.flash&&app.querySelector('[data-bread-zoom]')?.getAttribute('aria-pressed')==='true')message+=' 확대 중에는 밀어서 이동해요.';
+  message=s.itemArmed?'밀대로 지울 가로줄을 골라요.':s.flash?'':selected&&!neighbors.some(Boolean)?'이 빵은 이웃이 없어요. 다른 빵이나 밀대를 골라요.':selected?`${Math.floor(s.selected/size)+1}행 ${s.selected%size+1}열 ${breadName(s.board[s.selected])} 선택 · 점선 칸과 교환해요.`:'';
+  if(!s.itemArmed&&!s.flash&&app.querySelector('[data-bread-zoom]')?.getAttribute('aria-pressed')==='true')message+=' 확대 중 · 밀어서 이동';
   app.querySelectorAll('.field-controls button').forEach((el,i)=>{
    el.dataset.swapTarget=String(!!neighbors[i]);
   });

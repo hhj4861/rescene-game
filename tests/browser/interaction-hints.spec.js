@@ -23,8 +23,8 @@ test('Zena selection and occupied neighbors stay clear after zooming in and back
 });
 test('Zena matching clears the previous selection and rolling pin has its own instruction',async({page})=>{
  const s=createGame('photo',{seed:7});s.board=[1,1,2,3,4,5,1,2,1,4,5,3,2,3,4,5,3,1,3,4,5,2,1,2,4,5,2,1,2,3,5,2,3,4,3,4];await open(page,s);const cells=page.locator('.field-controls button');
- await cells.nth(7).click();await expect(page.locator('[data-swap-target="true"]')).toHaveCount(4);await cells.nth(8).click();await page.clock.runFor(700);await expect(page.locator('[data-swap-target="true"]')).toHaveCount(0);await expect(page.locator('#interaction-hint')).toHaveText('빵 하나를 고른 뒤 이웃한 빵을 눌러요.');
- await page.locator('.item-button').click();await expect(page.locator('#interaction-hint')).toHaveText('밀대로 지울 가로줄을 골라요.');await page.locator('.item-button').click();await expect(page.locator('#interaction-hint')).toHaveText('빵 하나를 고른 뒤 이웃한 빵을 눌러요.');
+ await cells.nth(7).click();await expect(page.locator('[data-swap-target="true"]')).toHaveCount(4);await cells.nth(8).click();await page.clock.runFor(700);await expect(page.locator('[data-swap-target="true"]')).toHaveCount(0);await expect(page.locator('#interaction-hint')).toBeEmpty();
+ await page.locator('.item-button').click();await expect(page.locator('#interaction-hint')).toHaveText('밀대로 지울 가로줄을 골라요.');await page.locator('.item-button').click();await expect(page.locator('#interaction-hint')).toBeEmpty();
 });
 
 test('Zena isolated tiles explain the next action even while zoomed',async({page})=>{
