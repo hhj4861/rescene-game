@@ -1,6 +1,7 @@
 /* global localStorage, document */
 import {test,expect} from '@playwright/test';
 import {createGame,gameAction,stepGame} from '../../src/arcade-room/model.js';
+import {LINK_FOODS} from '../../src/arcade-room/zena-foods.js';
 import {linkPair} from '../../src/arcade-room/zena-link.js';
 import {snapshotRound} from '../../src/arcade-room/progress.js';
 import {readGamePacks,PACKS_KEY} from '../../src/arcade-room/game-packs.js';
@@ -12,8 +13,8 @@ const saved=page=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),PACKS
 const tile=(page,i)=>page.locator(`.field-controls [data-act="${i}"]`);
 test('Zena icon tools fit a single 320px row, have accessible names and keep bakery controls working',async({page},info)=>{
  await page.setViewportSize({width:320,height:720});await open(page,createGame('photo',{seed:7}),'zena-bakery');await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();
- const tools=page.locator('.game-controls .zena-tool');await expect(tools).toHaveCount(4);const boxes=[];
- for(let i=0;i<4;i++){const b=tools.nth(i);await expect(b.locator('svg')).toBeVisible();await expect(b).toHaveAttribute('aria-label',/.+/);const box=await b.boundingBox();expect(box.height).toBeGreaterThanOrEqual(44);expect(box.width).toBeGreaterThanOrEqual(44);expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(320);boxes.push(box);}
+ const tools=page.locator('.game-controls .zena-tool');await expect(tools).toHaveCount(4);const boxes=await tools.evaluateAll(buttons=>buttons.map(button=>{const {x,y,width,height}=button.getBoundingClientRect();return {x,y,width,height};}));
+ for(let i=0;i<4;i++){const b=tools.nth(i);await expect(b.locator('svg')).toBeVisible();await expect(b).toHaveAttribute('aria-label',/.+/);const box=boxes[i];expect(box.height).toBeGreaterThanOrEqual(44);expect(box.width).toBeGreaterThanOrEqual(44);expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(320);}
  expect(Math.max(...boxes.map(b=>b.y))-Math.min(...boxes.map(b=>b.y))).toBeLessThan(1);
  await page.getByRole('button',{name:'판 확대',exact:true}).click();await expect(page.locator('[data-bread-zoom]')).toHaveAttribute('aria-pressed','true');await page.getByRole('button',{name:'판 축소',exact:true}).click();
  await page.getByRole('button',{name:'빵 섞기 · 2회',exact:true}).click();await expect(page.getByRole('button',{name:'빵 섞기 · 1회',exact:true})).toBeVisible();
@@ -35,11 +36,28 @@ test('all pairs clear the link stage; next stage and song reward belong to this 
   const [a,b]=linkPair(s.board);await tile(page,a).click();await tile(page,b).click();gameAction(s,a);gameAction(s,b);stepGame(s,.4);await page.clock.runFor(400);
   if(s.pairs===4){await expect(page.locator('.song-pickup')).toBeEnabled();await expect(page.locator('.song-pickup')).toHaveAttribute('aria-label','노래 아이템 줍기 · 1개');}
  }
- await expect(page.locator('#result-title')).toHaveText('스테이지 1 클리어!');await expect(page.locator('.result-paper')).toContainText('빵 18쌍');
+ await expect(page.locator('#result-title')).toHaveText('스테이지 1 클리어!');await expect(page.locator('.result-paper')).toContainText('음식 18쌍');
  const data=await saved(page);expect(data.packs['zena-link'].journey.stage).toBe(2);expect(data.packs['zena-bakery'].journey.stage).toBe(1);expect(data.packs['zena-link'].record).toBeGreaterThan(0);
  await page.locator('.result-paper [data-start="photo"]').click();await expect(page.locator('#app')).toHaveAttribute('data-pack','zena-link');await expect(page.locator('.stage-goal b')).toHaveText('STAGE 2');
 });
 for(const viewport of [{width:390,height:844},{width:844,height:390},{width:1280,height:720}])test(`late-stage link board and tools fit ${viewport.width}x${viewport.height} and incorrect pairs stay on the board`,async({page},info)=>{
  const s=createGame('photo',{link:true,stage:16,seed:3});await page.setViewportSize(viewport);await open(page,s);await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();await expect(page.locator('.field-controls button')).toHaveCount(64);
  const b=s.board.findIndex(v=>v!==s.board[0]);await tile(page,0).click();await tile(page,b).click();await expect(page.locator('#score')).toHaveText('0');await expect(page.locator('#extra')).toHaveText('32');await expect(page.locator('#interaction-hint')).toContainText('최대 두 번');expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(viewport.width);for(const button of await page.locator('.game-controls button').all()){const box=await button.boundingBox();expect(box.width).toBeGreaterThanOrEqual(44);expect(box.height).toBeGreaterThanOrEqual(44);expect(box.y+box.height).toBeLessThanOrEqual(viewport.height);}await page.screenshot({path:info.outputPath('zena-link-stage16.png'),fullPage:true});
+});
+
+test('all twelve foods have distinct accessible names, ramen pairs clear and new foods survive reload',async({page,isMobile},info)=>{
+ const s=createGame('photo',{link:true,stage:19,seed:7});s.board=s.board.map((_,i)=>1+Math.floor(i/2)%12);
+ await page.setViewportSize({width:320,height:780});await open(page,s);await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();
+ await expect(page.getByRole('button',{name:'음식 섞기 · 2회',exact:true})).toBeVisible();
+ for(let value=1;value<LINK_FOODS.length;value++)await expect(tile(page,(value-1)*2)).toHaveAttribute('aria-label',new RegExp(LINK_FOODS[value]+'$'));
+ await page.screenshot({path:info.outputPath('zena-twelve-foods-320.png'),fullPage:true});
+ if(isMobile)await tile(page,10).tap();else{await tile(page,10).focus();await page.keyboard.press('Enter');}
+ await expect(page.locator('#interaction-hint')).toContainText('라면 선택');
+ if(isMobile)await tile(page,11).tap();else{await tile(page,11).focus();await page.keyboard.press('Enter');}
+ await expect(page.locator('#goal')).toHaveText('1 / 32 짝');await expect(page.locator('#announce')).toHaveText('같은 음식 한 쌍 완성!');await expect(tile(page,10)).toHaveAttribute('aria-label',/빈칸/);
+ await page.clock.runFor(400);await page.locator('[data-exit-game]').click();
+ const snapshot=(await saved(page)).packs['zena-link'].journey.snapshot;
+ expect(snapshot.board[10]).toBe(0);expect(snapshot.board).toContain(12);
+ await page.reload();await page.locator('[data-slide="photo"]').click();await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();
+ await expect(tile(page,20)).toHaveAttribute('aria-label',/딸기$/);await expect(tile(page,22)).toHaveAttribute('aria-label',/아이스크림$/);await expect(page.locator('#goal')).toHaveText('1 / 32 짝');
 });

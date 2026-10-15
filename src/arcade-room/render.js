@@ -1,3 +1,4 @@
+import {drawFood} from './zena-foods.js';
 import {drawSurvival} from './survival-render.js';
 import {prankActive,prankMessage} from './walk-pranks.js';
 import {breadHunt,foundBread,breadAreaCells} from './bakery-hunt.js';
@@ -152,14 +153,14 @@ export function drawGame(c,s){c.save();if(s.kind==='photo')c.scale(c.canvas.widt
 function drawLink(c,s){
  const size=boardSize(s),cell=420/size;
  background(c,'#e2eee4','#b9d6c9',s);box(c,73,25,334,63,PAPER,15);
- text(c,'제나의 빵 사천성',240,57,25,'#286b5c');text(c,'같은 빵 두 개 · 빈 길 · 두 번까지 꺾기',240,81,15,'#286b5c');
+ text(c,'제나의 빵 사천성',240,57,25,'#286b5c');text(c,'같은 음식 두 개 · 빈 길 · 두 번까지 꺾기',240,81,15,'#286b5c');
  box(c,21,103,438,438,'#759d8e',17);
  for(let i=0;i<s.board.length;i++){
   const x=30+(i%size+.5)*cell,y=112+(Math.floor(i/size)+.5)*cell;
   if(!s.board[i]){ellipse(c,x,y,2,2,'#cfe6da');continue;}
   box(c,x-cell/2+3,y-cell/2+5,cell-6,cell-6,'#466d5f',8);
   box(c,x-cell/2+3,y-cell/2+2,cell-6,cell-6,s.selected===i?'#fff0a0':'#fff6e4',8);
-  bread(c,x,y,s.board[i],cell*.65,false);
+  if(s.board[i]<=5)bread(c,x,y,s.board[i],cell*.65,false);else drawFood(c,x,y,s.board[i],cell*.65);
   if(s.hint.includes(i)){c.strokeStyle='#286b5c';c.lineWidth=3;c.setLineDash([4,3]);c.strokeRect(x-cell/2+5,y-cell/2+4,cell-10,cell-10);c.setLineDash([]);}
  }
  if(s.flash&&s.path.length){
