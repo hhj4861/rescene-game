@@ -1,0 +1,59 @@
+name: Flutter app checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mobile:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: android
+          - os: macos-15
+            platform: ios
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    env:
+      ARCADE_ARTIFACTS: ${{ github.workspace }}/artifacts/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        if: matrix.platform == 'android'
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install pinned Flutter SDK
+        uses: actions/checkout@v4
+        with:
+          repository: flutter/flutter
+          ref: abaf9c523780a608bd46686fd5e53740a07077f8 # 3.47.7
+          path: .flutter-sdk
+      - name: Set SDK path
+        run: |
+          git -C .flutter-sdk fetch --depth=1 origin tag 3.47.7
+          echo "$GITHUB_WORKSPACE/.flutter-sdk/bin" >> "$GITHUB_PATH"
+      - name: Analyze and test app
+        run: npm run app:check
+      - name: Build Android test APK
+        if: matrix.platform == 'android'
+        run: npm run app:android
+      - name: Build iOS Simulator app
+        if: matrix.platform == 'ios'
+        run: npm run app:ios
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rescene-${{ matrix.platform }}-test-app
+          path: |
+            artifacts/mobile/flutter/rescene-arcade-debug.apk
+            artifacts/mobile/flutter/workspaces/*/build/ios/iphonesimulator/Runner.app
+          if-no-files-found: error
+          retention-days: 7
