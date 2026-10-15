@@ -10,16 +10,16 @@ async function expectCentered(page,id){
  })).toBeLessThan(2);
 }
 
-test('member tabs center the actual cabinet at wide, narrow and mobile widths',async({page},info)=>{
+// Keep each viewport within its own timeout: Linux WebKit can spend most of a
+// 45s test budget animating all 30 selections before the final screenshot.
+for(const width of [2200,1440,1065,700,390,320])test(`member tabs center the actual cabinet at ${width}px and after returning wide`,async({page},info)=>{
  await page.goto('./?may=classic');await expect(page.locator('[data-start="drive"].start')).toBeEnabled();
- for(const width of [2200,1440,1065,700,390,320]){
-  await page.setViewportSize({width,height:1000});
-  for(const id of ['blocks','catch','photo','rhythm','drive']){
-   await page.locator(`[data-slide="${id}"]`).click();await expectCentered(page,id);
-  }
+ await page.setViewportSize({width,height:1000});
+ for(const id of ['blocks','catch','photo','rhythm','drive']){
+  await page.locator(`[data-slide="${id}"]`).click();await expectCentered(page,id);
  }
  await page.setViewportSize({width:2200,height:1000});await page.locator('[data-slide="blocks"]').click();await expectCentered(page,'blocks');
- await page.screenshot({path:info.outputPath('may-centered-wide.png')});
+ if(width===320)await page.screenshot({path:info.outputPath('may-centered-wide.png')});
 });
 
 test('cabinet picker supports buttons, keyboard and remembers the game on return',async({page},info)=>{
