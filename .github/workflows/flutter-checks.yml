@@ -54,6 +54,6 @@ jobs:
           name: rescene-${{ matrix.platform }}-test-app
           path: |
             artifacts/mobile/flutter/rescene-arcade-debug.apk
-            artifacts/mobile/flutter/workspaces/*/build/ios/iphonesimulator/Runner.app
+            artifacts/mobile/flutter/rescene-ios-simulator.tar.gz
           if-no-files-found: error
           retention-days: 7

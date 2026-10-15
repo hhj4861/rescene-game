@@ -40,7 +40,7 @@ async function main() {
   const flutter=process.env.FLUTTER_BIN||'flutter';
   const execute=(command,args)=>new Promise((resolve,reject)=>{
     const child=spawn(command,args,{cwd:workspace,env,stdio:'inherit'});
-    child.once('error',reject);child.once('exit',code=>code===0?resolve():reject(new Error(`Flutter exited ${code}`)));
+    child.once('error',reject);child.once('exit',code=>code===0?resolve():reject(new Error(`${path.basename(command)} exited ${code}`)));
   });
   const run=args=>execute(flutter,['--suppress-analytics',...args]);
   console.log(`Flutter workspace: ${workspace}`);
@@ -58,7 +58,13 @@ async function main() {
     await copyFile(path.join(workspace,'build/app/outputs/flutter-apk/app-debug.apk'),dest);
     console.log(`Android test APK: ${dest}`);
   }
-  if(action==='ios')await run(['build','ios','--simulator','--debug',...extra]);
+  if(action==='ios'){
+    await run(['build','ios','--simulator','--debug',...extra]);
+    // GitHub artifact uploads do not preserve executable bits or bundle links.
+    const archive=path.join(artifacts,'rescene-ios-simulator.tar.gz');
+    await execute('tar',['-czf',archive,'-C',path.join(workspace,'build/ios/iphonesimulator'),'Runner.app']);
+    console.log(`iOS Simulator app archive: ${archive}`);
+  }
   if(action==='run')await run(['run',...extra]);
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

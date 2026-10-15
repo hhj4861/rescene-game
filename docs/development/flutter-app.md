@@ -35,6 +35,8 @@ npm run app:run -- -d DEVICE_ID --dart-define=ARCADE_URL=http://localhost:4325/
 
 패키지 변경 시 복사된 workspace에서 의존성을 먼저 해석하고 확인한 `pubspec.lock`을 소스에 반영한다. 소스 lock이 있으면 스크립트는 `--enforce-lockfile`을 사용한다.
 
+iOS 빌드는 실행 권한과 번들 내부 링크를 보존하는 `ARCADE_ARTIFACTS/flutter/rescene-ios-simulator.tar.gz`도 만든다. CI에서는 이 파일을 내려받아 압축을 푼 다음 Simulator에 설치한다.
+
 ## 앱 동작
 
 - 게임 화면은 SafeArea 안에 표시한다. 로딩 진행 표시, 네트워크 오류와 재시도만 네이티브 UI로 제공한다.
