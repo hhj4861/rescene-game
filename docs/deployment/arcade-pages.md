@@ -4,6 +4,16 @@
 
 
 
+## 안내 간소화·Flutter 앱 연결 운영 배포 — 2026-10-16
+
+- 사용자 명시 승인 후 [PR #42](https://github.com/hhj4861/rescene-game/pull/42)를 main에 머지했다. 운영 소스 `92b3d51ae1c3de0f7a52852096f8de9bb3422350`와 검증 head `8dfde7db9be63cd7c67cf9ee8f35343e701cf1d5`의 Git 트리 `6c91ff6414cc0857a5ad374d7f9ed4bc362e482d`가 동일하다.
+- [성공 웹 CI 38758536082](https://github.com/hhj4861/rescene-game/actions/runs/38758536082): 단위 **237개**, E2E **777개 통과·6개 조건부 생략**, lint/build 통과. 해당 `arcade-static-site` 산출물을 그대로 배포했다.
+- Pages 배포 `3a857d4a-30b0-4c0b-8a00-0ff3b46ccad2`: **Production / main / source `92b3d51`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://3a857d4a.rescene-arcade.pages.dev).
+- 7개 게임팩의 장문 규칙·반복 안내를 제거하고 조작·목표·진행 상태·저장 오류 안내를 유지했다. Android·iOS Flutter 셸은 같은 운영 URL을 불러오며 앱을 다시 열면 최신 웹이 반영된다. 일반 브라우저와 앱의 저장 공간은 별개이고 인터넷 연결이 필요하다.
+- 공개 파일 **41/41 SHA-256 일치**, 운영 E2E **103개 통과·2개 조건부 생략**(1.9분). PC Chromium·Pixel 7 Chromium·iPhone 13 WebKit 에뮬레이션에서 7팩 안내·조작·저장/복귀·백그라운드 브리지·영상 배치·캐러셀을 검증했다. 모바일 원이와 PC 리브 일시정지 화면 시각 검토. YouTube API는 대역을 사용했으며 네이티브 실기기/실제 음원 재생 검증은 아니다.
+- [Flutter CI 38758535676](https://github.com/hhj4861/rescene-game/actions/runs/38758535676): Android·iOS 분석/테스트 각 10개와 APK·iOS Simulator 빌드 성공. 앱 소스는 main 반영 완료. App Store·Google Play 게시 및 실기기 서명/배포는 미수행.
+- 기존 Wrangler 로그인으로 배포했으며 인증·도메인 설정은 변경하지 않았다. 증거: iCloud 작업 루트 `rescene-game/pr42-deploy-20261016/`의 `ci-source.json`, `site/`, `deploy.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`.
+
 ## 사천성 층별 진행·원이 동료 운영 배포 — 2026-10-15
 
 - 사용자 승인 후 [PR #41](https://github.com/hhj4861/rescene-game/pull/41)을 main에 머지했다. 운영 소스 `8a1e3ba9133a603916c2392e9780599cdcb25d75`와 검증 head `b367f1340fcebcae436a44bfab94775ddff61592`의 Git 트리 `cb4ac1b553a55b1c5e93bdca1eec94b00388e225`가 동일하다.

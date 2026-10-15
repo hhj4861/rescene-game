@@ -13,6 +13,8 @@
 - 네이티브 최종 코드 820a554: [Android APK·iOS Simulator CI 모두 성공](https://github.com/hhj4861/rescene-game/actions/runs/38753301724). Android 디버그 매니페스트 병합 충돌을 수정하고, iOS 번들은 실행 권한 보존을 위해 tar.gz로 보관. 두 플랫폼 모두 분석 및 단위/위젯 테스트 10개 통과.
 - 다운로드 결과: 작업 iCloud 폴더의 `ci-820a554/android/rescene-arcade-debug.apk`, `ci-820a554/ios/rescene-ios-simulator.tar.gz`. APK 서명·앱 ID·최소 SDK 24, iOS Simulator 번들 ID·실행 권한 0755·최소 OS 15.0 확인. 두 앱에 포함된 host_bridge.js가 저장소 소스와 바이트 단위로 일치.
 - 현재 운영 웹 호환 확인: 모바일 Chromium·WebKit에서 7팩 × 2 = 14개 브리지 시나리오 통과(`production-bridge-verified.log`). 영상 API는 모의 응답이며 네이티브 실기기/실제 YouTube 재생 검증과 구분함.
-- [PR #42](https://github.com/hhj4861/rescene-game/pull/42)에서 검토. 작업 브랜치에 commit/push했으며 main 머지·운영 웹 배포·스토어 배포는 미실행.
+- 현재: 사용자 승인 후 [PR #42](https://github.com/hhj4861/rescene-game/pull/42) main 머지 및 운영 웹 배포 완료(2026-10-16). 앱 스토어 게시·네이티브 실기기 검증은 미실행. [배포·검증 기록](../deployment/arcade-pages.md).
 - 전체 웹 CI 820a554: 761 통과·6 제외·1 시간 초과(28.6분). WebKit 캐러셀의 6개 너비·30개 선택 판정은 trace에서 통과했으나 마지막 캡처까지 누적 45초를 초과. 화면 너비별로 테스트를 분리하고 각 너비에서 다시 2200px로 돌아오는 검증도 유지함. 정렬 오차 2px 기준·개별 판정 제한 시간은 완화하지 않음.
 - 수정 후 캐러셀 3브라우저 재검증: 28 통과·2 제외(Chromium 전용 터치 주입), `carousel-verified.log`. 최신 전체 CI 결과는 PR #42의 체크에서 확인한다. 이후 변경은 이 테스트와 검증 기록뿐이며 앱 산출물의 소스는 820a554와 동일하다.
+
+- 배포 후 7팩 × 3브라우저의 앱 브리지 21개를 포함한 운영 회귀 103개 통과·2개 제외. 최종 head 8dfde7d의 네이티브 CI 38758535676도 두 플랫폼 모두 성공.

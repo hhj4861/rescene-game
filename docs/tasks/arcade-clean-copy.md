@@ -4,7 +4,7 @@
 - 담당: 현재 세션 단독. 기준 main e7570ac, feat/arcade-clean-copy.
 - 범위: 홈·곡 선택·플레이·일시정지·결과의 반복 안내, 캔버스 규칙 설명 제거. 조작 키·현재 효과·진행 수치·실패 안내 유지. 게임 규칙과 색감은 변경하지 않음.
 - 완료 기준: 관련 PC/모바일 E2E, 단위/lint/build, 변경만 commit/push/PR. 신규 PR 머지·배포는 별도 승인 이후.
-- 현재: 구현과 관련 검증 완료. Flutter 앱과 함께 [PR #42](https://github.com/hhj4861/rescene-game/pull/42)에 포함했으며 main·운영 반영 전.
+- 현재: 사용자 승인 후 PR #42 main 머지 및 운영 배포 완료(2026-10-16). [배포·검증 기록](../deployment/arcade-pages.md).
 
 - 1차 검증: 단위 236/236, lint/build 통과. E2E 파일명 필터가 worktree 이름과 일치해 전체 suite가 선택되어 중단(실패는 삭제한 저장 성공 문구를 기대한 기존 테스트). 구체적 파일 경로로 재실행하며 저장 자체를 확인하도록 변경.
 
@@ -14,3 +14,5 @@
 - 증거: iCloud `rescene-game/clean-copy-20261015/`의 unit.log, browser-final.log, browser-verified.log, site-verified/, browser-verified/. PC 원이·사천성, 모바일 원이·펌프 스크린샷 직접 확인.
 - 사용자 추가 요청: 웹과 함께 유지하는 Flutter 앱 구현을 이어 진행. 문구 정리는 작업 브랜치에 저장하며 새 PR 머지·운영 배포는 아직 하지 않음.
 - 전체 웹 CI에서 761개 통과·6개 제외, WebKit 캐러셀 한 항목은 모든 배치 판정 후 캡처 단계에서 누적 45초 제한 초과. 화면 너비별로 같은 판정을 분리하고 3브라우저 캐러셀 28개 통과·2개 제외로 재검증. 최신 전체 CI 결과는 PR #42 체크를 참조.
+
+- 운영 완료: main `92b3d51`, Pages `3a857d4a`. 최종 웹 CI 777개 통과·6개 제외, 운영 회귀 103개 통과·2개 제외, 파일 41/41 SHA-256 일치.
