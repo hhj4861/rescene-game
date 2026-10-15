@@ -4,6 +4,16 @@
 
 
 
+## 제나 사천성 12종 음식 운영 배포 — 2026-10-15
+
+- 사용자 승인 후 [PR #40](https://github.com/hhj4861/rescene-game/pull/40)을 main에 머지했다. 운영 소스 `01faba6e2abec52ae9ba427a12091eded05c357c`와 검증 head `0319a8af80428cebabdeedc92896f965ec128a3d`의 Git 트리 `e5ddf035533ae142d96163bb7f8ffc9f91bbfd45`가 동일하다.
+- [성공 CI 38731174593](https://github.com/hhj4861/rescene-game/actions/runs/38731174593): 단위 **230개**, E2E **702개 통과·6개 조건부 생략·실패 0개**(18.8분), 린트·빌드 통과. 해당 `arcade-static-site` 산출물 41개를 그대로 배포했다.
+- Pages 배포 `307e0a0d-885b-4b73-b727-afac1e655f35`: **Production / main / source `01faba6`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://307e0a0d.rescene-arcade.pages.dev).
+- 라면·초밥·피자·햄버거·삼각김밥·딸기·아이스크림을 추가해 총 12종. 새 판은 1단계 6종으로 시작해 3스테이지마다 1종씩, 19단계부터 12종을 고르게 배치한다. 기존 빵 ID·저장된 진행 중 판은 유지하며 다음 새 판부터 새 구성이 적용된다. 음식별 그림·접근성 이름·선택/결과 안내도 함께 반영했다.
+- 공개 파일 **41개 모두 CI 빌드와 SHA-256 일치**. 배포 직후 첫 비교는 40/41 일치했으며, 새 JS 경로 응답의 해시가 이전 배포 HTML과 같았다. 운영·고정 배포 주소 재조회에서 올바른 JavaScript 176,204바이트와 동일 해시를 확인한 뒤 전체 41개 재대조에 통과했다.
+- 초기 운영 E2E는 77개 통과 / 1개 실패: 새로고침 때 새 JS 경로에 text/html이 반환된 것을 브라우저 trace에서 확인했다. 전환 후 같은 코드로 전체 재검증하여 **78/78 통과**(2.1분). PC Chromium·Android Chromium·iPhone WebKit 에뮬레이션에서 음식 12종 이름·라면 짝 제거·터치/키보드·완주·저장 복원·기존 십원빵·팩 교체를 확인했다. 320px 운영 음식 화면 시각 검토 완료.
+- 기존 Wrangler 로그인 사용. 인증·도메인 설정은 변경하지 않았다. 증거: iCloud 작업 루트 `rescene-game/pr40-deploy-20261015/`의 `ci-success.log`, `site/`, `deploy.log`, `deployments.txt`, `production-assets-first.json`, `production-assets.json`, `production-app-headers.txt`, `fixed-app-headers.txt`, `public-browser.log`, `public-browser/`, `public-recheck.log`, `public-recheck/`.
+
 ## 제나 사천성·아이콘 조작 / 메이 노래 유지 운영 배포 — 2026-10-15
 
 - 사용자 승인 후 [PR #39](https://github.com/hhj4861/rescene-game/pull/39)를 main에 머지했다. 운영 소스 `1ff0f48dffa68374eb4c9ef15d224d3c987f696a`와 검증 head `4deaa19457d76a6e7e583d6276332288ab04699a`의 Git 트리 `c7bbbdfbbd33cf648d32ce07dd09c4460760f5c3`가 동일하다.
