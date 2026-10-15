@@ -1,3 +1,4 @@
+import {helperActive} from './walk-helpers.js';
 // Friendly cameos: one visit per member per stage, with a warning before effects.
 export const PRANK_MEMBERS=['liv','may','minami','zena'];
 export const PRANK_NAMES={liv:'리브',may:'메이',minami:'미나미',zena:'제나'};
@@ -10,6 +11,7 @@ export function validPranks(s){
 }
 export function stepPranks(s,dt){
  if(s.songItemTime){s.prank=null;while(s.prankIndex<4&&s.elapsed>=10+s.prankIndex*15)s.prankIndex++;return;}
+ if(s.prank&&helperActive(s,s.prank.member))s.prank=null;
  if(s.prank){
   const p=s.prank;
   if(p.warning>0){p.warning=Math.max(0,p.warning-dt);if(p.warning===0&&p.member==='zena')s.objects.push({id:s.nextObject++,lane:p.lane,y:110,kind:'bread',hp:1});}
@@ -17,6 +19,7 @@ export function stepPranks(s,dt){
  }
  if(!s.prank&&s.prankIndex<4&&s.elapsed>=10+s.prankIndex*15){
   const member=PRANK_MEMBERS[(s.prankIndex+(s.stage-1)%4)%4];s.prankIndex++;
+  if(helperActive(s,member))return;
   s.prank={member,warning:1.5,time:4,lane:(s.stage+s.prankIndex)%3};s.event='walk-prank';
  }
 }

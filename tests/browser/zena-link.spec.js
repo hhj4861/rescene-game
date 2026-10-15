@@ -54,10 +54,26 @@ test('all twelve foods have distinct accessible names, ramen pairs clear and new
  if(isMobile)await tile(page,10).tap();else{await tile(page,10).focus();await page.keyboard.press('Enter');}
  await expect(page.locator('#interaction-hint')).toContainText('라면 선택');
  if(isMobile)await tile(page,11).tap();else{await tile(page,11).focus();await page.keyboard.press('Enter');}
- await expect(page.locator('#goal')).toHaveText('1 / 32 짝');await expect(page.locator('#announce')).toHaveText('같은 음식 한 쌍 완성!');await expect(tile(page,10)).toHaveAttribute('aria-label',/빈칸/);
+ await expect(page.locator('#goal')).toHaveText('1 / 608 짝');await expect(page.locator('#announce')).toHaveText('같은 음식 한 쌍 완성!');await expect(tile(page,10)).toHaveAttribute('aria-label',/빈칸/);
  await page.clock.runFor(400);await page.locator('[data-exit-game]').click();
  const snapshot=(await saved(page)).packs['zena-link'].journey.snapshot;
  expect(snapshot.board[10]).toBe(0);expect(snapshot.board).toContain(12);
  await page.reload();await page.locator('[data-slide="photo"]').click();await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();
- await expect(tile(page,20)).toHaveAttribute('aria-label',/딸기$/);await expect(tile(page,22)).toHaveAttribute('aria-label',/아이스크림$/);await expect(page.locator('#goal')).toHaveText('1 / 32 짝');
+ await expect(tile(page,20)).toHaveAttribute('aria-label',/딸기$/);await expect(tile(page,22)).toHaveAttribute('aria-label',/아이스크림$/);await expect(page.locator('#goal')).toHaveText('1 / 608 짝');
+});
+
+test('stage two reveals the lower floor without clearing, resumes it, and completes only after both floors',async({page,isMobile},info)=>{
+ const s=createGame('photo',{link:true,stage:2,seed:11});s.board.fill(0);s.board[0]=s.board[1]=6;s.pairs=17;s.elapsed=160;s.remaining=20;
+ await open(page,s);await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();
+ await expect(page.locator('#powerup-status')).toContainText('현재 2층 / 총 2층');await expect(page.locator('#goal')).toHaveText('17 / 36 짝');
+ if(isMobile){await tile(page,0).tap();await tile(page,1).tap();}else{await tile(page,0).focus();await page.keyboard.press('Enter');await tile(page,1).focus();await page.keyboard.press('Enter');}
+ gameAction(s,0);gameAction(s,1);stepGame(s,.5);await page.clock.runFor(500);
+ await expect(page.locator('#app')).toHaveAttribute('data-state','playing');await expect(page.locator('#powerup-status')).toContainText('현재 1층 / 총 2층');await expect(page.locator('#goal')).toHaveText('18 / 36 짝');await expect(page.locator('#time')).toContainText('90');
+ await page.screenshot({path:info.outputPath('zena-lower-floor.png'),fullPage:true});await page.locator('[data-exit-game]').click();
+ const snapshot=(await saved(page)).packs['zena-link'].journey.snapshot;expect(snapshot.linkFloor).toBe(1);expect(snapshot.linkTimeBonus).toBeGreaterThan(69);expect(snapshot.board).toEqual(s.board);
+ await page.reload();await page.locator('[data-slide="photo"]').click();await page.locator('[data-start="photo"].start').click();await page.locator('[data-resume]').click();
+ await expect(page.locator('#powerup-status')).toContainText('현재 1층 / 총 2층');
+ while(s.board.some(Boolean)){const [a,b]=linkPair(s.board);await tile(page,a).click();await tile(page,b).click();gameAction(s,a);gameAction(s,b);stepGame(s,.4);await page.clock.runFor(400);}
+ await expect(page.locator('#result-title')).toHaveText('스테이지 2 클리어!');await expect(page.locator('.result-paper')).toContainText('음식 36쌍');
+ await page.locator('.result-paper [data-start="photo"]').click();await expect(page.locator('#powerup-status')).toContainText('현재 3층 / 총 3층');await expect(page.locator('#goal')).toHaveText('0 / 54 짝');
 });

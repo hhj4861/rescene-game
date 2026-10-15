@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {LINK_FOODS,linkMenu} from '../../src/arcade-room/zena-foods.js';
-import {linkPath,linkPair,linkSize,shuffleLink} from '../../src/arcade-room/zena-link.js';
+import {linkPath,linkPair,linkSize,shuffleLink,linkTotalPairs,linkFloorSeconds} from '../../src/arcade-room/zena-link.js';
 import {createGame,gameAction,stepGame} from '../../src/arcade-room/model.js';
 import {snapshotRound,restoreRound,saveRound,isStageClear,finishStage} from '../../src/arcade-room/progress.js';
 import {readGamePacks,selectPack,packProgress,saveGamePacks,PACKS_KEY} from '../../src/arcade-room/game-packs.js';
@@ -18,11 +18,11 @@ test('generated stages stay bounded, preserve pairs and can be played to complet
   const s=createGame('photo',{link:true,stage,seed});assert.equal(s.board.length,linkSize(stage)**2);assert.ok(restoreRound(snapshotRound(s)));
   if(seed%2===0)gameAction(s,'shuffle');
   let pairs=0;
-  while(s.board.some(Boolean)){
+  while(!isStageClear(s)&&pairs<(stage===1000?s.board.length/2:linkTotalPairs(s))){
    const pair=linkPair(s.board);assert.ok(pair,`stage ${stage}, seed ${seed}, turn ${pairs}`);const path=linkPath(s.board,...pair);assert.ok(corners(path)<=2);
    gameAction(s,pair[0]);gameAction(s,pair[1]);assert.equal(s.board[pair[0]],0);assert.equal(s.board[pair[1]],0);assert.ok(s.flash>0);stepGame(s,.4);pairs++;
   }
-  assert.equal(pairs,s.board.length/2);assert.equal(isStageClear(s),true);
+  assert.equal(pairs,stage===1000?s.board.length/2:linkTotalPairs(s));assert.equal(isStageClear(s),stage!==1000);assert.ok(restoreRound(snapshotRound(s)));
  }
 });
 test('a blocked board reshuffles without consuming manual charges or reviving removed tiles',()=>{
@@ -66,4 +66,30 @@ test('legacy bread saves retain their tile IDs and new food saves reject invalid
  assert.ok(snapshot.board.includes(12));assert.deepEqual(restoreRound(snapshot).board,s.board);
  for(const value of [13,-1,6.5])assert.equal(restoreRound({...snapshot,board:snapshot.board.map((v,i)=>i<2?value:v)}),null);
  const odd=[...snapshot.board];odd[0]=odd[0]===6?7:6;assert.equal(restoreRound({...snapshot,board:odd}),null);
+});
+
+function lastPair(s){s.board.fill(0);s.board[0]=s.board[1]=6;s.pairs=(s.linkLayers-s.linkFloor+1)*s.board.length/2-1;s.selected=-1;s.flash=0;}
+test('N stages have N floors and only the final floor clears; floor transition is saved deterministically',()=>{
+ for(const stage of [1,2,3,6,1000]){
+  const s=createGame('photo',{link:true,stage,seed:17});assert.equal(s.linkLayers,stage);assert.equal(s.linkFloor,stage);
+  lastPair(s);s.elapsed=179.9;s.remaining=.1;gameAction(s,0);gameAction(s,1);
+  assert.equal(isStageClear(s),stage===1);
+  const pending=restoreRound(snapshotRound(s));assert.ok(pending);stepGame(s,.4);stepGame(pending,.4);
+  assert.equal(s.linkFloor,Math.max(1,stage-1));assert.equal(s.ended,false);
+  if(stage>1){assert.ok(s.remaining>=linkFloorSeconds(stage)-.4);assert.equal(s.board.filter(Boolean).length,s.board.length);assert.deepEqual(s.board,pending.board);assert.equal(isStageClear(s),false);}
+  assert.ok(restoreRound(snapshotRound(s)));
+ }
+});
+test('legacy single-floor saves keep progress, while malformed layers and time bonuses are rejected',()=>{
+ const s=createGame('photo',{link:true,stage:3,seed:7}),old=snapshotRound(s);
+ for(const key of ['linkLayers','linkFloor','linkTimeBonus'])delete old[key];
+ const r=restoreRound(old);assert.ok(r);assert.equal(r.linkLayers,1);assert.equal(r.linkFloor,1);assert.deepEqual(r.board,s.board);
+ for(const patch of [{linkFloor:0},{linkFloor:4},{linkLayers:2},{linkLayers:1.5},{linkTimeBonus:1},{linkTimeBonus:-1},{pairs:18}])assert.equal(restoreRound({...snapshotRound(s),...patch}),null);
+ const partial=snapshotRound(s);delete partial.linkFloor;assert.equal(restoreRound(partial),null);
+});
+test('floor changes preserve song timers, unclaimed rewards and limited shuffle charges',()=>{
+ const s=createGame('photo',{link:true,stage:3,seed:7});s.shuffles=0;s.songItemTime=40;s.songDrops=0;lastPair(s);gameAction(s,0);gameAction(s,1);stepGame(s,.4);
+ assert.equal(s.linkFloor,2);assert.equal(s.shuffles,0);assert.equal(s.songDrops,0);assert.ok(s.songItemTime>39);
+ s.songItemTime=0;s.songDrops=1;lastPair(s);gameAction(s,0);gameAction(s,1);stepGame(s,.4);assert.equal(s.linkFloor,1);assert.equal(s.songDrops,1);
+ lastPair(s);gameAction(s,0);gameAction(s,1);assert.ok(isStageClear(s));
 });

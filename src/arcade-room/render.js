@@ -1,3 +1,5 @@
+import {WALK_HELPERS,HELPER_NAMES,HELPER_HEIGHT,BYEOL_HEIGHT,WONI_HEIGHT,activeHelpers,helperPosition} from './walk-helpers.js';
+import {linkTotalPairs} from './zena-link.js';
 import {drawFood} from './zena-foods.js';
 import {drawSurvival} from './survival-render.js';
 import {prankActive,prankMessage} from './walk-pranks.js';
@@ -58,6 +60,7 @@ function drawWalk(c,s){
   if(o.kind==='puddle'){ellipse(c,x,y+3,39,17,'#6faac6');ellipse(c,x-3,y,32,12,'#a1d7df');ellipse(c,x-10,y-3,12,2,'#e5f8f4');}
   else if(o.kind==='monster'){critter(c,x,y,o.hp>1?'#8a79ad':'#af9bd2');text(c,'몬스터',x,y-30,12,'#6e577e');for(let i=0;i<o.hp;i++)ellipse(c,x+(i-(o.hp-1)/2)*10,y+30,3,3,'#8a79ad');}
   else if(o.kind==='byeol'){ellipse(c,x,y,32,32,'#dbccf4');c.save();c.translate(x,y+25);c.scale(.6,.6);drawByeol(c,0,0,0);c.restore();text(c,'별이 캐리',x,y-38,13,'#755599');}
+  else if(WALK_HELPERS.includes(o.kind)){ellipse(c,x,y,29,29,'#fff8df');drawDoll(c,o.kind,x,y+23,47);text(c,HELPER_NAMES[o.kind]+' 도움',x,y-34,13,'#42684e');}
   else if(o.kind==='charmander'){ellipse(c,x,y+4,30,30,'#ffdfa0');drawCharmander(c,x,y+28,52);text(c,'파이리 변신',x,y-34,12,'#a65c27');}
   else if(o.kind==='bread'){bread(c,x,y,1,64,false);text(c,'제나의 빵 · 점프/공격',x,y-38,12,'#956551');}
   else if(o.kind==='log'){box(c,x-36,y-13,72,26,'#a77755',10);ellipse(c,x+31,y,9,13,'#d8ac73');ellipse(c,x+31,y,5,8,'#b98658');box(c,x-24,y-6,39,3,'#c89466',2);}
@@ -69,13 +72,23 @@ function drawWalk(c,s){
  }
  for(const b of s.shots){if(['fire','blaze'].includes(b.kind)){if(b.kind==='blaze')ellipse(c,b.x,b.y,25,36,'#ef674788');ellipse(c,b.x,b.y+10,16,28,'#f19a3dd9');ellipse(c,b.x,b.y+4,9,20,'#fff0a2');star(c,b.x,b.y-17,11,'#ffbf58');}else if(b.kind==='heart'){text(c,'♥',b.x,b.y,30,'#d86b9c');}else if(['paw','super-paw'].includes(b.kind)){if(b.kind==='super-paw')star(c,b.x,b.y,23,'#f7d982');ellipse(c,b.x,b.y,9,8,'#ab81d3');for(const dx of [-9,0,9])ellipse(c,b.x+dx,b.y-10,4,5,'#d8b9f3');}else star(c,b.x,b.y,10,'#d39a3e');}
  for(const e of s.effects){c.save();c.globalAlpha=e.ttl/.45;for(let i=0;i<5;i++)star(c,e.x+Math.cos(i*1.26)*24,e.y+Math.sin(i*1.26)*24,7,'#fff7b1');text(c,'+150',e.x,e.y-25,16,'#805780');c.restore();}
+ for(const e of s.helperFx){
+  const p=helperPosition(s,e.member);c.save();c.globalAlpha=e.ttl/.45;c.strokeStyle=e.member==='may'?'#ad8acc':'#dfb964';c.lineWidth=3;c.setLineDash([5,5]);c.beginPath();c.moveTo(p.x,p.y-22);c.lineTo(e.x,e.y);c.stroke();c.setLineDash([]);bubble(c,e.x,e.y,32,'#e8d3f388');c.restore();
+ }
  const lift=s.jumpTime?Math.sin(s.jumpTime/.8*Math.PI)*65:0,bob=quiet||lift?0:Math.sin(walk)*2;
  ellipse(c,s.x,519,52,9,'#24465522');c.save();if(s.shield&&Math.floor(s.shield*10)%2)c.globalAlpha=.5;
  if(s.fever){ellipse(c,s.x,470-lift,61,58,'#fff8c466');for(let i=0;i<3;i++)star(c,s.x-45+i*43,424-lift+(i%2)*12,7,'#e9c466');}
- c.strokeStyle='#cf8d9e';c.lineWidth=2;c.beginPath();c.moveTo(s.x-12,469-lift+bob);c.quadraticCurveTo(s.x+11,490-lift,s.x+32,480-lift+bob);c.stroke();
- if(s.transformTime){c.save();if(s.fireLevel===2){c.filter='hue-rotate(-25deg) saturate(1.7)';ellipse(c,s.x-22,470-lift,56,56,'#ffb45c55');}drawCharmander(c,s.x-22,514-lift+bob,s.fireLevel===2?112:94);c.restore();if(s.fireLevel===2){star(c,s.x-57,445-lift,14,'#ff9b47');star(c,s.x+14,438-lift,14,'#ff9b47');}}else drawDoll(c,'woni',s.x-22,514-lift+bob,94);if(s.byeolPower){star(c,s.x+31,460-lift,49,'#f7d98288');text(c,'슈퍼 발바닥!',s.x+30,412-lift,13,'#8d6330');}else if(s.byeolTime){ellipse(c,s.x+31,468-lift,35,42,'#dcc5f088');text(c,'별이 캐리!',s.x+30,416-lift,13,'#755599');}drawByeol(c,s.x+31,503-lift+bob,walk);c.restore();
- if(s.rewardTime){const labels={byeol:'별이가 도와줄게! 20초 자동 추적 공격',charmander:'파이리 변신! 자동으로 불을 뿜어요',treat:'간식 +1',song:`♪ ${stageItemSong(s.kind,s.stage).title}`,clock:'+10초', 'clock-max':'시간 보너스 최대 +60초'};text(c,labels[s.lastReward],240,405,19,'#42684e');}
- if(s.songItemTime){box(c,18,545,444,45,'#fff8e8ed',12);for(const [i,member] of ['liv','may','minami','zena'].entries()){const x=43+i*110;drawDoll(c,member,x,587,38);text(c,['리브 ♥','메이 방울','미나미 가속','제나 간식'][i],x+42,570,11);}}
+ c.strokeStyle='#cf8d9e';c.lineWidth=2;c.beginPath();c.moveTo(s.x-12,469-lift+bob);c.quadraticCurveTo(s.x+11,490-lift,s.x+26,505-lift+bob);c.stroke();
+ if(s.transformTime){c.save();if(s.fireLevel===2){c.filter='hue-rotate(-25deg) saturate(1.7)';ellipse(c,s.x-22,470-lift,56,56,'#ffb45c55');}drawCharmander(c,s.x-22,514-lift+bob,s.fireLevel===2?112:94);c.restore();if(s.fireLevel===2){star(c,s.x-57,445-lift,14,'#ff9b47');star(c,s.x+14,438-lift,14,'#ff9b47');}}else drawDoll(c,'woni',s.x-22,514-lift+bob,WONI_HEIGHT);if(s.byeolPower){star(c,s.x+26,500-lift,23,'#f7d98288');text(c,'슈퍼 발바닥!',s.x+30,412-lift,13,'#8d6330');}else if(s.byeolTime){ellipse(c,s.x+26,501-lift,19,22,'#dcc5f088');text(c,'별이 캐리!',s.x+30,416-lift,13,'#755599');}c.save();c.translate(s.x+26,514-lift+bob-BYEOL_HEIGHT*13/87);c.scale(BYEOL_HEIGHT/87,BYEOL_HEIGHT/87);drawByeol(c,0,0,walk);c.restore();c.restore();
+ for(const member of activeHelpers(s)){
+  const p=helperPosition(s,member),hop=quiet?0:Math.sin(walk+WALK_HELPERS.indexOf(member))*2;
+  ellipse(c,p.x,p.y+1,18,4,'#24465522');
+  if(member==='minami'){c.strokeStyle='#e3bd56';c.lineWidth=2;for(const dy of [12,21]){c.beginPath();c.moveTo(p.x-24,p.y-dy);c.lineTo(p.x-17,p.y-dy-5);c.stroke();}}
+  drawDoll(c,member,p.x,p.y+hop,HELPER_HEIGHT,quiet?0:Math.floor(s.elapsed*4)%2);
+  text(c,`${HELPER_NAMES[member]} ${Math.ceil(Math.max(s.songItemTime,s.helpers[member]))}`,p.x,p.y+12,10,'#42684e');
+ }
+ if(s.rewardTime){const labels={...Object.fromEntries(WALK_HELPERS.map(m=>[m,HELPER_NAMES[m]+' 합류! 20초 동안 함께해요'])),byeol:'별이가 도와줄게! 20초 자동 추적 공격',charmander:'파이리 변신! 자동으로 불을 뿜어요',treat:'간식 +1',song:`♪ ${stageItemSong(s.kind,s.stage).title}`,clock:'+10초', 'clock-max':'시간 보너스 최대 +60초'};text(c,labels[s.lastReward],240,405,19,'#42684e');}
+ if(s.songItemTime)text(c,`♪ 친구들과 함께 · ${Math.ceil(s.songItemTime)}초`,240,574,16,'#42684e');
  if(s.prank){
   const p=s.prank;c.save();
   if(prankActive(s,'liv')){c.globalAlpha=.72;for(let i=0;i<4;i++)text(c,'♥',90+i*100,235+(i%2)*55,55,'#ed9db2');c.globalAlpha=1;}
@@ -154,10 +167,11 @@ function drawLink(c,s){
  const size=boardSize(s),cell=420/size;
  background(c,'#e2eee4','#b9d6c9',s);box(c,73,25,334,63,PAPER,15);
  text(c,'제나의 빵 사천성',240,57,25,'#286b5c');text(c,'같은 음식 두 개 · 빈 길 · 두 번까지 꺾기',240,81,15,'#286b5c');
+ for(let d=Math.min(3,s.linkFloor-1);d>0;d--)box(c,21+d*3,103+d*5,438,438,d%2?'#567d70':'#98bbac',17);
  box(c,21,103,438,438,'#759d8e',17);
  for(let i=0;i<s.board.length;i++){
   const x=30+(i%size+.5)*cell,y=112+(Math.floor(i/size)+.5)*cell;
-  if(!s.board[i]){ellipse(c,x,y,2,2,'#cfe6da');continue;}
+  if(!s.board[i]){if(s.linkFloor>1){box(c,x-cell/2+5,y-cell/2+6,cell-10,cell-10,'#aac8ba',8);text(c,'◇',x,y+6,18,'#6a9483');}else ellipse(c,x,y,2,2,'#cfe6da');continue;}
   box(c,x-cell/2+3,y-cell/2+5,cell-6,cell-6,'#466d5f',8);
   box(c,x-cell/2+3,y-cell/2+2,cell-6,cell-6,s.selected===i?'#fff0a0':'#fff6e4',8);
   if(s.board[i]<=5)bread(c,x,y,s.board[i],cell*.65,false);else drawFood(c,x,y,s.board[i],cell*.65);
@@ -167,5 +181,5 @@ function drawLink(c,s){
   c.save();c.strokeStyle='#fff0a0';c.lineWidth=5;c.lineJoin='round';c.lineCap='round';c.beginPath();
   s.path.forEach((p,i)=>{const x=Math.max(12,Math.min(468,30+(p.x+.5)*cell)),y=Math.max(94,Math.min(548,112+(p.y+.5)*cell));if(i)c.lineTo(x,y);else c.moveTo(x,y);});c.stroke();c.restore();
  }
- text(c,`${s.pairs} / ${s.board.length/2}쌍 완성`,240,568,20,'#286b5c');
+ text(c,`${s.linkFloor}층 / 총 ${s.linkLayers}층 · ${s.pairs} / ${linkTotalPairs(s)}쌍`,240,573,18,'#286b5c');
 }
