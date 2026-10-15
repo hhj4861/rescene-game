@@ -1,6 +1,9 @@
 import {LINK_FOODS,linkMenu} from './zena-foods.js';
 import {collectSongTime} from './song-time.js';
 export const linkSize=stage=>stage<=5?6:8;
+export const linkTotalPairs=s=>s.board.length/2*s.linkLayers;
+export const linkCleared=s=>s.linkFloor===1&&!s.board.some(Boolean);
+export const linkFloorSeconds=stage=>Math.max(60,90-(stage-2)*5);
 const point=(i,size)=>({x:i%size,y:Math.floor(i/size)});
 // Search empty cells plus a one-cell border; a route may turn at most twice.
 export function linkPath(board,a,b){
@@ -38,7 +41,7 @@ function freshBoard(s){
  return board;
 }
 export function createLink(s,options){
- Object.assign(s,{linkVersion:1,board:freshBoard(s),selected:-1,pairs:0,shuffles:2,flash:0,path:[],hint:[],hintTime:0,linkMessage:'',songDrops:Number.isSafeInteger(options.songDrops)&&options.songDrops>=0?options.songDrops:0,songPickups:0});
+ Object.assign(s,{linkVersion:1,linkLayers:s.stage,linkFloor:s.stage,linkTimeBonus:0,board:freshBoard(s),selected:-1,pairs:0,shuffles:2,flash:0,path:[],hint:[],hintTime:0,linkMessage:'',songDrops:Number.isSafeInteger(options.songDrops)&&options.songDrops>=0?options.songDrops:0,songPickups:0});
 }
 export function shuffleLink(s,automatic=false){
  const cells=s.board.map((v,i)=>v?i:-1).filter(i=>i>=0),values=cells.map(i=>s.board[i]);
@@ -64,14 +67,20 @@ export function linkAction(s,a){
  if(!route){s.selected=a;s.linkMessage='같은 음식을 빈 길로 연결해요. 최대 두 번 꺾을 수 있어요.';s.event='bread-invalid';return;}
  s.board[s.selected]=s.board[a]=0;s.selected=-1;s.path=route;s.flash=.35;s.pairs++;s.score+=150+Math.min(10,s.stage)*10;
  if(s.pairs%4===0&&!s.songItemTime&&!s.songDrops)s.songDrops=1;
- s.linkMessage='한 쌍 완성!';s.event='bread-match';
+ s.linkMessage=s.songDrops&&!s.songItemTime?'한 쌍 완성! ♪ 버튼으로 노래 아이템을 받아요.':'한 쌍 완성!';s.event='bread-match';
 }
 export function stepLink(s,dt){
  const was=s.flash;s.flash=Math.max(0,s.flash-dt);s.hintTime=Math.max(0,s.hintTime-dt);
  if(was&&!s.flash){s.path=[];if(s.board.some(Boolean)&&!linkPair(s.board))shuffleLink(s,true);}
+ if(!s.flash&&!s.board.some(Boolean)&&s.linkFloor>1){
+  s.linkFloor--;s.board=freshBoard(s);s.selected=-1;s.hint=[];s.hintTime=0;s.path=[];
+  const bonus=Math.max(0,linkFloorSeconds(s.stage)-s.remaining);
+  s.linkTimeBonus+=bonus;s.remaining+=bonus;
+  s.linkMessage=`아래 ${s.linkFloor}층이 열렸어요!${bonus?' 시간을 보충했어요.':''}`;
+ }
  if(!s.hintTime)s.hint=[];
 }
 export function validLink(s){
  const int=(n,a,b)=>Number.isInteger(n)&&n>=a&&n<=b,size=linkSize(s.stage);
- return s.linkVersion===1&&Array.isArray(s.board)&&s.board.length===size*size&&s.board.every(n=>int(n,0,LINK_FOODS.length-1))&&LINK_FOODS.slice(1).map((_,i)=>i+1).every(n=>s.board.filter(v=>v===n).length%2===0)&&int(s.pairs,0,size*size/2)&&s.pairs*2+s.board.filter(Boolean).length===size*size&&int(s.selected,-1,s.board.length-1)&&(s.selected===-1||s.board[s.selected]>0)&&int(s.shuffles,0,2)&&int(s.songDrops,0,100000)&&int(s.songPickups,0,100000)&&Number.isFinite(s.flash)&&s.flash>=0&&s.flash<=.35&&Array.isArray(s.path)&&s.path.length<30&&s.path.every(p=>p&&int(p.x,-1,size)&&int(p.y,-1,size))&&Array.isArray(s.hint)&&s.hint.length<=2&&s.hint.every(i=>int(i,0,s.board.length-1))&&Number.isFinite(s.hintTime)&&s.hintTime>=0&&s.hintTime<=3&&typeof s.linkMessage==='string'&&s.linkMessage.length<=100;
+ return s.linkVersion===1&&Number.isSafeInteger(s.linkLayers)&&(s.linkLayers===s.stage||s.linkLayers===1)&&int(s.linkFloor,1,s.linkLayers)&&Number.isFinite(s.linkTimeBonus)&&s.linkTimeBonus>=0&&s.linkTimeBonus<=Math.min(s.elapsed,(s.linkLayers-s.linkFloor)*linkFloorSeconds(s.stage))+.001&&Array.isArray(s.board)&&s.board.length===size*size&&s.board.every(n=>int(n,0,LINK_FOODS.length-1))&&LINK_FOODS.slice(1).map((_,i)=>i+1).every(n=>s.board.filter(v=>v===n).length%2===0)&&Number.isSafeInteger(s.pairs)&&int(s.pairs,0,linkTotalPairs(s))&&s.pairs-(s.linkLayers-s.linkFloor)*size*size/2===(size*size-s.board.filter(Boolean).length)/2&&int(s.selected,-1,s.board.length-1)&&(s.selected===-1||s.board[s.selected]>0)&&int(s.shuffles,0,2)&&int(s.songDrops,0,100000)&&int(s.songPickups,0,100000)&&Number.isFinite(s.flash)&&s.flash>=0&&s.flash<=.35&&Array.isArray(s.path)&&s.path.length<30&&s.path.every(p=>p&&int(p.x,-1,size)&&int(p.y,-1,size))&&Array.isArray(s.hint)&&s.hint.length<=2&&s.hint.every(i=>int(i,0,s.board.length-1))&&Number.isFinite(s.hintTime)&&s.hintTime>=0&&s.hintTime<=3&&typeof s.linkMessage==='string'&&s.linkMessage.length<=100;
 }

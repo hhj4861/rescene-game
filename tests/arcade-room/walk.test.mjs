@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {WALK_HELPERS,helperActive,helperPosition} from '../../src/arcade-room/walk-helpers.js';
 import {createGame,gameAction,stepGame} from '../../src/arcade-room/model.js';
 import {restoreRound,snapshotRound,readProgress,emptyProgress} from '../../src/arcade-room/progress.js';
 function pickup(s,kind){s.objects=[{id:s.nextObject++,lane:s.lane,y:455,kind}];s.spawn=10;stepGame(s,.025);}
@@ -29,8 +30,8 @@ test('invalid bonuses are rejected; old games retain progress but restart only t
 });
 test('every route cycle offers song and clock gifts with a reproducible lane sequence',()=>{
  const s=createGame('drive',{seed:7}),seen=[];
- for(let i=0;i<28;i++){s.objects=[];s.spawn=0;stepGame(s,.025);seen.push(s.objects[0].kind);}
- assert.equal(seen.filter(k=>k==='song').length,2);assert.equal(seen.filter(k=>k==='clock').length,2);assert.equal(seen.filter(k=>k==='treat').length,8);assert.equal(seen.filter(k=>k==='monster').length,8);assert.equal(seen.filter(k=>k==='charmander').length,2);
+ for(let i=0;i<36;i++){s.objects=[];s.spawn=0;stepGame(s,.025);seen.push(s.objects[0].kind);}
+ for(const member of WALK_HELPERS)assert.equal(seen.filter(k=>k===member).length,2);assert.equal(seen.filter(k=>k==='song').length,2);assert.equal(seen.filter(k=>k==='clock').length,2);assert.equal(seen.filter(k=>k==='treat').length,8);assert.equal(seen.filter(k=>k==='monster').length,8);assert.equal(seen.filter(k=>k==='charmander').length,2);
 });
 
 test('star attacks hit the nearest monster once, respect cooldown, and leave gifts intact',()=>{
@@ -68,4 +69,25 @@ test('song helpers attack, clear obstacles, accelerate movement, attract treats 
  const s=createGame('drive',{seed:7});pickup(s,'song');s.objects=[{id:1,lane:0,y:340,kind:'monster',hp:2},{id:2,lane:2,y:200,kind:'log'},{id:3,lane:2,y:380,kind:'treat'}];s.spawn=10;stepGame(s,.025);
  assert.ok(s.shots.some(b=>b.kind==='heart'));assert.equal(s.objects.some(o=>o.kind==='log'),false);assert.equal(s.objects.find(o=>o.kind==='treat').lane,2);s.x=310;s.lane=2;stepGame(s,.025);assert.equal(s.objects.find(o=>o.kind==='treat').lane,2);assert.ok(restoreRound(snapshotRound(s)));
  gameAction(s,'left');const x=s.x;stepGame(s,.025);assert.ok(x-s.x>21.25);s.objects=[];s.shots=[];s.songItemTime=.01;stepGame(s,.025);assert.equal(s.songItemTime,0);s.objects=[{id:4,lane:2,y:200,kind:'log'},{id:5,lane:2,y:380,kind:'treat'}];stepGame(s,.025);assert.equal(s.objects.length,2);assert.equal(s.objects.find(o=>o.kind==='treat').lane,2);assert.equal(s.shots.length,0);
+});
+
+test('each member pickup summons only that helper for 20 seconds, refreshes and survives resume',()=>{
+ for(const member of WALK_HELPERS){
+  const s=createGame('drive',{seed:7});pickup(s,member);assert.equal(s.helpers[member],20);assert.equal(s.songItemTime,0);assert.equal(s.clockPickups,0);
+  for(const other of WALK_HELPERS)assert.equal(helperActive(s,other),other===member);
+  const r=restoreRound(snapshotRound(s));assert.ok(r);assert.equal(r.helpers[member],20);s.objects=[];stepGame(s,.1);stepGame(r,.1);assert.deepEqual(snapshotRound(s),snapshotRound(r));
+  pickup(s,member);assert.equal(s.helpers[member],20);s.helpers[member]=.01;stepGame(s,.025);assert.equal(helperActive(s,member),false);
+ }
+});
+test('individual companions perform their own skills from the game field without needing music',()=>{
+ const s=createGame('drive',{seed:7});pickup(s,'liv');s.objects=[{id:10,lane:0,y:200,kind:'monster',hp:2}];stepGame(s,.025);
+ const shot=s.shots.find(b=>b.kind==='heart'),p=helperPosition(s,'liv');assert.ok(shot);assert.ok(Math.abs(shot.x-p.x)<=30);assert.ok(shot.y<p.y);assert.ok(restoreRound(snapshotRound(s)));
+ pickup(s,'may');s.objects=[{id:11,lane:2,y:200,kind:'log'}];stepGame(s,.025);assert.equal(s.objects.length,0);assert.equal(s.helperFx[0].member,'may');
+ pickup(s,'minami');gameAction(s,'left');const x=s.x;stepGame(s,.025);assert.ok(x-s.x>21.25);
+ s.x=100;pickup(s,'zena');s.x=290;s.lane=2;s.objects=[{id:12,lane:1,y:380,kind:'treat'}];stepGame(s,.025);assert.equal(s.objects[0].lane,2);assert.ok(s.helperFx.some(e=>e.member==='zena'));
+});
+test('helpers cannot prank simultaneously and malformed helper saves are rejected; legacy saves load',()=>{
+ const s=createGame('drive',{seed:7});s.elapsed=9.99;s.remaining=80.01;pickup(s,'liv');assert.equal(s.prank,null);stepGame(s,.1);assert.equal(s.prank,null);
+ const snapshot=snapshotRound(s),old={...snapshot};delete old.helpers;delete old.helperFx;assert.ok(restoreRound(old));
+ for(const patch of [{helpers:{liv:21,may:0,minami:0,zena:0}},{helpers:{liv:1}},{helperFx:[{member:'woni',x:100,y:100,ttl:.1}]}])assert.equal(restoreRound({...snapshot,...patch}),null);
 });
