@@ -4,6 +4,15 @@
 
 
 
+## 사천성 층별 진행·원이 동료 운영 배포 — 2026-10-15
+
+- 사용자 승인 후 [PR #41](https://github.com/hhj4861/rescene-game/pull/41)을 main에 머지했다. 운영 소스 `8a1e3ba9133a603916c2392e9780599cdcb25d75`와 검증 head `b367f1340fcebcae436a44bfab94775ddff61592`의 Git 트리 `cb4ac1b553a55b1c5e93bdca1eec94b00388e225`가 동일하다.
+- [성공 CI 38738053223](https://github.com/hhj4861/rescene-game/actions/runs/38738053223): 단위 **236개**, E2E **717개 통과·6개 조건부 생략·실패 0개**(20.3분), lint/build 통과. 해당 정적 산출물 그대로 배포했다.
+- Pages 배포 `a69a14b6-33e6-44f0-a5fc-6ee6d0d9e2c0`: **Production / main / source `8a1e3ba`**. [운영 게임](https://rescene-arcade.pages.dev/), [고정 배포](https://a69a14b6.rescene-arcade.pages.dev).
+- 사천성은 N단계 N층을 위에서 아래로 모두 비워야 클리어. 원이는 멤버별 아이템 획득 시 절반 크기의 동료가 20초간 등장하며 노래 중에는 4명이 지원한다. 별이는 원이의 1/3 크기로 변경했다. 기존 저장 호환 유지.
+- 공개 파일 **41/41 SHA-256 일치**, 운영 주소 E2E **138/138 통과**(3.6분). PC Chromium·Pixel 7 Chromium·iPhone 13 WebKit 에뮬레이션의 층 전환·완주·저장 복원·동료별 획득·노래·기존 빵 퍼즐·팩 교체 회귀 확인. 운영 PC 파이리+동료 화면 시각 검토. 실기기 검증은 아님.
+- 기존 Wrangler 로그인 사용, 인증·도메인 변경 없음. 증거: iCloud 작업 루트 `rescene-game/pr41-deploy-20261015/`의 `ci-success.log`, `site/`, `deploy.log`, `deployments.txt`, `production-assets.json`, `public-browser.log`, `public-browser/`.
+
 ## 제나 사천성 12종 음식 운영 배포 — 2026-10-15
 
 - 사용자 승인 후 [PR #40](https://github.com/hhj4861/rescene-game/pull/40)을 main에 머지했다. 운영 소스 `01faba6e2abec52ae9ba427a12091eded05c357c`와 검증 head `0319a8af80428cebabdeedc92896f965ec128a3d`의 Git 트리 `e5ddf035533ae142d96163bb7f8ffc9f91bbfd45`가 동일하다.
