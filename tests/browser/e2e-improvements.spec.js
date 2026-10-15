@@ -27,11 +27,11 @@ for(const viewport of [{width:844,height:390},{width:1280,height:720}])for(const
  await page.screenshot({path:info.outputPath(`${kind}-${viewport.width}.png`)});
  await page.locator('[data-pause]').click();await expect(page.locator('#overlay')).toHaveCSS('position','fixed');const dialog=await page.locator('.pause-paper').boundingBox();expect(dialog.y).toBeGreaterThanOrEqual(0);expect(dialog.y+dialog.height).toBeLessThanOrEqual(viewport.height);await page.locator('[data-resume]').click();
 });
-for(const width of [768,844,1024])test(`Woni guide remains readable at ${width}px`,async({page})=>{
- await page.setViewportSize({width,height:1180});await open(page,'drive');const b=await page.locator('.short-guide').boundingBox();expect(b.width).toBeGreaterThan(300);expect(b.height).toBeLessThan(600);
+for(const width of [768,844,1024])test(`Woni omits verbose guides at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:1180});await open(page,'drive');await expect(page.locator('.short-guide,.key-guide')).toHaveCount(0);await expect(page.locator('#powerup-status')).toBeEmpty();await expect(page.locator('[data-lane-stamp]')).toHaveCount(3);
 });
 test('small Zena has reachable tools above the board and preserves large zoom targets',async({page},info)=>{
- await page.setViewportSize({width:320,height:568});await open(page,'photo',11);const field=await page.locator('.playfield').boundingBox(),tools=await page.locator('.game-controls').boundingBox();expect(tools.y+tools.height).toBeLessThan(field.y);expect(field.y+field.height).toBeLessThanOrEqual(568);
+ await page.setViewportSize({width:320,height:568});await open(page,'photo',11);const field=await page.locator('.playfield').boundingBox(),tools=await page.locator('.game-controls').boundingBox();expect(tools.y+tools.height).toBeLessThanOrEqual(field.y);for(const button of await page.locator('.game-controls button').all()){const box=await button.boundingBox();expect(field.y-box.y-box.height).toBeGreaterThanOrEqual(8);}expect(field.y+field.height).toBeLessThanOrEqual(568);
  await page.locator('[data-bread-zoom]').click();await expect(page.locator('[data-bread-zoom]')).toHaveAttribute('aria-pressed','true');const tile=await page.locator('.field-controls button').first().boundingBox();expect(tile.width).toBeGreaterThanOrEqual(48);
  await page.locator('[data-act=rolling-pin]').click();await expect(page.locator('#interaction-hint')).toContainText('밀대로 지울');await page.screenshot({path:info.outputPath('zena-tools-320.png')});
 });
