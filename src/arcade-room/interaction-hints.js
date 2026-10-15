@@ -1,3 +1,4 @@
+import {linkFoodName} from './zena-foods.js';
 import {walkLaneQuota} from './walk.js';
 const lanes=['왼쪽','가운데','오른쪽'];
 export const breadName=value=>['빈칸','식빵','도넛','컵케이크','소보로빵','말차빵'][value%10];
@@ -18,7 +19,7 @@ export function syncInteractionHints(app,s){
    el.dataset.collected=String(done);el.setAttribute('aria-label',`${lanes[i]} 길: ${done?'수집 완료':'간식 필요'}`);
   });
  }else if(s.linkVersion){
-  message=s.linkMessage||(s.selected>=0?`${breadName(s.board[s.selected])} 선택 · 같은 빵을 하나 더 눌러요.`:'같은 빵 두 개를 골라요. 선은 두 번까지 꺾을 수 있어요.');
+  message=s.linkMessage||(s.selected>=0?`${linkFoodName(s.board[s.selected])} 선택 · 같은 음식을 하나 더 눌러요.`:'같은 음식 두 개를 골라요. 선은 두 번까지 꺾을 수 있어요.');
   app.querySelectorAll('.field-controls button').forEach(el=>{el.dataset.swapTarget='false';});
  }else{
   const size=Math.round(Math.sqrt(s.board.length)),selected=s.selected>=0&&s.board[s.selected]&&!s.flash&&!s.itemArmed;

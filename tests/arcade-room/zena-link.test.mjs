@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {LINK_FOODS,linkMenu} from '../../src/arcade-room/zena-foods.js';
 import {linkPath,linkPair,linkSize,shuffleLink} from '../../src/arcade-room/zena-link.js';
 import {createGame,gameAction,stepGame} from '../../src/arcade-room/model.js';
 import {snapshotRound,restoreRound,saveRound,isStageClear,finishStage} from '../../src/arcade-room/progress.js';
@@ -45,4 +46,24 @@ test('Zena pack snapshots, records and next stages stay independent and malforme
  const corrupt=JSON.parse(values.get(PACKS_KEY));corrupt.packs['zena-bakery'].journey.snapshot=snapshotRound(s);assert.equal(readGamePacks({getItem:k=>k===PACKS_KEY?JSON.stringify(corrupt):null}).packs['zena-bakery'].journey.snapshot,null);
  while(s.board.some(Boolean)){const pair=linkPair(s.board);gameAction(s,pair[0]);gameAction(s,pair[1]);stepGame(s,.4);}
  finishStage(packProgress(loaded),s);assert.equal(loaded.packs['zena-link'].journey.stage,2);assert.equal(loaded.packs['zena-bakery'].journey.stage,1);
+});
+
+test('food variety grows from six to twelve, includes ramen immediately and balances every pair',()=>{
+ for(const [stage,types] of [[1,6],[3,6],[4,7],[6,7],[10,9],[19,12],[1000,12]])for(let seed=1;seed<=12;seed++){
+  const s=createGame('photo',{link:true,stage,seed}),menu=linkMenu(stage);
+  assert.equal(new Set(s.board).size,types);assert.ok(s.board.includes(6));
+  const counts=menu.map(v=>s.board.filter(n=>n===v).length);
+  assert.ok(counts.every(n=>n>=2&&n%2===0));assert.ok(Math.max(...counts)-Math.min(...counts)<=2);
+  assert.deepEqual(restoreRound(snapshotRound(s)).board,s.board);
+ }
+ assert.equal(LINK_FOODS.length,13);
+});
+test('legacy bread saves retain their tile IDs and new food saves reject invalid or unpaired IDs',()=>{
+ const s=createGame('photo',{link:true,stage:19,seed:7});
+ const legacy=snapshotRound(s);legacy.board=legacy.board.map((_,i)=>1+Math.floor(i/2)%5);
+ assert.deepEqual(restoreRound(legacy).board,legacy.board);
+ const snapshot=snapshotRound(s);
+ assert.ok(snapshot.board.includes(12));assert.deepEqual(restoreRound(snapshot).board,s.board);
+ for(const value of [13,-1,6.5])assert.equal(restoreRound({...snapshot,board:snapshot.board.map((v,i)=>i<2?value:v)}),null);
+ const odd=[...snapshot.board];odd[0]=odd[0]===6?7:6;assert.equal(restoreRound({...snapshot,board:odd}),null);
 });
